@@ -1,3 +1,81 @@
+ใช่ครับ — แต่มีเงื่อนไขที่ต้องรู้ 4 ข้อ ขอตอบให้ครบ
+
+> หมายเหตุ: ตอนนี้ยังไม่ได้ลงมือทำนะครับ (`lib/utils/logger.dart` ยังไม่มี, `main.dart` ยังไม่มี `kReleaseMode`) ผมตอบเป็นสิ่งที่**จะเกิดขึ้นหลังทำ**
+
+## ✅ คำตอบหลัก
+
+| คำสั่ง | Build mode | `kDebugMode` | Log แสดงไหม |
+|---|---|---|---|
+| `flutter run -d chrome` | debug | `true` | ✅ **แสดงครบ** |
+| `flutter run --profile` | profile | `false` | ❌ ไม่แสดง |
+| **`flutter build web`** | **release** (ค่าเริ่มต้น) | `false` | ❌ **ไม่แสดง — และหายจาก bundle** |
+| `flutter build web --release` | release | `false` | ❌ ไม่แสดง |
+| ⚠️ `flutter build web --debug` | debug | `true` | ⚠️ **แสดง!** อย่าใช้ deploy |
+
+ตอนพัฒนาคุณใช้ `flutter run -d chrome` ซึ่งเป็น debug mode → **log ยังเห็นครบเหมือนเดิมทุกบรรทัด** ไม่มีอะไรเปลี่ยน
+
+ตอน deploy คุณใช้ `flutter build web` ซึ่ง**ดีฟอลต์เป็น release อยู่แล้ว** → โค้ด log ถูกตัดทิ้งตั้งแต่ตอน compile ไม่ใช่แค่ "เงียบ" แต่ **ไม่มีอยู่ในไฟล์ `main.dart.js` เลย**
+
+## 🔬 วิธีพิสูจน์ด้วยตาตัวเอง (สำคัญมาก อย่าเชื่อผม)
+
+หลังทำเสร็จ ให้ build แล้วค้นหาข้อความ log ในไฟล์ที่ build ออกมา:
+
+```bash
+flutter build web --release
+```
+
+```bash
+grep -c "Login Attempt" build/web/main.dart.js
+```
+
+- ได้ **`0`** = ข้อความหายไปจริง ✅ ยืนยันว่าถูก tree-shake แล้ว
+- ได้เลขอื่น = ยังฝังอยู่ ต้องกลับมาแก้
+
+ลองเทียบก่อน/หลังก็ได้ — ตอนนี้ยังไม่ได้แก้ ถ้า build เดี๋ยวนี้จะเจอข้อความอยู่
+
+## ⚠️ 4 ข้อที่ยัง "ไม่ครอบคลุม"
+
+**1. Argument ยังถูกคำนวณ (แต่ไม่แสดง)**
+
+```dart
+AppLogger.d('data: ${jsonEncode(bigObject)}');  // jsonEncode ยังทำงานใน release
+AppLogger.lazy(() => 'data: ${jsonEncode(bigObject)}');  // ✅ ไม่ทำงานเลย
+```
+ตัว body ถูกตัดแน่นอน แต่ string interpolation ที่ call site อาจยังรัน → ใช้ `lazy()` กับอันที่แพงหรืออ่อนไหว
+
+**2. Error ของ Flutter framework ยังพ่น stack trace ใน release**
+
+อันนี้เป็นคนละกลไก ไม่เกี่ยวกับ logger เรา ต้องดักเพิ่มใน `main.dart`:
+
+```dart
+if (kReleaseMode) {
+  FlutterError.onError = (details) {
+    // ส่งเข้า error tracking ของตัวเอง หรือกลืนเงียบ — ไม่ต้อง dump ลง console
+  };
+}
+```
+
+**3. `print()` จาก package ภายนอก** — logger เราคุมได้แค่โค้ดเรา ถ้า package อื่น `print` เอง เราปิดไม่ได้ (แต่ `LogInterceptor` ของ Dio ที่ครอบ `kDebugMode` ไว้แล้วปลอดภัย)
+
+**4. แท็บ Network ยังเห็น token อยู่ดี**
+
+ต่อให้ปิด console หมด คนที่เปิด DevTools → Network ก็ยังเห็น response ของ `/api/auth/login` ที่มี token อยู่ดี — อันนี้ห้ามไม่ได้ เป็นธรรมชาติของ web
+
+ขอปรับคำที่ผมพูดไปรอบก่อนให้ตรงกว่านี้: การ log token ลง console **ไม่ใช่ช่องโหว่ที่โจมตีจากระยะไกลได้** (มันเป็น token ของ user คนนั้นเอง คนร้ายต้องเข้าถึงเครื่องได้อยู่แล้ว) แต่มันเป็นความเสี่ยงจริงในกรณี: แชร์หน้าจอ/ประชุมออนไลน์, browser extension ที่อ่าน console ได้, หรือถ้าวันหน้าต่อ error-tracking SDK (Sentry ฯลฯ) ที่ hook console แล้วส่ง token ขึ้น server ปลายทาง — ควรแก้ในฐานะ **สุขอนามัยของโค้ด (defense in depth)** มากกว่าการปิดรูรั่วฉุกเฉิน
+
+## 📌 ข้อควรระวังตอน deploy
+
+อย่าใช้ `--profile` หรือ `--debug` ขึ้น production เด็ดขาด และแนะนำให้ระบุ `--release` ให้ชัดไปเลยกันพลาด:
+
+```bash
+flutter build web --release --no-wasm-dry-run
+```
+
+---
+
+สรุปสั้นๆ: **ใช่ครับ ระหว่างพัฒนาเห็นครบเหมือนเดิม พอ `flutter build web` แล้วหายเกลี้ยงจาก bundle** — และมีวิธี grep ยืนยันได้จริง
+
+ให้ผมลงมือทำขั้นตอน 1-6 เลยไหมครับ? (จะ `git init` + commit ตัวปัจจุบันไว้ก่อนให้ด้วย เผื่อต้องย้อนกลับ)
 # Clean the project
 flutter clean
 
