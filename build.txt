@@ -1,0 +1,50 @@
+# Clean the project
+flutter clean
+
+# Delete pub cache (if needed)
+flutter pub cache repair
+
+# Get packages
+flutter pub get
+
+# Run the app
+flutter run -d chrome
+flutter build web --no-wasm-dry-run
+
+// Example in any widget
+Text(
+  'ข้อความภาษาไทย',
+  style: TextStyle(
+    fontFamily: 'Sarabun',  // Specify font explicitly
+    fontSize: 16,
+    color: Colors.black,
+  ),
+)
+flutter build web
+directory build/web
+
+I tried everything I can do. But at last simply deleting pubspec.lock file done my job.
+then run flutter clean
+then build again.
+After doing this no error /warning was showing.
+Hop this works for you all
+
+flutter build web
+flutter build web --no-wasm-dry-run
+directory build/web
+
+flutter build apk --release
+flutter build appbundle --release
+flutter pub outdated
+flutter pub upgrade --major-versions
+flutter clean
+flutter clean cached
+flutter pub get
+
+flutter clean
+flutter run
+
+flutter pub run flutter_launcher_icons:main  //icon app
+flutter pub get upgrade
+flutter upgrade
+flutter doctor

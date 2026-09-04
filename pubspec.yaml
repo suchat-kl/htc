@@ -1,0 +1,91 @@
+name: highway_training
+description: Highway Training System - Flutter Web App
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.10.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  google_fonts: ^8.2.0
+  flutter_localizations:
+    sdk: flutter
+  intl: ^0.20.2
+  url_launcher: ^6.2.1
+  flutter_svg: ^2.0.9
+  animated_text_kit: ^4.2.2
+  dio: ^5.4.0
+  flutter_secure_storage: ^10.3.1
+  universal_html: ^2.3.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  # ✅ ย้ายมาที่นี่พร้อมระบุเวอร์ชัน
+  flutter_launcher_icons: ^0.13.1
+
+# ✅ ส่วนตั้งค่าไอคอนแยกเป็น top-level key
+flutter_launcher_icons:
+  # android: true
+  # ios: true
+  image_path: "assets/icons/icon.png"
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: "assets/icons/icon.png"   # ถ้าไม่มีไฟล์นี้ให้ลบบรรทัดนี้ออก
+  web:
+    generate: true
+    image_path: "assets/icons/icon.png"
+    background_color: "#FFFFFF"
+    theme_color: "#FFFFFF"
+  # windows:
+  #   generate: true
+  #   image_path: "assets/icons/icon.png"
+  #   icon_size: 256
+  # macos:
+  #   generate: false
+  #   image_path: "assets/icons/icon.png"
+
+flutter:
+  uses-material-design: true
+
+  fonts:
+    - family: Sarabun
+      fonts:
+        - asset: assets/fonts/Sarabun-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/Sarabun-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Sarabun-Bold.ttf
+          weight: 700
+
+    - family: NotoSansThai
+      fonts:
+        - asset: assets/fonts/NotoSansThai-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/NotoSansThai-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/NotoSansThai-Bold.ttf
+          weight: 700
+
+    - family: Kanit
+      fonts:
+        - asset: assets/fonts/Kanit-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/Kanit-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Kanit-Bold.ttf
+          weight: 700
+
+  assets:
+    - assets/images/
+    - assets/images/normal.png
+    - assets/images/vip.png
+    - assets/images/meeting.png
+    - assets/images/brochure.pdf
+    - assets/images/location.pdf
+    - assets/images/line.png
+    - assets/images/map500.png
+    # - assets/icons/       # ถ้ามีไฟล์ icon.png ก็เปิดใช้งานด้วย
+    # - assets/icons/icon.png
