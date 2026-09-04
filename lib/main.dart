@@ -1,7 +1,9 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:highway_training/screens/contact_screen.dart';
 import 'package:highway_training/screens/home_screen.dart';
+import 'package:highway_training/screens/training_screen.dart';
 // import 'package:google_fonts/google_fonts.dart';
 import 'package:highway_training/widgets/header.dart';
 import 'package:highway_training/widgets/sidebar_menu.dart';
@@ -25,9 +27,7 @@ void main() async {
 
     // Flutter จะ dump stack trace ลง console เองเมื่อเกิด error แม้ใน release
     // อันนี้เป็นคนละกลไกกับ AppLogger จึงต้องดักแยก
-    FlutterError.onError = (FlutterErrorDetails details) {
-      
-    };
+    FlutterError.onError = (FlutterErrorDetails details) {};
   }
 
   // Set preferred orientations
@@ -54,7 +54,7 @@ void main() async {
   // For newer Flutter versions
   // Intl.defaultLocale = 'th';
   // initializeDateFormatting('th_TH', 'th');
-  
+
   runApp(HighwayTrainingApp(authProvider: authProvider));
 }
 
@@ -72,11 +72,21 @@ class _HighwayTrainingAppState extends State<HighwayTrainingApp> {
   void initState() {
     super.initState();
     // Listen for auth state changes
-    widget.authProvider.addListener(() {
-      if (mounted) {
-        setState(() {});
-      }
-    });
+    widget.authProvider.addListener(_onAuthChanged);
+  }
+
+  @override
+  void dispose() {
+    // ต้องถอด listener ออก ไม่งั้น AuthProvider (มีอายุยืนกว่า State นี้)
+    // จะยังถือ closure ที่อ้างถึง State ที่ถูก dispose ไปแล้วอยู่
+    widget.authProvider.removeListener(_onAuthChanged);
+    super.dispose();
+  }
+
+  void _onAuthChanged() {
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   @override
@@ -197,11 +207,12 @@ class _MainNavigationState extends State<MainNavigation> {
           authProvider: widget.authProvider,
         );
       case 1:
-        return const Center(child: Text('หลักสูตรฝึกอบรม'));
+        return const TrainingScreen(embedded: true);
       case 2:
+        // ยังไม่มีหน้าข่าวสารแยก — ข่าวล่าสุดแสดงอยู่ใน HomeScreen
         return const Center(child: Text('ข่าวสาร'));
       case 3:
-        return const Center(child: Text('ติดต่อเรา'));
+        return const ContactScreen(embedded: true);
       default:
         return const Center(child: Text('ไม่พบหน้า'));
     }

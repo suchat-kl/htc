@@ -134,9 +134,7 @@ class ApiService {
   String? get username => _username;
   String? get email => _email;
   String? get fullName => _fullName;
-  int? get empID {
-    return _empID!;
-  }
+  int? get empID => _empID;
 
   List<String> get roles => _roles;
   bool get isLoggedIn => _isLoggedIn;

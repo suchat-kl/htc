@@ -6,7 +6,12 @@ import '../utils/snackbar_helper.dart';
 import 'package:highway_training/utils/logger.dart';
 
 class ContactScreen extends StatefulWidget {
-  const ContactScreen({super.key});
+  /// `true` เมื่อถูกฝังเป็นแท็บใน MainNavigation ซึ่งมี Scaffold + header
+  /// ของตัวเองอยู่แล้ว จะไม่สร้าง Scaffold/AppBar ซ้อน และไม่แสดงปุ่มปิด
+  /// (ปุ่มปิดเรียก Navigator.pop ซึ่งใช้ไม่ได้ตอนเป็น root route)
+  final bool embedded;
+
+  const ContactScreen({super.key, this.embedded = false});
 
   @override
   State<ContactScreen> createState() => _ContactScreenState();
@@ -59,6 +64,42 @@ class _ContactScreenState extends State<ContactScreen> {
     // ignore: unused_local_variable
     final bodyFontSize = isLargeScreen ? 16.0 : (isDesktop ? 15.0 : 14.0);
 
+    final body = Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            AppTheme.primaryColor.withValues(alpha: 0.04),
+            Colors.white,
+            AppTheme.secondaryColor.withValues(alpha: 0.06),
+          ],
+        ),
+      ),
+      child: SingleChildScrollView(
+        padding: EdgeInsets.symmetric(
+          horizontal: isDesktop ? 40 : 16,
+          vertical: isDesktop ? 32 : 20,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            _buildHeader(isDesktop),
+            const SizedBox(height: 32),
+            _buildContactInfo(isDesktop, isLargeScreen),
+            const SizedBox(height: 40),
+            _buildMapSection(isDesktop, isLargeScreen),
+            const SizedBox(height: 40),
+            _buildDownloadButtons(isDesktop),
+            const SizedBox(height: 20),
+          ],
+        ),
+      ),
+    );
+
+    // ฝังในแท็บ: MainNavigation มี Scaffold + CustomHeader ให้อยู่แล้ว
+    if (widget.embedded) return body;
+
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
@@ -77,38 +118,7 @@ class _ContactScreenState extends State<ContactScreen> {
         foregroundColor: Colors.white,
         elevation: 4,
       ),
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              AppTheme.primaryColor.withValues(alpha: 0.04),
-              Colors.white,
-              AppTheme.secondaryColor.withValues(alpha: 0.06),
-            ],
-          ),
-        ),
-        child: SingleChildScrollView(
-          padding: EdgeInsets.symmetric(
-            horizontal: isDesktop ? 40 : 16,
-            vertical: isDesktop ? 32 : 20,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              _buildHeader(isDesktop),
-              const SizedBox(height: 32),
-              _buildContactInfo(isDesktop, isLargeScreen),
-              const SizedBox(height: 40),
-              _buildMapSection(isDesktop, isLargeScreen),
-              const SizedBox(height: 40),
-              _buildDownloadButtons(isDesktop),
-              const SizedBox(height: 20),
-            ],
-          ),
-        ),
-      ),
+      body: body,
     );
   }
 
@@ -237,8 +247,8 @@ class _ContactScreenState extends State<ContactScreen> {
             children: [
               Image.asset(
                 'assets/images/line.png',
-                width: 100 ,//isDesktop ? 100 : 90,
-                height: 100,//isDesktop ? 28 : 22,
+                width: 100, //isDesktop ? 100 : 90,
+                height: 100, //isDesktop ? 28 : 22,
                 errorBuilder: (ctx, err, _) => Icon(
                   Icons.chat,
                   color: Colors.green,
@@ -371,7 +381,7 @@ class _ContactScreenState extends State<ContactScreen> {
             child: ClipRRect(
               borderRadius: BorderRadius.circular(12),
               child: Container(
-                width: 1000,//mapWidth,
+                width: 1000, //mapWidth,
                 // height: isDesktop ? 400 : 250,
                 decoration: BoxDecoration(color: Colors.grey.shade200),
                 child: Image.asset(
