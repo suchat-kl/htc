@@ -1,28 +1,28 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
+import 'package:highway_training/utils/logger.dart';
 
 class EventBus {
   static final EventBus _instance = EventBus._internal();
   factory EventBus() => _instance;
   EventBus._internal() {
-    debugPrint('🔧 EventBus initialized');
+    AppLogger.d('🔧 EventBus initialized');
   }
 
   final _controller = StreamController<String>.broadcast();
 
   Stream<String> get stream {
-    debugPrint('📡 Stream accessed');
+    AppLogger.d('📡 Stream accessed');
     return _controller.stream;
   }
 
   void emit(String event) {
-    debugPrint('📤 EventBus emit: $event');
+    AppLogger.d('📤 EventBus emit: $event');
     _controller.add(event);
   }
 
   void dispose() {
-    debugPrint('🔧 EventBus disposed');
+    AppLogger.d('🔧 EventBus disposed');
     _controller.close();
   }
 }

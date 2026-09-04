@@ -3,6 +3,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:universal_html/html.dart' as html;
 import '../config/theme.dart';
 import '../utils/snackbar_helper.dart';
+import 'package:highway_training/utils/logger.dart';
 
 class ContactScreen extends StatefulWidget {
   const ContactScreen({super.key});
@@ -24,7 +25,7 @@ class _ContactScreenState extends State<ContactScreen> {
         html.window.open(url, '_blank');
       }
     } catch (e) {
-      debugPrint('Error opening URL: $e');
+      AppLogger.d('Error opening URL: $e');
       if (mounted) context.showErrorSnackBar('ไม่สามารถเปิดลิงก์ได้');
     }
   }
@@ -42,7 +43,7 @@ class _ContactScreenState extends State<ContactScreen> {
 
       if (mounted) context.showSuccessSnackBar('กำลังดาวน์โหลด $filename');
     } catch (e) {
-      debugPrint('Error downloading: $e');
+      AppLogger.d('Error downloading: $e');
       if (mounted) context.showErrorSnackBar('ไม่สามารถดาวน์โหลดได้');
     } finally {
       if (mounted) setState(() => _isDownloading = false);

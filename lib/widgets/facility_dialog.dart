@@ -5,6 +5,7 @@ import '../config/theme.dart';
 
 import '../services/api_service.dart';
 import '../utils/snackbar_helper.dart';
+import 'package:highway_training/utils/logger.dart';
 
 class FacilityDialog extends StatefulWidget {
   final Facility? facility;
@@ -73,13 +74,13 @@ class _FacilityDialogState extends State<FacilityDialog> {
       );
 
       if (isEdit) {
-        // debugPrint("edit");
-        // debugPrint(widget.facility!.facilityID.toString());
-        // debugPrint(facility.description);
+        // AppLogger.d("edit");
+        // AppLogger.d(widget.facility!.facilityID.toString());
+        // AppLogger.d(facility.description);
         // ✅ Check if facilityID is not null before accessing
         final facilityId = widget.facility?.facilityID;
-        debugPrint("edit");
-        debugPrint("facilityID: ${facilityId ?? 'null'}");
+        AppLogger.d("edit");
+        AppLogger.d("facilityID: ${facilityId ?? 'null'}");
 
         // if (facilityId == null) {
         //   throw Exception('Facility ID is null - cannot update');

@@ -8,6 +8,7 @@ import '../models/foodtype.dart';
 import '../services/api_service.dart';
 import '../utils/snackbar_helper.dart';
 import '../utils/util.dart';
+import 'package:highway_training/utils/logger.dart';
 
 class BookingEditScreen extends StatefulWidget {
   final ApiService apiService;
@@ -102,7 +103,7 @@ class _BookingEditScreenState extends State<BookingEditScreen> {
       final types = await widget.apiService.getFoodtypeList();
       if (mounted) setState(() => _foodtypes = types);
     } catch (e) {
-      debugPrint('Error loading foodtypes: $e');
+      AppLogger.d('Error loading foodtypes: $e');
     } finally {
       if (mounted) setState(() => _isLoading = false); // ✅ เพิ่มบรรทัดนี้
     }
@@ -126,7 +127,7 @@ class _BookingEditScreenState extends State<BookingEditScreen> {
         );
       }
     } catch (e) {
-      debugPrint('Error loading tfoods: $e');
+      AppLogger.d('Error loading tfoods: $e');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -169,7 +170,7 @@ class _BookingEditScreenState extends State<BookingEditScreen> {
 
       // ignore: unused_local_variable
       Bookroom saved;
-      debugPrint("isEdit $isEdit");
+      AppLogger.d("isEdit $isEdit");
       if (isEdit) {
         saved = await widget.apiService.updateBooking(
           // widget.booking!.bookID!,
@@ -208,7 +209,7 @@ class _BookingEditScreenState extends State<BookingEditScreen> {
       }
     } catch (e) {
       setState(() {
-        debugPrint('Error: $e'); // ← เปลี่ยนจาก debugPrint(e.toString())
+        AppLogger.d('Error: $e'); // ← เปลี่ยนจาก AppLogger.d(e.toString())
         _error = e.toString().replaceAll('Exception: ', '');
         _isSaving = false;
       });

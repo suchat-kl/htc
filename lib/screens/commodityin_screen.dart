@@ -10,6 +10,7 @@ import '../models/commodity_in.dart';
 import '../services/api_service.dart';
 import '../widgets/commodityin_dialog.dart';
 import '../utils/snackbar_helper.dart';
+import 'package:highway_training/utils/logger.dart';
 
 class CommodityInScreen extends StatefulWidget {
   final ApiService apiService;
@@ -48,7 +49,7 @@ class _CommodityInScreenState extends State<CommodityInScreen> {
       final commodities = await widget.apiService.getCommoditiesList();
       if (mounted) setState(() => _commodities = commodities);
     } catch (e) {
-      debugPrint('Error loading commodities: $e');
+      AppLogger.d('Error loading commodities: $e');
     }
   }
 
@@ -57,7 +58,7 @@ class _CommodityInScreenState extends State<CommodityInScreen> {
       final employees = await widget.apiService.getEmployeesList();
       if (mounted) setState(() => _employees = employees);
     } catch (e) {
-      debugPrint('Error loading commodities: $e');
+      AppLogger.d('Error loading commodities: $e');
     }
   }
 

@@ -4,6 +4,7 @@ import '../models/organization.dart';
 import '../models/section.dart';
 import '../services/api_service.dart';
 import '../utils/snackbar_helper.dart';
+import 'package:highway_training/utils/logger.dart';
 
 class SectionScreen extends StatefulWidget {
   final ApiService apiService;
@@ -35,7 +36,7 @@ class _SectionScreenState extends State<SectionScreen> {
       final orgs = await widget.apiService.getOrganizationList();
       if (mounted) setState(() => _organizations = orgs.where((o) => o.orgName != null && o.orgName!.isNotEmpty).toList());
     } catch (e) {
-      debugPrint('Error loading orgs: $e');
+      AppLogger.d('Error loading orgs: $e');
     }
   }
 

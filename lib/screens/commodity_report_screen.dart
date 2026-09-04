@@ -8,6 +8,7 @@ import '../services/api_service.dart';
 import '../utils/snackbar_helper.dart';
 import 'package:universal_html/html.dart' as html;
 import '../utils/util.dart';
+import 'package:highway_training/utils/logger.dart';
 
 class CommodityReportScreen extends StatefulWidget {
   final ApiService apiService;
@@ -133,8 +134,8 @@ class _CommodityReportScreenState extends State<CommodityReportScreen> {
         throw Exception('ไฟล์รายงานว่างเปล่า');
       }
 
-      debugPrint('Downloaded report: ${bytes.length} bytes');
-      debugPrint(
+      AppLogger.d('Downloaded report: ${bytes.length} bytes');
+      AppLogger.d(
         'First bytes: ${bytes.take(8).map((b) => b.toRadixString(16)).join(' ')}',
       );
 
@@ -160,7 +161,7 @@ class _CommodityReportScreenState extends State<CommodityReportScreen> {
         context.showSuccessSnackBar('ดาวน์โหลดรายงานสำเร็จ');
       }
     } catch (e) {
-      debugPrint('Report download error: $e');
+      AppLogger.d('Report download error: $e');
       if (mounted) {
         context.showErrorSnackBar('ดาวน์โหลดรายงานไม่สำเร็จ: $e');
       }
@@ -173,7 +174,7 @@ class _CommodityReportScreenState extends State<CommodityReportScreen> {
 // late DateTime dateNow ;//= DateTime.now();
   Future<void> _selectDate() async {
     
-    // debugPrint("dateNow $dateNow");
+    // AppLogger.d("dateNow $dateNow");
     // int y = dateNow.year;
     final DateTime? picked; //=
     picked = await Util.dateFieldPicker(context,  _selectedDate);

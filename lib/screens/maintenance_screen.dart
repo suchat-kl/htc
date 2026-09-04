@@ -7,6 +7,7 @@ import '../providers/auth_provider.dart';
 import '../screens/maintenance_edit_screen.dart';
 import '../utils/snackbar_helper.dart';
 import '../utils/util.dart';
+import 'package:highway_training/utils/logger.dart';
 
 class MaintenanceScreen extends StatefulWidget {
   final ApiService apiService;
@@ -44,18 +45,18 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
         workstatus: _fWorkstatus,
       );
 
-      debugPrint('Maintenance response keys: ${r.keys}'); // ✅ Debug
+      AppLogger.d('Maintenance response keys: ${r.keys}'); // ✅ Debug
 
       if (mounted) {
         // ✅ Try both possible keys
         final l = (r['maintenance'] ?? r['maintenances']) as List?;
 
-        debugPrint('Maintenance list length: ${l?.length}'); // ✅ Debug
+        AppLogger.d('Maintenance list length: ${l?.length}'); // ✅ Debug
 
         setState(() {
           _list =
               l?.map((j) {
-                debugPrint('Parsing: $j'); // ✅ Debug each item
+                AppLogger.d('Parsing: $j'); // ✅ Debug each item
                 return Maintenance.fromJson(j as Map<String, dynamic>);
               }).toList() ??
               [];
@@ -65,14 +66,14 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
           _isLoading = false;
         });
 // ✅ Debug
-        debugPrint('Total pages: $_tp');
-        debugPrint('Current page: $_cp');
-        debugPrint('Page size: $_ps');
-        debugPrint('List length: ${_list.length}');
-        debugPrint('Parsed ${_list.length} items'); // ✅ Debug
+        AppLogger.d('Total pages: $_tp');
+        AppLogger.d('Current page: $_cp');
+        AppLogger.d('Page size: $_ps');
+        AppLogger.d('List length: ${_list.length}');
+        AppLogger.d('Parsed ${_list.length} items'); // ✅ Debug
       }
     } catch (e) {
-      debugPrint('Error loading maintenance: $e'); // ✅ Debug error
+      AppLogger.d('Error loading maintenance: $e'); // ✅ Debug error
       if (mounted) {
         setState(() => _isLoading = false);
         context.showErrorSnackBar('ไม่สามารถโหลดข้อมูลได้: $e');

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:universal_html/html.dart' as html;
 import '../config/theme.dart';
 import '../utils/snackbar_helper.dart';
+import 'package:highway_training/utils/logger.dart';
 
 class RoomRatesScreen extends StatefulWidget {
   const RoomRatesScreen({super.key});
@@ -23,7 +24,7 @@ class _RoomRatesScreenState extends State<RoomRatesScreen> {
         context.showSuccessSnackBar('กำลังเปิดโบรชัวร์');
       }
     } catch (e) {
-      debugPrint('Error downloading brochure: $e');
+      AppLogger.d('Error downloading brochure: $e');
       if (mounted) {
         context.showErrorSnackBar('ไม่สามารถดาวน์โหลดโบรชัวร์ได้');
       }

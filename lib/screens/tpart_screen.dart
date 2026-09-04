@@ -10,6 +10,7 @@ import '../services/api_service.dart';
 import '../widgets/tpart_dialog.dart';
 import '../utils/snackbar_helper.dart';
 import '../utils/util.dart';
+import 'package:highway_training/utils/logger.dart';
 
 class TpartScreen extends StatefulWidget {
   final ApiService apiService;
@@ -54,7 +55,7 @@ class _TpartScreenState extends State<TpartScreen> {
         });
       }
     } catch (e) {
-      debugPrint('Error loading dropdowns: $e');
+      AppLogger.d('Error loading dropdowns: $e');
     }
   }
 

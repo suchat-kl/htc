@@ -3,6 +3,7 @@ import '../config/theme.dart';
 import '../models/organization.dart';
 import '../services/api_service.dart';
 import '../utils/snackbar_helper.dart';
+import 'package:highway_training/utils/logger.dart';
 
 class OrganizationScreen extends StatefulWidget {
   final ApiService apiService;
@@ -35,7 +36,7 @@ class _OrganizationScreenState extends State<OrganizationScreen> {
       final orgs = await widget.apiService.getOrganizationList();
       if (mounted) setState(() => _allOrgs = orgs);
     } catch (e) {
-      debugPrint('Error loading orgs: $e');
+      AppLogger.d('Error loading orgs: $e');
     }
   }
 

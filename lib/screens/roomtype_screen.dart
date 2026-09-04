@@ -35,7 +35,7 @@ class _RoomtypeScreenState extends State<RoomtypeScreen> {
   //    final  commodities = await widget.apiService.getCommoditiesList();
   //     if (mounted) setState(() => _commodityList = commodities);
   //   } catch (e) {
-  //     debugPrint('Error loading commodity list: $e');
+  //     AppLogger.d('Error loading commodity list: $e');
   //   }
   // }
 

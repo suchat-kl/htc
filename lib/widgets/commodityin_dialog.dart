@@ -8,6 +8,7 @@ import '../models/commodity_in.dart';
 import '../services/api_service.dart';
 import '../utils/snackbar_helper.dart';
 import '../providers/auth_provider.dart';
+import 'package:highway_training/utils/logger.dart';
 
 class CommodityInDialog extends StatefulWidget {
   final AuthProvider authProvider;
@@ -113,7 +114,7 @@ class _CommodityInDialogState extends State<CommodityInDialog> {
       );
 
       // ✅ Debug print
-      debugPrint('Saving data: ${data.toJson()}');
+      AppLogger.d('Saving data: ${data.toJson()}');
 
       if (isEdit) {
         await widget.apiService.updateCommodityIn(

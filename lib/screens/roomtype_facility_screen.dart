@@ -4,6 +4,7 @@ import '../models/facility.dart';
 import '../models/roomtype_facility.dart';
 import '../services/api_service.dart';
 import '../utils/snackbar_helper.dart';
+import 'package:highway_training/utils/logger.dart';
 
 class RoomtypeFacilityScreen extends StatefulWidget {
   final int roomTypeID;
@@ -41,25 +42,25 @@ class _RoomtypeFacilityScreenState extends State<RoomtypeFacilityScreen> {
 
   Future<void> _loadFacilityList() async {
     try {
-      debugPrint('=== Loading Facility Lists ===');
-      debugPrint('roomTypeID: ${widget.roomTypeID}');
+      AppLogger.d('=== Loading Facility Lists ===');
+      AppLogger.d('roomTypeID: ${widget.roomTypeID}');
 
       final facilitiesAdd = await widget.apiService.getFacilitiesList(
         roomTypeID: widget.roomTypeID,
         mode: "add",
       );
-      debugPrint('facilitiesAdd count: ${facilitiesAdd.length}');
+      AppLogger.d('facilitiesAdd count: ${facilitiesAdd.length}');
       for (var f in facilitiesAdd) {
-        debugPrint('  ADD - facilityID: ${f.facilityID}, name: ${f.name}');
+        AppLogger.d('  ADD - facilityID: ${f.facilityID}, name: ${f.name}');
       }
 
       final facilitiesEdit = await widget.apiService.getFacilitiesList(
         roomTypeID: widget.roomTypeID,
         mode: "edit",
       );
-      debugPrint('facilitiesEdit count: ${facilitiesEdit.length}');
+      AppLogger.d('facilitiesEdit count: ${facilitiesEdit.length}');
       for (var f in facilitiesEdit) {
-        debugPrint('  EDIT - facilityID: ${f.facilityID}, name: ${f.name}');
+        AppLogger.d('  EDIT - facilityID: ${f.facilityID}, name: ${f.name}');
       }
 
       if (mounted) {
@@ -67,11 +68,11 @@ class _RoomtypeFacilityScreenState extends State<RoomtypeFacilityScreen> {
           _facilityListAdd = facilitiesAdd;
           _facilityListEdit = facilitiesEdit;
         });
-        debugPrint('State updated successfully');
+        AppLogger.d('State updated successfully');
       }
-      debugPrint('===================================');
+      AppLogger.d('===================================');
     } catch (e) {
-      debugPrint('❌ Error loading facility list: $e');
+      AppLogger.e('❌ Error loading facility list: $e');
     }
   }
 
@@ -113,24 +114,24 @@ class _RoomtypeFacilityScreenState extends State<RoomtypeFacilityScreen> {
   }
 
   void _showAddEditDialog({RoomtypeFacility? facility, String? mode}) {
-    debugPrint('=== Opening Dialog ===');
-    debugPrint('Mode: $mode');
-    debugPrint('RoomTypeID: ${widget.roomTypeID}');
-    debugPrint(
+    AppLogger.d('=== Opening Dialog ===');
+    AppLogger.d('Mode: $mode');
+    AppLogger.d('RoomTypeID: ${widget.roomTypeID}');
+    AppLogger.d(
       'Facility: ${facility != null ? "Edit facilityID=${facility.facilityID}" : "New"}',
     );
 
     if (mode == "edit") {
-      debugPrint(
+      AppLogger.d(
         'Using _facilityListEdit (count: ${_facilityListEdit.length})',
       );
       for (var f in _facilityListEdit) {
-        debugPrint('  facilityID: ${f.facilityID}, name: ${f.name}');
+        AppLogger.d('  facilityID: ${f.facilityID}, name: ${f.name}');
       }
     } else {
-      debugPrint('Using _facilityListAdd (count: ${_facilityListAdd.length})');
+      AppLogger.d('Using _facilityListAdd (count: ${_facilityListAdd.length})');
       for (var f in _facilityListAdd) {
-        debugPrint('  facilityID: ${f.facilityID}, name: ${f.name}');
+        AppLogger.d('  facilityID: ${f.facilityID}, name: ${f.name}');
       }
     }
 
@@ -763,42 +764,42 @@ class _RoomtypeFacilityFormDialogState
     }
     final uniqueList = uniqueMap.values.toList();
     // ✅ DEBUG PRINTS
-    debugPrint('=== Facility Dropdown Debug ===');
-    debugPrint('Mode: ${isEdit ? "EDIT" : "ADD"}');
-    debugPrint('widget.facilityList length: ${widget.facilityList.length}');
-    debugPrint('uniqueList length: ${uniqueList.length}');
-    debugPrint('_selectedFacilityID: $_selectedFacilityID');
-    debugPrint('FacilityList items:');
+    AppLogger.d('=== Facility Dropdown Debug ===');
+    AppLogger.d('Mode: ${isEdit ? "EDIT" : "ADD"}');
+    AppLogger.d('widget.facilityList length: ${widget.facilityList.length}');
+    AppLogger.d('uniqueList length: ${uniqueList.length}');
+    AppLogger.d('_selectedFacilityID: $_selectedFacilityID');
+    AppLogger.d('FacilityList items:');
     for (var f in widget.facilityList) {
-      debugPrint('  facilityID: ${f.facilityID}, name: ${f.name}');
+      AppLogger.d('  facilityID: ${f.facilityID}, name: ${f.name}');
     }
-    debugPrint('UniqueList items:');
+    AppLogger.d('UniqueList items:');
     for (var f in uniqueList) {
-      debugPrint('  facilityID: ${f.facilityID}, name: ${f.name}');
+      AppLogger.d('  facilityID: ${f.facilityID}, name: ${f.name}');
     }
-    debugPrint('===================================');
+    AppLogger.d('===================================');
 
     // ✅ Validate selected value exists in the list
     if (_selectedFacilityID != null && uniqueList.isNotEmpty) {
       final exists = uniqueList.any((c) => c.facilityID == _selectedFacilityID);
       if (!exists) {
         // Reset to first item if not found
-        debugPrint('⚠️ Selected value not found! Resetting to first item...');
+        AppLogger.w('⚠️ Selected value not found! Resetting to first item...');
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted) {
             setState(() {
               _selectedFacilityID = uniqueList.first.facilityID;
-              debugPrint('Reset _selectedFacilityID to: $_selectedFacilityID');
+              AppLogger.d('Reset _selectedFacilityID to: $_selectedFacilityID');
             });
           }
         });
       }
     } else if (uniqueList.isNotEmpty && _selectedFacilityID == null) {
       _selectedFacilityID = uniqueList.first.facilityID;
-       debugPrint('Set default _selectedFacilityID to: $_selectedFacilityID');
+       AppLogger.d('Set default _selectedFacilityID to: $_selectedFacilityID');
     }
     else if (uniqueList.isEmpty) {
-      debugPrint('⚠️ uniqueList is EMPTY!');
+      AppLogger.w('⚠️ uniqueList is EMPTY!');
     }
 
     return Dialog(

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../config/theme.dart';
 import '../services/api_service.dart';
 import '../utils/snackbar_helper.dart';
+import 'package:highway_training/utils/logger.dart';
 
 class RegisterUserDialog extends StatefulWidget {
   final ApiService apiService;
@@ -67,7 +68,7 @@ class _RegisterUserDialogState extends State<RegisterUserDialog> {
         });
       }
     } catch (e) {
-      debugPrint('Error loading roles: $e');
+      AppLogger.d('Error loading roles: $e');
     }
   }
 

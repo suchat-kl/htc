@@ -34,6 +34,7 @@ import '../config/theme.dart';
 import '../providers/auth_provider.dart';
 // import '../widgets/user_profile_widget.dart';
 import '../widgets/login_dialog.dart';
+import 'package:highway_training/utils/logger.dart';
 
 // import '../utils/event_bus.dart';
 // import 'package:highway_training/screens/home_screen.dart'; // Add this import
@@ -953,7 +954,7 @@ class _SidebarMenuState extends State<SidebarMenu> {
 
     if (result == true) {
       context.showSuccessSnackBar('เปลี่ยนรหัสผ่านสำเร็จ');
-      debugPrint('เปลี่ยนรหัสผ่านสำเร็จ');
+      AppLogger.d('เปลี่ยนรหัสผ่านสำเร็จ');
       // Optional: Force logout after password change for security
       _showLogoutConfirmation(context);
     }

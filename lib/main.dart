@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:highway_training/screens/home_screen.dart';
@@ -12,8 +13,23 @@ import 'config/theme.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 void main() async {
-  
   WidgetsFlutterBinding.ensureInitialized();
+
+  // ===== กันข้อมูลรั่วลง browser console ตอน production =====
+  // AppLogger ถูก tree-shake ออกไปแล้วตั้งแต่ตอน compile (ดู lib/utils/logger.dart)
+  // สองบล็อกนี้เป็นตาข่ายชั้นสุดท้าย เผื่อมี debugPrint หลุดเข้ามาใหม่
+  // หรือมาจาก package ภายนอกที่เราคุมไม่ได้
+  if (kReleaseMode) {
+    // ปิด debugPrint ทุกจุด รวมถึงของ framework และ package อื่น
+    debugPrint = (String? message, {int? wrapWidth}) {};
+
+    // Flutter จะ dump stack trace ลง console เองเมื่อเกิด error แม้ใน release
+    // อันนี้เป็นคนละกลไกกับ AppLogger จึงต้องดักแยก
+    FlutterError.onError = (FlutterErrorDetails details) {
+      // TODO: ต่อ error tracking (Sentry/Crashlytics) ตรงนี้ถ้าต้องการเก็บ error
+    };
+  }
+
   // Set preferred orientations
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
@@ -121,7 +137,7 @@ class _MainNavigationState extends State<MainNavigation> {
       drawer: SidebarMenu(
         authProvider: widget.authProvider,
         // onTickerSaved: () {
-        //   debugPrint('📢 onTickerSaved callback!');
+        //   AppLogger.d('📢 onTickerSaved callback!');
         //   // Switch to home tab and refresh
         //   _onTabChanged(0);
         // },

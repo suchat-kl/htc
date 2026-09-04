@@ -10,6 +10,7 @@ import '../models/documentstatus.dart';
 import '../services/api_service.dart';
 import '../utils/snackbar_helper.dart';
 import '../utils/util.dart';
+import 'package:highway_training/utils/logger.dart';
 
 class BookingListScreen extends StatefulWidget {
   final AuthProvider authProvider;
@@ -76,7 +77,7 @@ class _BookingListScreenState extends State<BookingListScreen> {
         _isLoading = false;
       });
     } catch (e) {
-      debugPrint('Error loading status: $e');
+      AppLogger.d('Error loading status: $e');
       setState(() => _isLoading = false);
     }
   }

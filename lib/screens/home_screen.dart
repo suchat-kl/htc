@@ -6,6 +6,7 @@ import 'package:highway_training/services/api_service.dart';
 import '../config/theme.dart';
 import '../widgets/news_card.dart';
 import '../widgets/footer.dart';
+import 'package:highway_training/utils/logger.dart';
 
 class HomeScreen extends StatefulWidget {
   final AuthProvider authProvider;
@@ -77,9 +78,9 @@ List<TickerMessage> _tickerMessagesData = [];
   // Load ticker messages from API
   Future<void> _loadTickerMessages() async {
     try {
-      debugPrint('🔄 Loading ticker messages...');
+      AppLogger.d('🔄 Loading ticker messages...');
       final messages = await _apiService.getActiveTickerMessages();
-      debugPrint('📥 Ticker messages loaded: ${messages.length}');
+      AppLogger.d('📥 Ticker messages loaded: ${messages.length}');
 
       if (mounted) {
         setState(() {
@@ -109,7 +110,7 @@ List<TickerMessage> _tickerMessagesData = [];
         }
       }
     } catch (e) {
-      debugPrint('❌ Error loading ticker messages: $e');
+      AppLogger.e('❌ Error loading ticker messages: $e');
       if (mounted) {
         setState(() {
           _tickerMessagesData = [];

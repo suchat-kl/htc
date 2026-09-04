@@ -1,6 +1,6 @@
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
 import 'api_service.dart';
+import 'package:highway_training/utils/logger.dart';
 
 class AuthInterceptor extends Interceptor {
   final ApiService apiService;
@@ -66,7 +66,7 @@ class AuthInterceptor extends Interceptor {
 
       // ✅ CRITICAL: If already refreshing, queue the request
       if (_isRefreshing) {
-        debugPrint('⏳ Refresh already in progress, queuing: $requestPath');
+        AppLogger.d('⏳ Refresh already in progress, queuing: $requestPath');
         _pendingRequests.add({
           'options': err.requestOptions,
           'handler': handler,
@@ -76,7 +76,7 @@ class AuthInterceptor extends Interceptor {
 
       // Start refreshing
       _isRefreshing = true;
-      debugPrint('🔄 Starting token refresh...');
+      AppLogger.d('🔄 Starting token refresh...');
 
       try {
         await apiService.refreshToken();
@@ -86,7 +86,7 @@ class AuthInterceptor extends Interceptor {
         final newToken = await apiService.getAccessToken();
 
         // ✅ Retry ALL pending requests
-        debugPrint(
+        AppLogger.d(
           '✅ Token refreshed, retrying ${_pendingRequests.length + 1} requests',
         );
 
@@ -103,7 +103,7 @@ class AuthInterceptor extends Interceptor {
         err.requestOptions.headers['Authorization'] = 'Bearer $newToken';
         _retryRequest(err.requestOptions, handler);
       } catch (e) {
-        debugPrint('❌ Token refresh failed: $e');
+        AppLogger.e('❌ Token refresh failed: $e');
         _isRefreshing = false;
 
         // Reject all pending requests
@@ -125,16 +125,16 @@ class AuthInterceptor extends Interceptor {
   }
 
   void _retryRequest(RequestOptions options, ErrorInterceptorHandler handler) {
-    debugPrint('🔄 Retrying: ${options.path}');
+    AppLogger.d('🔄 Retrying: ${options.path}');
     apiService.dio
         .fetch(options)
         .then(
           (response) {
-            debugPrint('✅ Retry success: ${options.path}');
+            AppLogger.i('✅ Retry success: ${options.path}');
             handler.resolve(response);
           },
           onError: (e) {
-            debugPrint('❌ Retry failed: ${options.path}');
+            AppLogger.e('❌ Retry failed: ${options.path}');
             if (e is DioException) {
               handler.reject(e);
             } else {

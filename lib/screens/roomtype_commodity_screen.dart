@@ -4,6 +4,7 @@ import '../models/commodity.dart';
 import '../models/roomtype_commodity.dart';
 import '../services/api_service.dart';
 import '../utils/snackbar_helper.dart';
+import 'package:highway_training/utils/logger.dart';
 
 class RoomtypeCommodityScreen extends StatefulWidget {
   final int roomTypeID;
@@ -66,7 +67,7 @@ class _RoomtypeCommodityScreenState extends State<RoomtypeCommodityScreen> {
           });
       }
     } catch (e) {
-      debugPrint('Error loading commodity list: $e');
+      AppLogger.d('Error loading commodity list: $e');
     }
   }
 

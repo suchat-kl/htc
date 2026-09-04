@@ -4,6 +4,7 @@ import '../models/employee.dart';
 import '../models/organization.dart';
 import '../services/api_service.dart';
 import '../utils/snackbar_helper.dart';
+import 'package:highway_training/utils/logger.dart';
 
 class EmployeeScreen extends StatefulWidget {
   final ApiService apiService;
@@ -44,7 +45,7 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
         });
       }
     } catch (e) {
-      debugPrint('Error loading dropdowns: $e');
+      AppLogger.d('Error loading dropdowns: $e');
     }
   }
 

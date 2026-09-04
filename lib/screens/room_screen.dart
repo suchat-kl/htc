@@ -5,6 +5,7 @@ import '../models/roomtype.dart';
 import '../services/api_service.dart';
 import '../widgets/room_dialog.dart';
 import '../utils/snackbar_helper.dart';
+import 'package:highway_training/utils/logger.dart';
 
 class RoomScreen extends StatefulWidget {
   final ApiService apiService;
@@ -50,7 +51,7 @@ class _RoomScreenState extends State<RoomScreen> {
         );
       }
     } catch (e) {
-      debugPrint('Error loading roomtypes: $e');
+      AppLogger.d('Error loading roomtypes: $e');
     }
   }
 

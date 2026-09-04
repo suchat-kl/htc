@@ -11,6 +11,7 @@ import '../services/api_service.dart';
 import '../widgets/tpart_dialog.dart';
 import '../utils/snackbar_helper.dart';
 import '../utils/util.dart';
+import 'package:highway_training/utils/logger.dart';
 
 class MaintenanceEditScreen extends StatefulWidget {
   final ApiService apiService;
@@ -108,7 +109,7 @@ class _MaintenanceEditScreenState extends State<MaintenanceEditScreen> {
         // Try parsing "2026-07-23" format
         return DateFormat('yyyy-MM-dd').parse(dateStr);
       } catch (e) {
-        debugPrint('Error parsing date: $dateStr');
+        AppLogger.d('Error parsing date: $dateStr');
         return null;
       }
     }
@@ -127,7 +128,7 @@ class _MaintenanceEditScreenState extends State<MaintenanceEditScreen> {
         });
       }
     } catch (e) {
-      debugPrint('Error loading dropdowns: $e');
+      AppLogger.d('Error loading dropdowns: $e');
     }
   }
 
@@ -139,7 +140,7 @@ class _MaintenanceEditScreenState extends State<MaintenanceEditScreen> {
       );
       if (mounted) setState(() => _tparts = tparts);
     } catch (e) {
-      debugPrint('Error loading tparts: $e');
+      AppLogger.d('Error loading tparts: $e');
     }
   }
 
@@ -666,10 +667,10 @@ class _MaintenanceEditScreenState extends State<MaintenanceEditScreen> {
             },
           );
           // if (p != null) setState(() => _reportDate = p);
-          // debugPrint("picked*********");
-          // debugPrint(picked.toString());
-          // debugPrint("selectedDate*********");
-          // debugPrint(selectedDate.toString());
+          // AppLogger.d("picked*********");
+          // AppLogger.d(picked.toString());
+          // AppLogger.d("selectedDate*********");
+          // AppLogger.d(selectedDate.toString());
           if (picked != null && picked != selectedDate) {
             setState(() {
               _stopDate = picked;
