@@ -26,7 +26,7 @@ void main() async {
     // Flutter จะ dump stack trace ลง console เองเมื่อเกิด error แม้ใน release
     // อันนี้เป็นคนละกลไกกับ AppLogger จึงต้องดักแยก
     FlutterError.onError = (FlutterErrorDetails details) {
-      // TODO: ต่อ error tracking (Sentry/Crashlytics) ตรงนี้ถ้าต้องการเก็บ error
+      
     };
   }
 
