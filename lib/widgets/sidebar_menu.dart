@@ -954,7 +954,7 @@ class _SidebarMenuState extends State<SidebarMenu> {
 
     if (result == true) {
       context.showSuccessSnackBar('เปลี่ยนรหัสผ่านสำเร็จ');
-      AppLogger.d('เปลี่ยนรหัสผ่านสำเร็จ');
+      if (AppLogger.on) AppLogger.d('เปลี่ยนรหัสผ่านสำเร็จ');
       // Optional: Force logout after password change for security
       _showLogoutConfirmation(context);
     }

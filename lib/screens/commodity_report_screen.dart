@@ -134,10 +134,12 @@ class _CommodityReportScreenState extends State<CommodityReportScreen> {
         throw Exception('ไฟล์รายงานว่างเปล่า');
       }
 
-      AppLogger.d('Downloaded report: ${bytes.length} bytes');
-      AppLogger.d(
-        'First bytes: ${bytes.take(8).map((b) => b.toRadixString(16)).join(' ')}',
-      );
+      if (AppLogger.on) AppLogger.d('Downloaded report: ${bytes.length} bytes');
+      if (AppLogger.on) {
+        AppLogger.d(
+          'First bytes: ${bytes.take(8).map((b) => b.toRadixString(16)).join(' ')}',
+        );
+      }
 
       // ✅ Create blob with correct MIME type
       final blob = html.Blob([
@@ -161,7 +163,7 @@ class _CommodityReportScreenState extends State<CommodityReportScreen> {
         context.showSuccessSnackBar('ดาวน์โหลดรายงานสำเร็จ');
       }
     } catch (e) {
-      AppLogger.d('Report download error: $e');
+      if (AppLogger.on) AppLogger.d('Report download error: $e');
       if (mounted) {
         context.showErrorSnackBar('ดาวน์โหลดรายงานไม่สำเร็จ: $e');
       }

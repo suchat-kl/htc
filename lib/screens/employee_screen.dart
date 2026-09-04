@@ -45,7 +45,7 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
         });
       }
     } catch (e) {
-      AppLogger.d('Error loading dropdowns: $e');
+      if (AppLogger.on) AppLogger.d('Error loading dropdowns: $e');
     }
   }
 

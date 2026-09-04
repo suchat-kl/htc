@@ -25,6 +25,23 @@ if [ -n "$hits" ]; then
   fail=1
 fi
 
+# call site ของ AppLogger ต้องครอบด้วย `if (AppLogger.on)` เสมอ
+# ไม่งั้น dart2js จะเก็บ string literal ไว้ใน main.dart.js ถึงแม้จะไม่พิมพ์ออกมา
+# บรรทัดก่อนหน้าที่เป็น `if (AppLogger.on) {` ถือว่าครอบแล้ว (call แบบหลายบรรทัด)
+hits=$(find lib -name "*.dart" ! -path "lib/utils/logger.dart" -print0 \
+       | xargs -0 awk '
+           /^[[:space:]]*AppLogger\.(d|i|w|e|lazy)\(/ &&
+           prev !~ /^[[:space:]]*if \(AppLogger\.on\) \{[[:space:]]*$/ {
+             printf "%s:%d: %s\n", FILENAME, FNR, $0
+           }
+           { prev = $0 }
+         ' || true)
+if [ -n "$hits" ]; then
+  echo "พบ AppLogger ที่ไม่ได้ครอบด้วย if (AppLogger.on) — ข้อความจะติดไปกับ bundle:"
+  echo "$hits"
+  fail=1
+fi
+
 # LogInterceptor ต้องไม่เปิด header/body ทิ้งไว้ (token และ PII จะโผล่ใน console)
 hits=$(grep -rnE "(requestHeader|responseBody|requestBody|responseHeader): true" lib --include="*.dart" || true)
 if [ -n "$hits" ]; then

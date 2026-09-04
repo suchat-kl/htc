@@ -77,7 +77,7 @@ class _BookingListScreenState extends State<BookingListScreen> {
         _isLoading = false;
       });
     } catch (e) {
-      AppLogger.d('Error loading status: $e');
+      if (AppLogger.on) AppLogger.d('Error loading status: $e');
       setState(() => _isLoading = false);
     }
   }

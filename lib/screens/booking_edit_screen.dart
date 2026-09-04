@@ -103,7 +103,7 @@ class _BookingEditScreenState extends State<BookingEditScreen> {
       final types = await widget.apiService.getFoodtypeList();
       if (mounted) setState(() => _foodtypes = types);
     } catch (e) {
-      AppLogger.d('Error loading foodtypes: $e');
+      if (AppLogger.on) AppLogger.d('Error loading foodtypes: $e');
     } finally {
       if (mounted) setState(() => _isLoading = false); // ✅ เพิ่มบรรทัดนี้
     }
@@ -127,7 +127,7 @@ class _BookingEditScreenState extends State<BookingEditScreen> {
         );
       }
     } catch (e) {
-      AppLogger.d('Error loading tfoods: $e');
+      if (AppLogger.on) AppLogger.d('Error loading tfoods: $e');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -170,7 +170,7 @@ class _BookingEditScreenState extends State<BookingEditScreen> {
 
       // ignore: unused_local_variable
       Bookroom saved;
-      AppLogger.d("isEdit $isEdit");
+      if (AppLogger.on) AppLogger.d("isEdit $isEdit");
       if (isEdit) {
         saved = await widget.apiService.updateBooking(
           // widget.booking!.bookID!,
@@ -209,7 +209,7 @@ class _BookingEditScreenState extends State<BookingEditScreen> {
       }
     } catch (e) {
       setState(() {
-        AppLogger.d('Error: $e'); // ← เปลี่ยนจาก AppLogger.d(e.toString())
+        if (AppLogger.on) AppLogger.d('Error: $e'); // ← เปลี่ยนจาก AppLogger.d(e.toString())
         _error = e.toString().replaceAll('Exception: ', '');
         _isSaving = false;
       });

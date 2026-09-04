@@ -114,7 +114,7 @@ class _CommodityInDialogState extends State<CommodityInDialog> {
       );
 
       // ✅ Debug print
-      AppLogger.d('Saving data: ${data.toJson()}');
+      if (AppLogger.on) AppLogger.d('Saving data: ${data.toJson()}');
 
       if (isEdit) {
         await widget.apiService.updateCommodityIn(

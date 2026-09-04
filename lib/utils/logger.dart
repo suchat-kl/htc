@@ -8,8 +8,15 @@ import 'package:flutter/foundation.dart';
 /// คอมไพเลอร์ (dart2js / AOT) จึงตัดโค้ดในบล็อกทิ้งได้ตั้งแต่ตอน compile
 /// ข้อความ log จะไม่ปรากฏใน `build/web/main.dart.js` เลย
 ///
-/// ห้ามเปลี่ยน [_on] เป็นตัวแปรธรรมดา (`static bool`) เพราะจะ tree-shake ไม่ได้
+/// ห้ามเปลี่ยน [on] เป็นตัวแปรธรรมดา (`static bool`) เพราะจะ tree-shake ไม่ได้
 /// โค้ดและข้อความทั้งหมดจะยังติดไปกับ bundle
+///
+/// สำคัญ: การ gate ที่ตัว method ตัดได้แค่ *เนื้อใน* ฟังก์ชัน แต่ dart2js ยังเก็บ
+/// call site กับ string literal ไว้ใน bundle เพราะไม่ inline ฟังก์ชันที่ถูกเรียก
+/// หลายร้อยครั้ง ถ้าต้องการให้ข้อความหายไปจาก main.dart.js ด้วย ต้องครอบที่
+/// call site ด้วย [on] ซึ่งเป็น `const`:
+///
+///   if (AppLogger.on) AppLogger.d('...');
 ///
 /// ตรวจสอบว่าใช้ได้จริง:
 ///   flutter build web --release
@@ -17,7 +24,10 @@ import 'package:flutter/foundation.dart';
 class AppLogger {
   AppLogger._();
 
-  static const bool _on = kDebugMode;
+  /// เป็น `const` เพื่อให้ครอบ call site แล้วคอมไพเลอร์ตัดทั้งบรรทัดทิ้งได้
+  static const bool on = kDebugMode;
+
+  static const bool _on = on;
 
   /// debug — รายละเอียดระหว่างพัฒนา
   static void d(Object? msg, {String tag = 'APP'}) => _log(tag, msg, 500);

@@ -61,8 +61,10 @@ class ApiService {
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
-          // Add these headers for web
-          'Access-Control-Allow-Origin': '*',
+          // Access-Control-Allow-Origin เป็น *response* header ที่ server ต้องส่งมา
+          // ใส่ฝั่ง client ไม่มีผลกับ CORS แถมทำให้เบราว์เซอร์ยิง preflight
+          // (OPTIONS) เกินจำเป็น — ต้องไปตั้งที่ backend แทน
+          // 'Access-Control-Allow-Origin': '*',
 
           // 'User-Agent' : 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148',
         },
@@ -144,19 +146,19 @@ class ApiService {
   // Login with detailed error handling
   Future<Map<String, dynamic>> login(String username, String password) async {
     try {
-      AppLogger.d('🔵 Login Attempt:');
-      AppLogger.d('   URL: $baseUrl/api/auth/login');
-      AppLogger.d('   Username: $username');
-      AppLogger.d('   Password: ${password.replaceAll(RegExp(r'.'), '*')}');
+      if (AppLogger.on) AppLogger.d('🔵 Login Attempt:');
+      if (AppLogger.on) AppLogger.d('   URL: $baseUrl/api/auth/login');
+      if (AppLogger.on) AppLogger.d('   Username: $username');
+      if (AppLogger.on) AppLogger.d('   Password: ${password.replaceAll(RegExp(r'.'), '*')}');
 
       final response = await publicDio.post(
         '/api/auth/login',
         data: {'username': username, 'password': password},
       );
 
-      AppLogger.i('🟢 Login Response:');
-      AppLogger.d('   Status Code: ${response.statusCode}');
-      AppLogger.lazy(() => '   Response Data: ${AppLogger.redact(response.data)}', tag: 'AUTH');
+      if (AppLogger.on) AppLogger.i('🟢 Login Response:');
+      if (AppLogger.on) AppLogger.d('   Status Code: ${response.statusCode}');
+      if (AppLogger.on) AppLogger.lazy(() => '   Response Data: ${AppLogger.redact(response.data)}', tag: 'AUTH');
 
       if (response.statusCode == 200) {
         final data = response.data;
@@ -190,31 +192,31 @@ class ApiService {
 
         onLoginStateChanged?.call(true);
 
-        AppLogger.i('🟢 Login Successful:');
-        AppLogger.d('   Username: $_username');
-        AppLogger.d('   Full Name: $_fullName');
-        AppLogger.d('   Roles: $_roles');
+        if (AppLogger.on) AppLogger.i('🟢 Login Successful:');
+        if (AppLogger.on) AppLogger.d('   Username: $_username');
+        if (AppLogger.on) AppLogger.d('   Full Name: $_fullName');
+        if (AppLogger.on) AppLogger.d('   Roles: $_roles');
 
         return data;
       } else {
         throw Exception('Login failed with status: ${response.statusCode}');
       }
     } on DioException catch (e) {
-      AppLogger.e('🔴 DioException:');
-      AppLogger.d('   Type: ${e.type}');
-      AppLogger.d('   Message: ${e.message}');
-      AppLogger.d('   Error: ${e.error}');
+      if (AppLogger.on) AppLogger.e('🔴 DioException:');
+      if (AppLogger.on) AppLogger.d('   Type: ${e.type}');
+      if (AppLogger.on) AppLogger.d('   Message: ${e.message}');
+      if (AppLogger.on) AppLogger.d('   Error: ${e.error}');
 
       if (e.response != null) {
-        AppLogger.d('   Response Status: ${e.response?.statusCode}');
-        AppLogger.lazy(() => '   Response Data: ${AppLogger.redact(e.response?.data)}', tag: 'AUTH');
-        AppLogger.d('   Response Headers: ${e.response?.headers}');
+        if (AppLogger.on) AppLogger.d('   Response Status: ${e.response?.statusCode}');
+        if (AppLogger.on) AppLogger.lazy(() => '   Response Data: ${AppLogger.redact(e.response?.data)}', tag: 'AUTH');
+        if (AppLogger.on) AppLogger.d('   Response Headers: ${e.response?.headers}');
       }
 
       String message = _getErrorMessage(e);
       throw Exception(message);
     } catch (e) {
-      AppLogger.e('🔴 Unexpected Error: $e');
+      if (AppLogger.on) AppLogger.e('🔴 Unexpected Error: $e');
       throw Exception('เกิดข้อผิดพลาดที่ไม่คาดคิด: ${e.toString()}');
     }
   }
@@ -268,17 +270,17 @@ class ApiService {
   // Test connectivity
   Future<Map<String, dynamic>> testConnection() async {
     try {
-      AppLogger.d('🔵 Testing connection to: $baseUrl/api/auth/login');
+      if (AppLogger.on) AppLogger.d('🔵 Testing connection to: $baseUrl/api/auth/login');
 
       // ignore: unused_local_variable
       final response = dio.options.baseUrl.contains('https')
           ? dio.get('/api/auth/login')
           : dio.get('/api/auth/login');
 
-      AppLogger.i('🟢 Connection test successful');
+      if (AppLogger.on) AppLogger.i('🟢 Connection test successful');
       return {'success': true, 'message': 'เชื่อมต่อสำเร็จ'};
     } on DioException catch (e) {
-      AppLogger.e('🔴 Connection test failed: ${e.message}');
+      if (AppLogger.on) AppLogger.e('🔴 Connection test failed: ${e.message}');
       return {
         'success': false,
         'message': _getErrorMessage(e),
@@ -297,7 +299,7 @@ class ApiService {
   Future<void> refreshToken() async {
     // ✅ Check if already refreshing
     if (_isRefreshing) {
-      AppLogger.w('⚠️ Refresh already in progress, waiting...');
+      if (AppLogger.on) AppLogger.w('⚠️ Refresh already in progress, waiting...');
       // Wait for current refresh to complete
       await Future.doWhile(() async {
         await Future.delayed(const Duration(milliseconds: 100));
@@ -314,10 +316,12 @@ class ApiService {
         throw Exception('No refresh token available');
       }
 
-      AppLogger.d('🔄 Refreshing token...');
-      AppLogger.d(
-        '   Using refresh_token: ${oldRefreshToken.substring(0, 8)}...',
-      );
+      if (AppLogger.on) AppLogger.d('🔄 Refreshing token...');
+      if (AppLogger.on) {
+        AppLogger.d(
+          '   Using refresh_token: ${oldRefreshToken.substring(0, 8)}...',
+        );
+      }
 
       final response = await publicDio.post(
         '/api/auth/refresh-token',
@@ -329,15 +333,17 @@ class ApiService {
         // ✅ Save new tokens immediately
         await storage.write(key: accessTokenKey, value: data['access_token']);
         await storage.write(key: refreshTokenKey, value: data['refresh_token']);
-        AppLogger.i('🟢 Token refreshed successfully');
-        AppLogger.d(
-          '   New refresh_token: ${data['refresh_token']?.toString().substring(0, 8)}...',
-        );
+        if (AppLogger.on) AppLogger.i('🟢 Token refreshed successfully');
+        if (AppLogger.on) {
+          AppLogger.d(
+            '   New refresh_token: ${data['refresh_token']?.toString().substring(0, 8)}...',
+          );
+        }
       } else {
         throw Exception('Refresh failed with status: ${response.statusCode}');
       }
     } catch (e) {
-      AppLogger.e('🔴 Token refresh failed: $e');
+      if (AppLogger.on) AppLogger.e('🔴 Token refresh failed: $e');
       await logout();
       throw Exception('Session expired. Please login again.');
     } finally {
@@ -348,7 +354,7 @@ class ApiService {
   // Simple logout - interceptor handles the token
   Future<void> logout() async {
     try {
-      AppLogger.d('👋 Logging out...');
+      if (AppLogger.on) AppLogger.d('👋 Logging out...');
 
       final refreshToken = await storage.read(key: refreshTokenKey);
 
@@ -361,9 +367,9 @@ class ApiService {
             data: {'refresh_token': refreshToken},
           );
 
-          AppLogger.i('🟢 Logout API Response: ${response.statusCode}');
+          if (AppLogger.on) AppLogger.i('🟢 Logout API Response: ${response.statusCode}');
         } catch (e) {
-          AppLogger.w('⚠️ Logout API call failed: $e');
+          if (AppLogger.on) AppLogger.w('⚠️ Logout API call failed: $e');
         }
       }
 
@@ -377,9 +383,9 @@ class ApiService {
       await storage.deleteAll();
       onLoginStateChanged?.call(false);
 
-      AppLogger.i('✅ Logged out successfully');
+      if (AppLogger.on) AppLogger.i('✅ Logged out successfully');
     } catch (e) {
-      AppLogger.e('🔴 Error during logout: $e');
+      if (AppLogger.on) AppLogger.e('🔴 Error during logout: $e');
       await storage.deleteAll();
       _isLoggedIn = false;
       onLoginStateChanged?.call(false);
@@ -402,12 +408,12 @@ class ApiService {
           _roles = parts[3].split(',').where((r) => r.isNotEmpty).toList();
           _isLoggedIn = true;
           onLoginStateChanged?.call(true);
-          AppLogger.i('🟢 Session loaded: $_username');
+          if (AppLogger.on) AppLogger.i('🟢 Session loaded: $_username');
           return true;
         }
       }
     } catch (e) {
-      AppLogger.w('⚠️ Error loading session: $e');
+      if (AppLogger.on) AppLogger.w('⚠️ Error loading session: $e');
     }
     return false;
   }
@@ -425,7 +431,7 @@ class ApiService {
     try {
       // Check if token is about to expire
       if (await isTokenExpired()) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
+        if (AppLogger.on) AppLogger.d('Token expired or about to expire, refreshing...');
         try {
           await refreshToken();
         } catch (e) {
@@ -433,9 +439,9 @@ class ApiService {
         }
       }
 
-      AppLogger.d('🔵 Change Password Request:');
-      AppLogger.d('   Username: $username');
-      AppLogger.d('   URL: $baseUrl/api/auth/changepassword');
+      if (AppLogger.on) AppLogger.d('🔵 Change Password Request:');
+      if (AppLogger.on) AppLogger.d('   Username: $username');
+      if (AppLogger.on) AppLogger.d('   URL: $baseUrl/api/auth/changepassword');
 
       final response = await dio.post(
         '/api/auth/changepassword',
@@ -446,9 +452,9 @@ class ApiService {
         },
       );
 
-      AppLogger.i('🟢 Change Password Response:');
-      AppLogger.d('   Status Code: ${response.statusCode}');
-      AppLogger.lazy(() => '   Response: ${AppLogger.redact(response.data)}', tag: 'AUTH');
+      if (AppLogger.on) AppLogger.i('🟢 Change Password Response:');
+      if (AppLogger.on) AppLogger.d('   Status Code: ${response.statusCode}');
+      if (AppLogger.on) AppLogger.lazy(() => '   Response: ${AppLogger.redact(response.data)}', tag: 'AUTH');
 
       if (response.statusCode == 200) {
         final data = response.data;
@@ -460,9 +466,9 @@ class ApiService {
         throw Exception('เปลี่ยนรหัสผ่านไม่สำเร็จ (${response.statusCode})');
       }
     } on DioException catch (e) {
-      AppLogger.e('🔴 Change Password Error:');
-      AppLogger.d('   Type: ${e.type}');
-      AppLogger.d('   Message: ${e.message}');
+      if (AppLogger.on) AppLogger.e('🔴 Change Password Error:');
+      if (AppLogger.on) AppLogger.d('   Type: ${e.type}');
+      if (AppLogger.on) AppLogger.d('   Message: ${e.message}');
 
       if (e.response?.data != null && e.response!.data is Map) {
         final message = e.response!.data['message'] ?? 'เกิดข้อผิดพลาด';
@@ -472,7 +478,7 @@ class ApiService {
       String message = _getErrorMessage(e);
       throw Exception(message);
     } catch (e) {
-      AppLogger.e('🔴 Unexpected Error in changePassword: $e');
+      if (AppLogger.on) AppLogger.e('🔴 Unexpected Error in changePassword: $e');
       throw Exception('เกิดข้อผิดพลาด: ${e.toString()}');
     }
   }
@@ -486,7 +492,7 @@ class ApiService {
     try {
       // Check if token is about to expire
       if (await isTokenExpired()) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
+        if (AppLogger.on) AppLogger.d('Token expired or about to expire, refreshing...');
         try {
           await refreshToken();
         } catch (e) {
@@ -494,9 +500,9 @@ class ApiService {
         }
       }
 
-      AppLogger.d('🔵 Reset Password Request:');
-      AppLogger.d('   Username: $username');
-      AppLogger.d('   URL: $baseUrl/api/auth/resetpassword');
+      if (AppLogger.on) AppLogger.d('🔵 Reset Password Request:');
+      if (AppLogger.on) AppLogger.d('   Username: $username');
+      if (AppLogger.on) AppLogger.d('   URL: $baseUrl/api/auth/resetpassword');
 
       final response = await dio.post(
         '/api/auth/resetpassword',
@@ -507,9 +513,9 @@ class ApiService {
         },
       );
 
-      AppLogger.i('🟢 Reset Password Response:');
-      AppLogger.d('   Status Code: ${response.statusCode}');
-      AppLogger.lazy(() => '   Response: ${AppLogger.redact(response.data)}', tag: 'AUTH');
+      if (AppLogger.on) AppLogger.i('🟢 Reset Password Response:');
+      if (AppLogger.on) AppLogger.d('   Status Code: ${response.statusCode}');
+      if (AppLogger.on) AppLogger.lazy(() => '   Response: ${AppLogger.redact(response.data)}', tag: 'AUTH');
 
       if (response.statusCode == 200) {
         final data = response.data;
@@ -521,9 +527,9 @@ class ApiService {
         throw Exception('กำหนดรหัสผ่านใหม่ไม่สำเร็จ (${response.statusCode})');
       }
     } on DioException catch (e) {
-      AppLogger.e('🔴 ResetPassword Error:');
-      AppLogger.d('   Type: ${e.type}');
-      AppLogger.d('   Message: ${e.message}');
+      if (AppLogger.on) AppLogger.e('🔴 ResetPassword Error:');
+      if (AppLogger.on) AppLogger.d('   Type: ${e.type}');
+      if (AppLogger.on) AppLogger.d('   Message: ${e.message}');
 
       if (e.response?.data != null && e.response!.data is Map) {
         final message = e.response!.data['message'] ?? 'เกิดข้อผิดพลาด';
@@ -533,7 +539,7 @@ class ApiService {
       String message = _getErrorMessage(e);
       throw Exception(message);
     } catch (e) {
-      AppLogger.e('🔴 Unexpected Error in resetPassword: $e');
+      if (AppLogger.on) AppLogger.e('🔴 Unexpected Error in resetPassword: $e');
       throw Exception('เกิดข้อผิดพลาด: ${e.toString()}');
     }
   }
@@ -541,11 +547,11 @@ class ApiService {
   // Get all available roles
   Future<List<Map<String, String>>> getRoles() async {
     try {
-      AppLogger.d('🔵 Get Roles Request:');
-      AppLogger.d('   URL: $baseUrl/api/auth/roles');
+      if (AppLogger.on) AppLogger.d('🔵 Get Roles Request:');
+      if (AppLogger.on) AppLogger.d('   URL: $baseUrl/api/auth/roles');
       // Check if token is about to expire
       if (await isTokenExpired()) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
+        if (AppLogger.on) AppLogger.d('Token expired or about to expire, refreshing...');
         try {
           await refreshToken();
         } catch (e) {
@@ -560,9 +566,9 @@ class ApiService {
         // ),
       );
 
-      AppLogger.i('🟢 Get Roles Response:');
-      AppLogger.d('   Status Code: ${response.statusCode}');
-      AppLogger.lazy(() => '   Response: ${AppLogger.redact(response.data)}', tag: 'AUTH');
+      if (AppLogger.on) AppLogger.i('🟢 Get Roles Response:');
+      if (AppLogger.on) AppLogger.d('   Status Code: ${response.statusCode}');
+      if (AppLogger.on) AppLogger.lazy(() => '   Response: ${AppLogger.redact(response.data)}', tag: 'AUTH');
 
       if (response.statusCode == 200) {
         final data = response.data;
@@ -580,12 +586,12 @@ class ApiService {
 
       throw Exception('ไม่สามารถดึงข้อมูลบทบาทได้');
     } on DioException catch (e) {
-      AppLogger.e('🔴 Get Roles Error: ${e.message}');
+      if (AppLogger.on) AppLogger.e('🔴 Get Roles Error: ${e.message}');
 
       // Return default roles if API fails
       return _getDefaultRoles();
     } catch (e) {
-      AppLogger.e('🔴 Unexpected Error in getRoles: $e');
+      if (AppLogger.on) AppLogger.e('🔴 Unexpected Error in getRoles: $e');
       return _getDefaultRoles();
     }
   }
@@ -613,7 +619,7 @@ class ApiService {
       // ✅ Consider token expired if less than 60 seconds remaining
       return now.add(const Duration(seconds: 60)).isAfter(expiryDate);
     } catch (e) {
-      AppLogger.d('Error checking token expiry: $e');
+      if (AppLogger.on) AppLogger.d('Error checking token expiry: $e');
       return true;
     }
   }
@@ -632,7 +638,7 @@ class ApiService {
     try {
       // Check if token is about to expire
       if (await isTokenExpired()) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
+        if (AppLogger.on) AppLogger.d('Token expired or about to expire, refreshing...');
         try {
           await refreshToken();
         } catch (e) {
@@ -640,11 +646,11 @@ class ApiService {
         }
       }
 
-      AppLogger.d('🔵 Register User Request:');
-      AppLogger.d('   URL: $baseUrl/api/auth/register');
-      AppLogger.d('   Username: $username');
-      AppLogger.d('   Full Name: $fullName');
-      AppLogger.d('   Roles: $roles');
+      if (AppLogger.on) AppLogger.d('🔵 Register User Request:');
+      if (AppLogger.on) AppLogger.d('   URL: $baseUrl/api/auth/register');
+      if (AppLogger.on) AppLogger.d('   Username: $username');
+      if (AppLogger.on) AppLogger.d('   Full Name: $fullName');
+      if (AppLogger.on) AppLogger.d('   Roles: $roles');
 
       final response = await dio.post(
         '/api/auth/register',
@@ -665,9 +671,9 @@ class ApiService {
         ),
       );
 
-      AppLogger.i('🟢 Register User Response:');
-      AppLogger.d('   Status Code: ${response.statusCode}');
-      AppLogger.lazy(() => '   Response: ${AppLogger.redact(response.data)}', tag: 'AUTH');
+      if (AppLogger.on) AppLogger.i('🟢 Register User Response:');
+      if (AppLogger.on) AppLogger.d('   Status Code: ${response.statusCode}');
+      if (AppLogger.on) AppLogger.lazy(() => '   Response: ${AppLogger.redact(response.data)}', tag: 'AUTH');
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         return response.data;
@@ -675,9 +681,9 @@ class ApiService {
         throw Exception('สร้างผู้ใช้งานไม่สำเร็จ (${response.statusCode})');
       }
     } on DioException catch (e) {
-      AppLogger.e('🔴 Register User Error:');
-      AppLogger.d('   Type: ${e.type}');
-      AppLogger.d('   Message: ${e.message}');
+      if (AppLogger.on) AppLogger.e('🔴 Register User Error:');
+      if (AppLogger.on) AppLogger.d('   Type: ${e.type}');
+      if (AppLogger.on) AppLogger.d('   Message: ${e.message}');
 
       if (e.response?.data != null && e.response!.data is Map) {
         final message = e.response!.data['message'] ?? 'เกิดข้อผิดพลาด';
@@ -687,7 +693,7 @@ class ApiService {
       String message = _getErrorMessage(e);
       throw Exception(message);
     } catch (e) {
-      AppLogger.e('🔴 Unexpected Error in registerUser: $e');
+      if (AppLogger.on) AppLogger.e('🔴 Unexpected Error in registerUser: $e');
       throw Exception('เกิดข้อผิดพลาด: ${e.toString()}');
     }
   }
@@ -697,14 +703,14 @@ class ApiService {
   /// Get active ticker messages (PUBLIC - no auth required)
   Future<List<TickerMessage>> getActiveTickerMessages() async {
     try {
-      AppLogger.d('🔵 [PUBLIC] Getting active ticker messages...');
-      AppLogger.d('   URL: $baseUrl/api/auth/ticker-msg');
+      if (AppLogger.on) AppLogger.d('🔵 [PUBLIC] Getting active ticker messages...');
+      if (AppLogger.on) AppLogger.d('   URL: $baseUrl/api/auth/ticker-msg');
 
       // Use publicDio (no auth interceptor)
       final response = await publicDio.get('/api/auth/ticker-msg');
 
-      AppLogger.d('   Status Code: ${response.statusCode}');
-      AppLogger.lazy(() => '   Response: ${AppLogger.redact(response.data)}', tag: 'AUTH');
+      if (AppLogger.on) AppLogger.d('   Status Code: ${response.statusCode}');
+      if (AppLogger.on) AppLogger.lazy(() => '   Response: ${AppLogger.redact(response.data)}', tag: 'AUTH');
 
       if (response.statusCode == 200) {
         final data = response.data;
@@ -713,13 +719,13 @@ class ApiService {
           for (var msg in data['messages']) {
             messages.add(TickerMessage.fromJson(msg));
           }
-          AppLogger.i('✅ Loaded ${messages.length} ticker messages');
+          if (AppLogger.on) AppLogger.i('✅ Loaded ${messages.length} ticker messages');
           return messages;
         }
       }
       return [];
     } catch (e) {
-      AppLogger.e('❌ Error getting ticker messages: $e');
+      if (AppLogger.on) AppLogger.e('❌ Error getting ticker messages: $e');
       return [];
     }
   }
@@ -729,7 +735,7 @@ class ApiService {
     try {
       // Check if token is about to expire
       if (await isTokenExpired()) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
+        if (AppLogger.on) AppLogger.d('Token expired or about to expire, refreshing...');
         try {
           await refreshToken();
         } catch (e) {
@@ -756,7 +762,7 @@ class ApiService {
       }
       return [];
     } catch (e) {
-      AppLogger.d('Error getting all ticker messages: $e');
+      if (AppLogger.on) AppLogger.d('Error getting all ticker messages: $e');
       throw Exception('ไม่สามารถดึงข้อมูลข้อความวิ่งได้');
     }
   }
@@ -766,7 +772,7 @@ class ApiService {
     try {
       // Check if token is about to expire
       if (await isTokenExpired()) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
+        if (AppLogger.on) AppLogger.d('Token expired or about to expire, refreshing...');
         try {
           await refreshToken();
         } catch (e) {
@@ -788,7 +794,7 @@ class ApiService {
         throw Exception('บันทึกข้อความไม่สำเร็จ');
       }
     } catch (e) {
-      AppLogger.d('Error saving ticker messages: $e');
+      if (AppLogger.on) AppLogger.d('Error saving ticker messages: $e');
       throw Exception('เกิดข้อผิดพลาดในการบันทึกข้อความ');
     }
   }
@@ -817,7 +823,7 @@ class ApiService {
     try {
       // Check if token is about to expire
       if (await isTokenExpired()) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
+        if (AppLogger.on) AppLogger.d('Token expired or about to expire, refreshing...');
         try {
           await refreshToken();
         } catch (e) {
@@ -839,7 +845,7 @@ class ApiService {
       }
       throw Exception('ไม่สามารถดึงข้อมูลได้');
     } catch (e) {
-      AppLogger.d('Error getting commodities: $e');
+      if (AppLogger.on) AppLogger.d('Error getting commodities: $e');
       throw Exception('เกิดข้อผิดพลาด: $e');
     }
   }
@@ -848,7 +854,7 @@ class ApiService {
   Future<Commodity> createCommodity(Commodity commodity) async {
     // Check if token is about to expire
     if (await isTokenExpired()) {
-      AppLogger.d('Token expired or about to expire, refreshing...');
+      if (AppLogger.on) AppLogger.d('Token expired or about to expire, refreshing...');
       try {
         await refreshToken();
       } catch (e) {
@@ -870,7 +876,7 @@ class ApiService {
   Future<Commodity> updateCommodity(int id, Commodity commodity) async {
     // Check if token is about to expire
     if (await isTokenExpired()) {
-      AppLogger.d('Token expired or about to expire, refreshing...');
+      if (AppLogger.on) AppLogger.d('Token expired or about to expire, refreshing...');
       try {
         await refreshToken();
       } catch (e) {
@@ -892,7 +898,7 @@ class ApiService {
   Future<void> deleteCommodity(int id) async {
     // Check if token is about to expire
     if (await isTokenExpired()) {
-      AppLogger.d('Token expired or about to expire, refreshing...');
+      if (AppLogger.on) AppLogger.d('Token expired or about to expire, refreshing...');
       try {
         await refreshToken();
       } catch (e) {
@@ -918,7 +924,7 @@ class ApiService {
     try {
       // Check if token is about to expire
       if (await isTokenExpired()) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
+        if (AppLogger.on) AppLogger.d('Token expired or about to expire, refreshing...');
         try {
           await refreshToken();
         } catch (e) {
@@ -940,7 +946,7 @@ class ApiService {
       }
       throw Exception('ไม่สามารถดึงข้อมูลได้');
     } catch (e) {
-      AppLogger.d('Error getting commodities: $e');
+      if (AppLogger.on) AppLogger.d('Error getting commodities: $e');
       throw Exception('เกิดข้อผิดพลาด: $e');
     }
   }
@@ -949,7 +955,7 @@ class ApiService {
   Future<Facility> createFacility(Facility facility) async {
     // Check if token is about to expire
     if (await isTokenExpired()) {
-      AppLogger.d('Token expired or about to expire, refreshing...');
+      if (AppLogger.on) AppLogger.d('Token expired or about to expire, refreshing...');
       try {
         await refreshToken();
       } catch (e) {
@@ -971,7 +977,7 @@ class ApiService {
   Future<Facility> updateFacility(int id, Facility facility) async {
     // Check if token is about to expire
     if (await isTokenExpired()) {
-      AppLogger.d('Token expired or about to expire, refreshing...');
+      if (AppLogger.on) AppLogger.d('Token expired or about to expire, refreshing...');
       try {
         await refreshToken();
       } catch (e) {
@@ -993,7 +999,7 @@ class ApiService {
   Future<void> deleteFacility(int id) async {
     // Check if token is about to expire
     if (await isTokenExpired()) {
-      AppLogger.d('Token expired or about to expire, refreshing...');
+      if (AppLogger.on) AppLogger.d('Token expired or about to expire, refreshing...');
       try {
         await refreshToken();
       } catch (e) {
@@ -1020,7 +1026,7 @@ class ApiService {
     try {
       // Check if token is about to expire
       if (await isTokenExpired()) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
+        if (AppLogger.on) AppLogger.d('Token expired or about to expire, refreshing...');
         try {
           await refreshToken();
         } catch (e) {
@@ -1043,7 +1049,7 @@ class ApiService {
       }
       throw Exception('ไม่สามารถดึงข้อมูลได้');
     } catch (e) {
-      AppLogger.d('Error getting roomtypes: $e');
+      if (AppLogger.on) AppLogger.d('Error getting roomtypes: $e');
       throw Exception('เกิดข้อผิดพลาด: $e');
     }
   }
@@ -1052,7 +1058,7 @@ class ApiService {
   Future<Roomtype> createRoomtype(Roomtype roomtype) async {
     // Check if token is about to expire
     if (await isTokenExpired()) {
-      AppLogger.d('Token expired or about to expire, refreshing...');
+      if (AppLogger.on) AppLogger.d('Token expired or about to expire, refreshing...');
       try {
         await refreshToken();
       } catch (e) {
@@ -1073,7 +1079,7 @@ class ApiService {
   Future<Roomtype> updateRoomtype(int id, Roomtype roomtype) async {
     // Check if token is about to expire
     if (await isTokenExpired()) {
-      AppLogger.d('Token expired or about to expire, refreshing...');
+      if (AppLogger.on) AppLogger.d('Token expired or about to expire, refreshing...');
       try {
         await refreshToken();
       } catch (e) {
@@ -1094,7 +1100,7 @@ class ApiService {
   Future<void> deleteRoomtype(int id) async {
     // Check if token is about to expire
     if (await isTokenExpired()) {
-      AppLogger.d('Token expired or about to expire, refreshing...');
+      if (AppLogger.on) AppLogger.d('Token expired or about to expire, refreshing...');
       try {
         await refreshToken();
       } catch (e) {
@@ -1116,7 +1122,7 @@ class ApiService {
     int size = 5,
   }) async {
     if (await isTokenExpired()) {
-      AppLogger.d('Token expired or about to expire, refreshing...');
+      if (AppLogger.on) AppLogger.d('Token expired or about to expire, refreshing...');
       try {
         await refreshToken();
       } catch (e) {
@@ -1134,7 +1140,7 @@ class ApiService {
   // Create roomtype commodity
   Future<void> createRoomtypeCommodity(RoomtypeCommodity rc) async {
     if (await isTokenExpired()) {
-      AppLogger.d('Token expired or about to expire, refreshing...');
+      if (AppLogger.on) AppLogger.d('Token expired or about to expire, refreshing...');
       try {
         await refreshToken();
       } catch (e) {
@@ -1157,7 +1163,7 @@ class ApiService {
     RoomtypeCommodity rc,
   ) async {
     if (await isTokenExpired()) {
-      AppLogger.d('Token expired or about to expire, refreshing...');
+      if (AppLogger.on) AppLogger.d('Token expired or about to expire, refreshing...');
       try {
         await refreshToken();
       } catch (e) {
@@ -1176,7 +1182,7 @@ class ApiService {
   // Delete roomtype commodity
   Future<void> deleteRoomtypeCommodity(int roomTypeID, int commodityID) async {
     if (await isTokenExpired()) {
-      AppLogger.d('Token expired or about to expire, refreshing...');
+      if (AppLogger.on) AppLogger.d('Token expired or about to expire, refreshing...');
       try {
         await refreshToken();
       } catch (e) {
@@ -1197,7 +1203,7 @@ class ApiService {
     String mode = "none",
   }) async {
     if (await isTokenExpired()) {
-      AppLogger.d('Token expired or about to expire, refreshing...');
+      if (AppLogger.on) AppLogger.d('Token expired or about to expire, refreshing...');
       try {
         await refreshToken();
       } catch (e) {
@@ -1231,7 +1237,7 @@ class ApiService {
     int size = 5,
   }) async {
     if (await isTokenExpired()) {
-      AppLogger.d('Token expired or about to expire, refreshing...');
+      if (AppLogger.on) AppLogger.d('Token expired or about to expire, refreshing...');
       try {
         await refreshToken();
       } catch (e) {
@@ -1249,7 +1255,7 @@ class ApiService {
   // Create roomtype commodity
   Future<void> createRoomtypeFacility(RoomtypeFacility rc) async {
     if (await isTokenExpired()) {
-      AppLogger.d('Token expired or about to expire, refreshing...');
+      if (AppLogger.on) AppLogger.d('Token expired or about to expire, refreshing...');
       try {
         await refreshToken();
       } catch (e) {
@@ -1272,7 +1278,7 @@ class ApiService {
     RoomtypeFacility rc,
   ) async {
     if (await isTokenExpired()) {
-      AppLogger.d('Token expired or about to expire, refreshing...');
+      if (AppLogger.on) AppLogger.d('Token expired or about to expire, refreshing...');
       try {
         await refreshToken();
       } catch (e) {
@@ -1291,7 +1297,7 @@ class ApiService {
   // Delete roomtype commodity
   Future<void> deleteRoomtypeFacility(int roomTypeID, int facilityID) async {
     if (await isTokenExpired()) {
-      AppLogger.d('Token expired or about to expire, refreshing...');
+      if (AppLogger.on) AppLogger.d('Token expired or about to expire, refreshing...');
       try {
         await refreshToken();
       } catch (e) {
@@ -1312,7 +1318,7 @@ class ApiService {
     String mode = "none",
   }) async {
     if (await isTokenExpired()) {
-      AppLogger.d('Token expired or about to expire, refreshing...');
+      if (AppLogger.on) AppLogger.d('Token expired or about to expire, refreshing...');
       try {
         await refreshToken();
       } catch (e) {
@@ -1350,7 +1356,7 @@ class ApiService {
     String? status,
   }) async {
     if (await isTokenExpired()) {
-      AppLogger.d('Token expired or about to expire, refreshing...');
+      if (AppLogger.on) AppLogger.d('Token expired or about to expire, refreshing...');
       try {
         await refreshToken();
       } catch (e) {
@@ -1375,7 +1381,7 @@ class ApiService {
   // Create room
   Future<Room> createRoom(Room room) async {
     if (await isTokenExpired()) {
-      AppLogger.d('Token expired or about to expire, refreshing...');
+      if (AppLogger.on) AppLogger.d('Token expired or about to expire, refreshing...');
       try {
         await refreshToken();
       } catch (e) {
@@ -1392,7 +1398,7 @@ class ApiService {
   // Update room
   Future<Room> updateRoom(int id, Room room) async {
     if (await isTokenExpired()) {
-      AppLogger.d('Token expired or about to expire, refreshing...');
+      if (AppLogger.on) AppLogger.d('Token expired or about to expire, refreshing...');
       try {
         await refreshToken();
       } catch (e) {
@@ -1409,7 +1415,7 @@ class ApiService {
   // Delete room
   Future<void> deleteRoom(int id) async {
     if (await isTokenExpired()) {
-      AppLogger.d('Token expired or about to expire, refreshing...');
+      if (AppLogger.on) AppLogger.d('Token expired or about to expire, refreshing...');
       try {
         await refreshToken();
       } catch (e) {
@@ -1425,7 +1431,7 @@ class ApiService {
   // Get room types for dropdown
   Future<List<Roomtype>> getRoomtypeList() async {
     if (await isTokenExpired()) {
-      AppLogger.d('Token expired or about to expire, refreshing...');
+      if (AppLogger.on) AppLogger.d('Token expired or about to expire, refreshing...');
       try {
         await refreshToken();
       } catch (e) {
@@ -1455,7 +1461,7 @@ class ApiService {
     String? status,
   }) async {
     if (await isTokenExpired()) {
-      AppLogger.d('Token expired or about to expire, refreshing...');
+      if (AppLogger.on) AppLogger.d('Token expired or about to expire, refreshing...');
       try {
         await refreshToken();
       } catch (e) {
@@ -1477,7 +1483,7 @@ class ApiService {
 
   Future<Part> createPart(Part part) async {
     if (await isTokenExpired()) {
-      AppLogger.d('Token expired or about to expire, refreshing...');
+      if (AppLogger.on) AppLogger.d('Token expired or about to expire, refreshing...');
       try {
         await refreshToken();
       } catch (e) {
@@ -1494,7 +1500,7 @@ class ApiService {
 
   Future<Part> updatePart(int id, Part part) async {
     if (await isTokenExpired()) {
-      AppLogger.d('Token expired or about to expire, refreshing...');
+      if (AppLogger.on) AppLogger.d('Token expired or about to expire, refreshing...');
       try {
         await refreshToken();
       } catch (e) {
@@ -1511,7 +1517,7 @@ class ApiService {
 
   Future<void> deletePart(int id) async {
     if (await isTokenExpired()) {
-      AppLogger.d('Token expired or about to expire, refreshing...');
+      if (AppLogger.on) AppLogger.d('Token expired or about to expire, refreshing...');
       try {
         await refreshToken();
       } catch (e) {
@@ -1533,7 +1539,7 @@ class ApiService {
   /// Get commodities by type for report
   Future<List<Commodity>> getCommoditiesByType(String type) async {
     if (await isTokenExpired()) {
-      AppLogger.d('Token expired or about to expire, refreshing...');
+      if (AppLogger.on) AppLogger.d('Token expired or about to expire, refreshing...');
       try {
         await refreshToken();
       } catch (e) {
@@ -1542,7 +1548,7 @@ class ApiService {
     }
 
     try {
-      AppLogger.d('🔵 Getting commodities by type: $type');
+      if (AppLogger.on) AppLogger.d('🔵 Getting commodities by type: $type');
 
       final token = await getAccessToken();
       if (token == null) throw Exception('กรุณาเข้าสู่ระบบใหม่');
@@ -1553,18 +1559,18 @@ class ApiService {
         options: Options(headers: {'Authorization': 'Bearer $token'}),
       );
 
-      AppLogger.d('   Status Code: ${response.statusCode}');
+      if (AppLogger.on) AppLogger.d('   Status Code: ${response.statusCode}');
 
       if (response.statusCode == 200 && response.data['commodities'] != null) {
         final List<dynamic> list = response.data['commodities'];
-        AppLogger.d('   Loaded ${list.length} commodities');
+        if (AppLogger.on) AppLogger.d('   Loaded ${list.length} commodities');
         return list
             .map((j) => Commodity.fromJson(j as Map<String, dynamic>))
             .toList();
       }
       return [];
     } catch (e) {
-      AppLogger.e('❌ Error getting commodities by type: $e');
+      if (AppLogger.on) AppLogger.e('❌ Error getting commodities by type: $e');
       throw Exception('ไม่สามารถโหลดข้อมูลได้: $e');
     }
   }
@@ -1575,7 +1581,7 @@ class ApiService {
     required String date,
   }) async {
     if (await isTokenExpired()) {
-      AppLogger.d('Token expired or about to expire, refreshing...');
+      if (AppLogger.on) AppLogger.d('Token expired or about to expire, refreshing...');
       try {
         await refreshToken();
       } catch (e) {
@@ -1584,7 +1590,7 @@ class ApiService {
     }
 
     try {
-      AppLogger.d('🔵 Downloading commodity report: type=$type, date=$date');
+      if (AppLogger.on) AppLogger.d('🔵 Downloading commodity report: type=$type, date=$date');
 
       final token = await getAccessToken();
       if (token == null) throw Exception('กรุณาเข้าสู่ระบบใหม่');
@@ -1604,14 +1610,14 @@ class ApiService {
         ),
       );
 
-      AppLogger.d('   Status Code: ${response.statusCode}');
-      AppLogger.d('   Content-Type: ${response.headers.value('content-type')}');
+      if (AppLogger.on) AppLogger.d('   Status Code: ${response.statusCode}');
+      if (AppLogger.on) AppLogger.d('   Content-Type: ${response.headers.value('content-type')}');
 
       if (response.statusCode == 200) {
         // ✅ Check if response is actually bytes or error JSON
         if (response.data is List<int>) {
           final bytes = response.data as List<int>;
-          AppLogger.d('   File size: ${bytes.length} bytes');
+          if (AppLogger.on) AppLogger.d('   File size: ${bytes.length} bytes');
 
           // ✅ Verify Excel signature (first 4 bytes of .xlsx are PK..)
           if (bytes.length > 4) {
@@ -1619,7 +1625,7 @@ class ApiService {
                 .take(4)
                 .map((b) => b.toRadixString(16))
                 .join(' ');
-            AppLogger.d('   File signature: $signature');
+            if (AppLogger.on) AppLogger.d('   File signature: $signature');
             // .xlsx files start with PK (0x50 0x4B)
             if (bytes[0] != 0x50 || bytes[1] != 0x4B) {
               throw Exception('ไฟล์ที่ได้ไม่ใช่ Excel file');
@@ -1636,7 +1642,7 @@ class ApiService {
         'ไม่สามารถดาวน์โหลดรายงานได้ (Status: ${response.statusCode})',
       );
     } catch (e) {
-      AppLogger.e('❌ Error downloading report: $e');
+      if (AppLogger.on) AppLogger.e('❌ Error downloading report: $e');
       throw Exception('ดาวน์โหลดรายงานไม่สำเร็จ: $e');
     }
   }
@@ -1653,7 +1659,7 @@ class ApiService {
     String? orgLevel,
   }) async {
     if (await isTokenExpired()) {
-      AppLogger.d('Token expired or about to expire, refreshing...');
+      if (AppLogger.on) AppLogger.d('Token expired or about to expire, refreshing...');
       try {
         await refreshToken();
       } catch (e) {
@@ -1674,7 +1680,7 @@ class ApiService {
 
   Future<Organization> createOrganization(Organization org) async {
     if (await isTokenExpired()) {
-      AppLogger.d('Token expired or about to expire, refreshing...');
+      if (AppLogger.on) AppLogger.d('Token expired or about to expire, refreshing...');
       try {
         await refreshToken();
       } catch (e) {
@@ -1693,7 +1699,7 @@ class ApiService {
 
   Future<Organization> updateOrganization(int id, Organization org) async {
     if (await isTokenExpired()) {
-      AppLogger.d('Token expired or about to expire, refreshing...');
+      if (AppLogger.on) AppLogger.d('Token expired or about to expire, refreshing...');
       try {
         await refreshToken();
       } catch (e) {
@@ -1712,7 +1718,7 @@ class ApiService {
 
   Future<void> deleteOrganization(int id) async {
     if (await isTokenExpired()) {
-      AppLogger.d('Token expired or about to expire, refreshing...');
+      if (AppLogger.on) AppLogger.d('Token expired or about to expire, refreshing...');
       try {
         await refreshToken();
       } catch (e) {
@@ -1728,7 +1734,7 @@ class ApiService {
   // Get organization list for parent dropdown
   Future<List<Organization>> getOrganizationList() async {
     if (await isTokenExpired()) {
-      AppLogger.d('Token expired or about to expire, refreshing...');
+      if (AppLogger.on) AppLogger.d('Token expired or about to expire, refreshing...');
       try {
         await refreshToken();
       } catch (e) {
@@ -1757,7 +1763,7 @@ class ApiService {
     int? orgID,
   }) async {
     if (await isTokenExpired()) {
-      AppLogger.d('Token expired or about to expire, refreshing...');
+      if (AppLogger.on) AppLogger.d('Token expired or about to expire, refreshing...');
       try {
         await refreshToken();
       } catch (e) {
@@ -1777,7 +1783,7 @@ class ApiService {
 
   Future<Section> createSection(Section section) async {
     if (await isTokenExpired()) {
-      AppLogger.d('Token expired or about to expire, refreshing...');
+      if (AppLogger.on) AppLogger.d('Token expired or about to expire, refreshing...');
       try {
         await refreshToken();
       } catch (e) {
@@ -1796,7 +1802,7 @@ class ApiService {
 
   Future<Section> updateSection(int id, Section section) async {
     if (await isTokenExpired()) {
-      AppLogger.d('Token expired or about to expire, refreshing...');
+      if (AppLogger.on) AppLogger.d('Token expired or about to expire, refreshing...');
       try {
         await refreshToken();
       } catch (e) {
@@ -1815,7 +1821,7 @@ class ApiService {
 
   Future<void> deleteSection(int id) async {
     if (await isTokenExpired()) {
-      AppLogger.d('Token expired or about to expire, refreshing...');
+      if (AppLogger.on) AppLogger.d('Token expired or about to expire, refreshing...');
       try {
         await refreshToken();
       } catch (e) {
@@ -1833,7 +1839,7 @@ class ApiService {
   // Get employees
   Future<List<Employee>> getEmployeesList() async {
     if (await isTokenExpired()) {
-      AppLogger.d('Token expired or about to expire, refreshing...');
+      if (AppLogger.on) AppLogger.d('Token expired or about to expire, refreshing...');
       try {
         await refreshToken();
       } catch (e) {
@@ -1861,7 +1867,7 @@ class ApiService {
     int? userID,
   }) async {
     if (await isTokenExpired()) {
-      AppLogger.d('Token expired or about to expire, refreshing...');
+      if (AppLogger.on) AppLogger.d('Token expired or about to expire, refreshing...');
       try {
         await refreshToken();
       } catch (e) {
@@ -1883,7 +1889,7 @@ class ApiService {
 
   Future<Employee> createEmployee(Employee emp) async {
     if (await isTokenExpired()) {
-      AppLogger.d('Token expired or about to expire, refreshing...');
+      if (AppLogger.on) AppLogger.d('Token expired or about to expire, refreshing...');
       try {
         await refreshToken();
       } catch (e) {
@@ -1899,7 +1905,7 @@ class ApiService {
 
   Future<Employee> updateEmployee(int id, Employee emp) async {
     if (await isTokenExpired()) {
-      AppLogger.d('Token expired or about to expire, refreshing...');
+      if (AppLogger.on) AppLogger.d('Token expired or about to expire, refreshing...');
       try {
         await refreshToken();
       } catch (e) {
@@ -1918,7 +1924,7 @@ class ApiService {
 
   Future<void> deleteEmployee(int id) async {
     if (await isTokenExpired()) {
-      AppLogger.d('Token expired or about to expire, refreshing...');
+      if (AppLogger.on) AppLogger.d('Token expired or about to expire, refreshing...');
       try {
         await refreshToken();
       } catch (e) {
@@ -1934,7 +1940,7 @@ class ApiService {
   // Get user list for dropdown
   Future<List<Map<String, dynamic>>> getUserList() async {
     if (await isTokenExpired()) {
-      AppLogger.d('Token expired or about to expire, refreshing...');
+      if (AppLogger.on) AppLogger.d('Token expired or about to expire, refreshing...');
       try {
         await refreshToken();
       } catch (e) {
@@ -1951,7 +1957,7 @@ class ApiService {
       }
       return [];
     } catch (e) {
-      AppLogger.d('Error loading users: $e');
+      if (AppLogger.on) AppLogger.d('Error loading users: $e');
       return [];
     }
   }
@@ -1994,7 +2000,7 @@ class ApiService {
     int? employeeID,
   }) async {
     if (await isTokenExpired()) {
-      AppLogger.d('Token expired or about to expire, refreshing...');
+      if (AppLogger.on) AppLogger.d('Token expired or about to expire, refreshing...');
       try {
         await refreshToken();
       } catch (e) {
@@ -2015,7 +2021,7 @@ class ApiService {
 
   Future<CommodityIn> createCommodityIn(CommodityIn data) async {
     if (await isTokenExpired()) {
-      AppLogger.d('Token expired or about to expire, refreshing...');
+      if (AppLogger.on) AppLogger.d('Token expired or about to expire, refreshing...');
       try {
         await refreshToken();
       } catch (e) {
@@ -2043,7 +2049,7 @@ class ApiService {
 
   Future<CommodityIn> updateCommodityIn(int id, CommodityIn data) async {
     if (await isTokenExpired()) {
-      AppLogger.d('Token expired or about to expire, refreshing...');
+      if (AppLogger.on) AppLogger.d('Token expired or about to expire, refreshing...');
       try {
         await refreshToken();
       } catch (e) {
@@ -2070,7 +2076,7 @@ class ApiService {
 
   Future<void> deleteCommodityIn(int id) async {
     if (await isTokenExpired()) {
-      AppLogger.d('Token expired or about to expire, refreshing...');
+      if (AppLogger.on) AppLogger.d('Token expired or about to expire, refreshing...');
       try {
         await refreshToken();
       } catch (e) {
@@ -2103,7 +2109,7 @@ class ApiService {
     String? place,
   }) async {
     if (await isTokenExpired()) {
-      AppLogger.d('Token expired or about to expire, refreshing...');
+      if (AppLogger.on) AppLogger.d('Token expired or about to expire, refreshing...');
       try {
         await refreshToken();
       } catch (e) {
@@ -2124,7 +2130,7 @@ class ApiService {
 
   Future<List<Map<String, dynamic>>> getBooktitles() async {
     if (await isTokenExpired()) {
-      AppLogger.d('Token expired or about to expire, refreshing...');
+      if (AppLogger.on) AppLogger.d('Token expired or about to expire, refreshing...');
       try {
         await refreshToken();
       } catch (e) {
@@ -2140,7 +2146,7 @@ class ApiService {
 
   Future<Equipment> createEquipment(Equipment data) async {
     if (await isTokenExpired()) {
-      AppLogger.d('Token expired or about to expire, refreshing...');
+      if (AppLogger.on) AppLogger.d('Token expired or about to expire, refreshing...');
       try {
         await refreshToken();
       } catch (e) {
@@ -2167,7 +2173,7 @@ class ApiService {
 
   Future<Equipment> updateEquipment(int id, Equipment data) async {
     if (await isTokenExpired()) {
-      AppLogger.d('Token expired or about to expire, refreshing...');
+      if (AppLogger.on) AppLogger.d('Token expired or about to expire, refreshing...');
       try {
         await refreshToken();
       } catch (e) {
@@ -2194,7 +2200,7 @@ class ApiService {
 
   Future<void> deleteEquipment(int id) async {
     if (await isTokenExpired()) {
-      AppLogger.d('Token expired or about to expire, refreshing...');
+      if (AppLogger.on) AppLogger.d('Token expired or about to expire, refreshing...');
       try {
         await refreshToken();
       } catch (e) {
@@ -2227,7 +2233,7 @@ class ApiService {
     int? maintenanceid,
   }) async {
      if (await isTokenExpired()) {
-      AppLogger.d('Token expired or about to expire, refreshing...');
+      if (AppLogger.on) AppLogger.d('Token expired or about to expire, refreshing...');
       try {
         await refreshToken();
       } catch (e) {
@@ -2246,7 +2252,7 @@ class ApiService {
 
   Future<Tpart> createTpart(Tpart d) async {
     if (await isTokenExpired()) {
-      AppLogger.d('Token expired or about to expire, refreshing...');
+      if (AppLogger.on) AppLogger.d('Token expired or about to expire, refreshing...');
       try {
         await refreshToken();
       } catch (e) {
@@ -2269,7 +2275,7 @@ class ApiService {
 
   Future<Tpart> updateTpart(int id, Tpart d) async {
     if (await isTokenExpired()) {
-      AppLogger.d('Token expired or about to expire, refreshing...');
+      if (AppLogger.on) AppLogger.d('Token expired or about to expire, refreshing...');
       try {
         await refreshToken();
       } catch (e) {
@@ -2292,7 +2298,7 @@ class ApiService {
 
   Future<void> deleteTpart(int id) async {
     if (await isTokenExpired()) {
-      AppLogger.d('Token expired or about to expire, refreshing...');
+      if (AppLogger.on) AppLogger.d('Token expired or about to expire, refreshing...');
       try {
         await refreshToken();
       } catch (e) {
@@ -2315,7 +2321,7 @@ class ApiService {
   // Get parts list for dropdown
   Future<List<Part>> getPartsList() async {
     if (await isTokenExpired()) {
-      AppLogger.d('Token expired or about to expire, refreshing...');
+      if (AppLogger.on) AppLogger.d('Token expired or about to expire, refreshing...');
       try {
         await refreshToken();
       } catch (e) {
@@ -2335,7 +2341,7 @@ class ApiService {
   // Get maintenance list for dropdown
   Future<List<Maintenance>> getMaintenanceList() async {
     if (await isTokenExpired()) {
-      AppLogger.d('Token expired or about to expire, refreshing...');
+      if (AppLogger.on) AppLogger.d('Token expired or about to expire, refreshing...');
       try {
         await refreshToken();
       } catch (e) {
@@ -2359,7 +2365,7 @@ class ApiService {
   // Get room list for dropdown
   Future<List<Map<String, dynamic>>> getRoomList() async {
     if (await isTokenExpired()) {
-      AppLogger.d('Token expired or about to expire, refreshing...');
+      if (AppLogger.on) AppLogger.d('Token expired or about to expire, refreshing...');
       try {
         await refreshToken();
       } catch (e) {
@@ -2374,7 +2380,7 @@ class ApiService {
   // Get Tparts by maintenance ID
   Future<List<Tpart>> getTpartsByMaintenanceId(int maintenanceid) async {
     if (await isTokenExpired()) {
-      AppLogger.d('Token expired or about to expire, refreshing...');
+      if (AppLogger.on) AppLogger.d('Token expired or about to expire, refreshing...');
       try {
         await refreshToken();
       } catch (e) {
@@ -2396,7 +2402,7 @@ class ApiService {
   // Delete maintenance (cascades to tparts)
   Future<void> deleteMaintenance(int id) async {
     if (await isTokenExpired()) {
-      AppLogger.d('Token expired or about to expire, refreshing...');
+      if (AppLogger.on) AppLogger.d('Token expired or about to expire, refreshing...');
       try {
         await refreshToken();
       } catch (e) {
@@ -2427,7 +2433,7 @@ class ApiService {
     String? placetype,
   }) async {
     if (await isTokenExpired()) {
-      AppLogger.d('Token expired or about to expire, refreshing...');
+      if (AppLogger.on) AppLogger.d('Token expired or about to expire, refreshing...');
       try {
         await refreshToken();
       } catch (e) {
@@ -2451,7 +2457,7 @@ class ApiService {
   Future<Maintenance> createMaintenance(Maintenance d) async {
     try {
       if (await isTokenExpired()) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
+        if (AppLogger.on) AppLogger.d('Token expired or about to expire, refreshing...');
         try {
           await refreshToken();
         } catch (e) {
@@ -2474,7 +2480,7 @@ class ApiService {
   // ✅ ADD THIS METHOD
   Future<Maintenance> updateMaintenance(int id, Maintenance d) async {
     if (await isTokenExpired()) {
-      AppLogger.d('Token expired or about to expire, refreshing...');
+      if (AppLogger.on) AppLogger.d('Token expired or about to expire, refreshing...');
       try {
         await refreshToken();
       } catch (e) {
@@ -2555,7 +2561,7 @@ class ApiService {
     int? foodgroupID,
   }) async {
     if (await isTokenExpired()) {
-      AppLogger.d('Token expired or about to expire, refreshing...');
+      if (AppLogger.on) AppLogger.d('Token expired or about to expire, refreshing...');
       try {
         await refreshToken();
       } catch (e) {
@@ -2572,7 +2578,7 @@ class ApiService {
 
   Future<Foodtype> createFoodtype(Foodtype d) async {
     if (await isTokenExpired()) {
-      AppLogger.d('Token expired or about to expire, refreshing...');
+      if (AppLogger.on) AppLogger.d('Token expired or about to expire, refreshing...');
       try {
         await refreshToken();
       } catch (e) {
@@ -2595,7 +2601,7 @@ class ApiService {
 
   Future<Foodtype> updateFoodtype(int id, Foodtype d) async {
     if (await isTokenExpired()) {
-      AppLogger.d('Token expired or about to expire, refreshing...');
+      if (AppLogger.on) AppLogger.d('Token expired or about to expire, refreshing...');
       try {
         await refreshToken();
       } catch (e) {
@@ -2618,7 +2624,7 @@ class ApiService {
 
   Future<void> deleteFoodtype(int id) async {
     if (await isTokenExpired()) {
-      AppLogger.d('Token expired or about to expire, refreshing...');
+      if (AppLogger.on) AppLogger.d('Token expired or about to expire, refreshing...');
       try {
         await refreshToken();
       } catch (e) {
@@ -2725,7 +2731,7 @@ class ApiService {
 
   Future<void> deleteBooking(int id) async {
     if (await isTokenExpired()) {
-      AppLogger.d('Token expired or about to expire, refreshing...');
+      if (AppLogger.on) AppLogger.d('Token expired or about to expire, refreshing...');
       try {
         await refreshToken();
       } catch (e) {
@@ -2870,7 +2876,7 @@ class ApiService {
     String? keyword,
   }) async {
     if (await isTokenExpired()) {
-      AppLogger.d('Token expired or about to expire, refreshing...');
+      if (AppLogger.on) AppLogger.d('Token expired or about to expire, refreshing...');
       try {
         await refreshToken();
       } catch (e) {
@@ -2896,7 +2902,7 @@ class ApiService {
     DocumentStatus documentStatus,
   ) async {
     if (await isTokenExpired()) {
-      AppLogger.d('Token expired or about to expire, refreshing...');
+      if (AppLogger.on) AppLogger.d('Token expired or about to expire, refreshing...');
       try {
         await refreshToken();
       } catch (e) {
@@ -2920,7 +2926,7 @@ if (response.statusCode == 200 && response.data['success'] == true) {
     DocumentStatus documentStatus,
   ) async {
     if (await isTokenExpired()) {
-      AppLogger.d('Token expired or about to expire, refreshing...');
+      if (AppLogger.on) AppLogger.d('Token expired or about to expire, refreshing...');
       try {
         await refreshToken();
       } catch (e) {
@@ -2943,7 +2949,7 @@ if (response.statusCode == 200 && response.data['success'] == true) {
 
   Future<void> deleteDocumentStatus(int id) async {
     if (await isTokenExpired()) {
-      AppLogger.d('Token expired or about to expire, refreshing...');
+      if (AppLogger.on) AppLogger.d('Token expired or about to expire, refreshing...');
       try {
         await refreshToken();
       } catch (e) {
@@ -2961,7 +2967,7 @@ if (response.statusCode == 200 && response.data['success'] == true) {
     String? keyword,
   }) async {
      if (await isTokenExpired()) {
-      AppLogger.d('Token expired or about to expire, refreshing...');
+      if (AppLogger.on) AppLogger.d('Token expired or about to expire, refreshing...');
       try {
         await refreshToken();
       } catch (e) {
@@ -2985,7 +2991,7 @@ if (response.statusCode == 200 && response.data['success'] == true) {
 
   Future<StatusCheck> createStatusCheck(StatusCheck statusCheck) async {
      if (await isTokenExpired()) {
-      AppLogger.d('Token expired or about to expire, refreshing...');
+      if (AppLogger.on) AppLogger.d('Token expired or about to expire, refreshing...');
       try {
         await refreshToken();
       } catch (e) {
@@ -3006,7 +3012,7 @@ if (response.statusCode == 200 && response.data['success'] == true) {
 
   Future<StatusCheck> updateStatusCheck(int id, StatusCheck statusCheck) async {
      if (await isTokenExpired()) {
-      AppLogger.d('Token expired or about to expire, refreshing...');
+      if (AppLogger.on) AppLogger.d('Token expired or about to expire, refreshing...');
       try {
         await refreshToken();
       } catch (e) {
@@ -3027,7 +3033,7 @@ if (response.statusCode == 200 && response.data['success'] == true) {
 
   Future<void> deleteStatusCheck(int id) async {
      if (await isTokenExpired()) {
-      AppLogger.d('Token expired or about to expire, refreshing...');
+      if (AppLogger.on) AppLogger.d('Token expired or about to expire, refreshing...');
       try {
         await refreshToken();
       } catch (e) {

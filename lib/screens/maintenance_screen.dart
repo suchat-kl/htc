@@ -45,18 +45,18 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
         workstatus: _fWorkstatus,
       );
 
-      AppLogger.d('Maintenance response keys: ${r.keys}'); // ✅ Debug
+      if (AppLogger.on) AppLogger.d('Maintenance response keys: ${r.keys}'); // ✅ Debug
 
       if (mounted) {
         // ✅ Try both possible keys
         final l = (r['maintenance'] ?? r['maintenances']) as List?;
 
-        AppLogger.d('Maintenance list length: ${l?.length}'); // ✅ Debug
+        if (AppLogger.on) AppLogger.d('Maintenance list length: ${l?.length}'); // ✅ Debug
 
         setState(() {
           _list =
               l?.map((j) {
-                AppLogger.d('Parsing: $j'); // ✅ Debug each item
+                if (AppLogger.on) AppLogger.d('Parsing: $j'); // ✅ Debug each item
                 return Maintenance.fromJson(j as Map<String, dynamic>);
               }).toList() ??
               [];
@@ -66,14 +66,14 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
           _isLoading = false;
         });
 // ✅ Debug
-        AppLogger.d('Total pages: $_tp');
-        AppLogger.d('Current page: $_cp');
-        AppLogger.d('Page size: $_ps');
-        AppLogger.d('List length: ${_list.length}');
-        AppLogger.d('Parsed ${_list.length} items'); // ✅ Debug
+        if (AppLogger.on) AppLogger.d('Total pages: $_tp');
+        if (AppLogger.on) AppLogger.d('Current page: $_cp');
+        if (AppLogger.on) AppLogger.d('Page size: $_ps');
+        if (AppLogger.on) AppLogger.d('List length: ${_list.length}');
+        if (AppLogger.on) AppLogger.d('Parsed ${_list.length} items'); // ✅ Debug
       }
     } catch (e) {
-      AppLogger.d('Error loading maintenance: $e'); // ✅ Debug error
+      if (AppLogger.on) AppLogger.d('Error loading maintenance: $e'); // ✅ Debug error
       if (mounted) {
         setState(() => _isLoading = false);
         context.showErrorSnackBar('ไม่สามารถโหลดข้อมูลได้: $e');

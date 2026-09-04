@@ -46,7 +46,7 @@ class _EquipmentScreenState extends State<EquipmentScreen> {
         });
       }
     } catch (e) {
-      AppLogger.d('Error loading dropdowns: $e');
+      if (AppLogger.on) AppLogger.d('Error loading dropdowns: $e');
     }
   }
 

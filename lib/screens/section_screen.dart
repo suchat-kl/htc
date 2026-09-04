@@ -36,7 +36,7 @@ class _SectionScreenState extends State<SectionScreen> {
       final orgs = await widget.apiService.getOrganizationList();
       if (mounted) setState(() => _organizations = orgs.where((o) => o.orgName != null && o.orgName!.isNotEmpty).toList());
     } catch (e) {
-      AppLogger.d('Error loading orgs: $e');
+      if (AppLogger.on) AppLogger.d('Error loading orgs: $e');
     }
   }
 

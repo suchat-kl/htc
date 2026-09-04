@@ -78,9 +78,9 @@ List<TickerMessage> _tickerMessagesData = [];
   // Load ticker messages from API
   Future<void> _loadTickerMessages() async {
     try {
-      AppLogger.d('🔄 Loading ticker messages...');
+      if (AppLogger.on) AppLogger.d('🔄 Loading ticker messages...');
       final messages = await _apiService.getActiveTickerMessages();
-      AppLogger.d('📥 Ticker messages loaded: ${messages.length}');
+      if (AppLogger.on) AppLogger.d('📥 Ticker messages loaded: ${messages.length}');
 
       if (mounted) {
         setState(() {
@@ -110,7 +110,7 @@ List<TickerMessage> _tickerMessagesData = [];
         }
       }
     } catch (e) {
-      AppLogger.e('❌ Error loading ticker messages: $e');
+      if (AppLogger.on) AppLogger.e('❌ Error loading ticker messages: $e');
       if (mounted) {
         setState(() {
           _tickerMessagesData = [];

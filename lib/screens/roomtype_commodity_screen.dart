@@ -67,7 +67,7 @@ class _RoomtypeCommodityScreenState extends State<RoomtypeCommodityScreen> {
           });
       }
     } catch (e) {
-      AppLogger.d('Error loading commodity list: $e');
+      if (AppLogger.on) AppLogger.d('Error loading commodity list: $e');
     }
   }
 

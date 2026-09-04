@@ -42,25 +42,25 @@ class _RoomtypeFacilityScreenState extends State<RoomtypeFacilityScreen> {
 
   Future<void> _loadFacilityList() async {
     try {
-      AppLogger.d('=== Loading Facility Lists ===');
-      AppLogger.d('roomTypeID: ${widget.roomTypeID}');
+      if (AppLogger.on) AppLogger.d('=== Loading Facility Lists ===');
+      if (AppLogger.on) AppLogger.d('roomTypeID: ${widget.roomTypeID}');
 
       final facilitiesAdd = await widget.apiService.getFacilitiesList(
         roomTypeID: widget.roomTypeID,
         mode: "add",
       );
-      AppLogger.d('facilitiesAdd count: ${facilitiesAdd.length}');
+      if (AppLogger.on) AppLogger.d('facilitiesAdd count: ${facilitiesAdd.length}');
       for (var f in facilitiesAdd) {
-        AppLogger.d('  ADD - facilityID: ${f.facilityID}, name: ${f.name}');
+        if (AppLogger.on) AppLogger.d('  ADD - facilityID: ${f.facilityID}, name: ${f.name}');
       }
 
       final facilitiesEdit = await widget.apiService.getFacilitiesList(
         roomTypeID: widget.roomTypeID,
         mode: "edit",
       );
-      AppLogger.d('facilitiesEdit count: ${facilitiesEdit.length}');
+      if (AppLogger.on) AppLogger.d('facilitiesEdit count: ${facilitiesEdit.length}');
       for (var f in facilitiesEdit) {
-        AppLogger.d('  EDIT - facilityID: ${f.facilityID}, name: ${f.name}');
+        if (AppLogger.on) AppLogger.d('  EDIT - facilityID: ${f.facilityID}, name: ${f.name}');
       }
 
       if (mounted) {
@@ -68,11 +68,11 @@ class _RoomtypeFacilityScreenState extends State<RoomtypeFacilityScreen> {
           _facilityListAdd = facilitiesAdd;
           _facilityListEdit = facilitiesEdit;
         });
-        AppLogger.d('State updated successfully');
+        if (AppLogger.on) AppLogger.d('State updated successfully');
       }
-      AppLogger.d('===================================');
+      if (AppLogger.on) AppLogger.d('===================================');
     } catch (e) {
-      AppLogger.e('❌ Error loading facility list: $e');
+      if (AppLogger.on) AppLogger.e('❌ Error loading facility list: $e');
     }
   }
 
@@ -114,24 +114,28 @@ class _RoomtypeFacilityScreenState extends State<RoomtypeFacilityScreen> {
   }
 
   void _showAddEditDialog({RoomtypeFacility? facility, String? mode}) {
-    AppLogger.d('=== Opening Dialog ===');
-    AppLogger.d('Mode: $mode');
-    AppLogger.d('RoomTypeID: ${widget.roomTypeID}');
-    AppLogger.d(
-      'Facility: ${facility != null ? "Edit facilityID=${facility.facilityID}" : "New"}',
-    );
+    if (AppLogger.on) AppLogger.d('=== Opening Dialog ===');
+    if (AppLogger.on) AppLogger.d('Mode: $mode');
+    if (AppLogger.on) AppLogger.d('RoomTypeID: ${widget.roomTypeID}');
+    if (AppLogger.on) {
+      AppLogger.d(
+        'Facility: ${facility != null ? "Edit facilityID=${facility.facilityID}" : "New"}',
+      );
+    }
 
     if (mode == "edit") {
-      AppLogger.d(
-        'Using _facilityListEdit (count: ${_facilityListEdit.length})',
-      );
+      if (AppLogger.on) {
+        AppLogger.d(
+          'Using _facilityListEdit (count: ${_facilityListEdit.length})',
+        );
+      }
       for (var f in _facilityListEdit) {
-        AppLogger.d('  facilityID: ${f.facilityID}, name: ${f.name}');
+        if (AppLogger.on) AppLogger.d('  facilityID: ${f.facilityID}, name: ${f.name}');
       }
     } else {
-      AppLogger.d('Using _facilityListAdd (count: ${_facilityListAdd.length})');
+      if (AppLogger.on) AppLogger.d('Using _facilityListAdd (count: ${_facilityListAdd.length})');
       for (var f in _facilityListAdd) {
-        AppLogger.d('  facilityID: ${f.facilityID}, name: ${f.name}');
+        if (AppLogger.on) AppLogger.d('  facilityID: ${f.facilityID}, name: ${f.name}');
       }
     }
 
@@ -764,42 +768,42 @@ class _RoomtypeFacilityFormDialogState
     }
     final uniqueList = uniqueMap.values.toList();
     // ✅ DEBUG PRINTS
-    AppLogger.d('=== Facility Dropdown Debug ===');
-    AppLogger.d('Mode: ${isEdit ? "EDIT" : "ADD"}');
-    AppLogger.d('widget.facilityList length: ${widget.facilityList.length}');
-    AppLogger.d('uniqueList length: ${uniqueList.length}');
-    AppLogger.d('_selectedFacilityID: $_selectedFacilityID');
-    AppLogger.d('FacilityList items:');
+    if (AppLogger.on) AppLogger.d('=== Facility Dropdown Debug ===');
+    if (AppLogger.on) AppLogger.d('Mode: ${isEdit ? "EDIT" : "ADD"}');
+    if (AppLogger.on) AppLogger.d('widget.facilityList length: ${widget.facilityList.length}');
+    if (AppLogger.on) AppLogger.d('uniqueList length: ${uniqueList.length}');
+    if (AppLogger.on) AppLogger.d('_selectedFacilityID: $_selectedFacilityID');
+    if (AppLogger.on) AppLogger.d('FacilityList items:');
     for (var f in widget.facilityList) {
-      AppLogger.d('  facilityID: ${f.facilityID}, name: ${f.name}');
+      if (AppLogger.on) AppLogger.d('  facilityID: ${f.facilityID}, name: ${f.name}');
     }
-    AppLogger.d('UniqueList items:');
+    if (AppLogger.on) AppLogger.d('UniqueList items:');
     for (var f in uniqueList) {
-      AppLogger.d('  facilityID: ${f.facilityID}, name: ${f.name}');
+      if (AppLogger.on) AppLogger.d('  facilityID: ${f.facilityID}, name: ${f.name}');
     }
-    AppLogger.d('===================================');
+    if (AppLogger.on) AppLogger.d('===================================');
 
     // ✅ Validate selected value exists in the list
     if (_selectedFacilityID != null && uniqueList.isNotEmpty) {
       final exists = uniqueList.any((c) => c.facilityID == _selectedFacilityID);
       if (!exists) {
         // Reset to first item if not found
-        AppLogger.w('⚠️ Selected value not found! Resetting to first item...');
+        if (AppLogger.on) AppLogger.w('⚠️ Selected value not found! Resetting to first item...');
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted) {
             setState(() {
               _selectedFacilityID = uniqueList.first.facilityID;
-              AppLogger.d('Reset _selectedFacilityID to: $_selectedFacilityID');
+              if (AppLogger.on) AppLogger.d('Reset _selectedFacilityID to: $_selectedFacilityID');
             });
           }
         });
       }
     } else if (uniqueList.isNotEmpty && _selectedFacilityID == null) {
       _selectedFacilityID = uniqueList.first.facilityID;
-       AppLogger.d('Set default _selectedFacilityID to: $_selectedFacilityID');
+       if (AppLogger.on) AppLogger.d('Set default _selectedFacilityID to: $_selectedFacilityID');
     }
     else if (uniqueList.isEmpty) {
-      AppLogger.w('⚠️ uniqueList is EMPTY!');
+      if (AppLogger.on) AppLogger.w('⚠️ uniqueList is EMPTY!');
     }
 
     return Dialog(

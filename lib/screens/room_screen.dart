@@ -51,7 +51,7 @@ class _RoomScreenState extends State<RoomScreen> {
         );
       }
     } catch (e) {
-      AppLogger.d('Error loading roomtypes: $e');
+      if (AppLogger.on) AppLogger.d('Error loading roomtypes: $e');
     }
   }
 

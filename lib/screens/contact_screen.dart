@@ -25,7 +25,7 @@ class _ContactScreenState extends State<ContactScreen> {
         html.window.open(url, '_blank');
       }
     } catch (e) {
-      AppLogger.d('Error opening URL: $e');
+      if (AppLogger.on) AppLogger.d('Error opening URL: $e');
       if (mounted) context.showErrorSnackBar('ไม่สามารถเปิดลิงก์ได้');
     }
   }
@@ -43,7 +43,7 @@ class _ContactScreenState extends State<ContactScreen> {
 
       if (mounted) context.showSuccessSnackBar('กำลังดาวน์โหลด $filename');
     } catch (e) {
-      AppLogger.d('Error downloading: $e');
+      if (AppLogger.on) AppLogger.d('Error downloading: $e');
       if (mounted) context.showErrorSnackBar('ไม่สามารถดาวน์โหลดได้');
     } finally {
       if (mounted) setState(() => _isDownloading = false);

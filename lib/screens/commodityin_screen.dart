@@ -49,7 +49,7 @@ class _CommodityInScreenState extends State<CommodityInScreen> {
       final commodities = await widget.apiService.getCommoditiesList();
       if (mounted) setState(() => _commodities = commodities);
     } catch (e) {
-      AppLogger.d('Error loading commodities: $e');
+      if (AppLogger.on) AppLogger.d('Error loading commodities: $e');
     }
   }
 
@@ -58,7 +58,7 @@ class _CommodityInScreenState extends State<CommodityInScreen> {
       final employees = await widget.apiService.getEmployeesList();
       if (mounted) setState(() => _employees = employees);
     } catch (e) {
-      AppLogger.d('Error loading commodities: $e');
+      if (AppLogger.on) AppLogger.d('Error loading commodities: $e');
     }
   }
 

@@ -68,7 +68,7 @@ class _RegisterUserDialogState extends State<RegisterUserDialog> {
         });
       }
     } catch (e) {
-      AppLogger.d('Error loading roles: $e');
+      if (AppLogger.on) AppLogger.d('Error loading roles: $e');
     }
   }
 

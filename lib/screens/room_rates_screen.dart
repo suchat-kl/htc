@@ -24,7 +24,7 @@ class _RoomRatesScreenState extends State<RoomRatesScreen> {
         context.showSuccessSnackBar('กำลังเปิดโบรชัวร์');
       }
     } catch (e) {
-      AppLogger.d('Error downloading brochure: $e');
+      if (AppLogger.on) AppLogger.d('Error downloading brochure: $e');
       if (mounted) {
         context.showErrorSnackBar('ไม่สามารถดาวน์โหลดโบรชัวร์ได้');
       }

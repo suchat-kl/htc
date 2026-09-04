@@ -36,7 +36,7 @@ class _OrganizationScreenState extends State<OrganizationScreen> {
       final orgs = await widget.apiService.getOrganizationList();
       if (mounted) setState(() => _allOrgs = orgs);
     } catch (e) {
-      AppLogger.d('Error loading orgs: $e');
+      if (AppLogger.on) AppLogger.d('Error loading orgs: $e');
     }
   }
 

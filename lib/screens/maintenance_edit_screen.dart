@@ -109,7 +109,7 @@ class _MaintenanceEditScreenState extends State<MaintenanceEditScreen> {
         // Try parsing "2026-07-23" format
         return DateFormat('yyyy-MM-dd').parse(dateStr);
       } catch (e) {
-        AppLogger.d('Error parsing date: $dateStr');
+        if (AppLogger.on) AppLogger.d('Error parsing date: $dateStr');
         return null;
       }
     }
@@ -128,7 +128,7 @@ class _MaintenanceEditScreenState extends State<MaintenanceEditScreen> {
         });
       }
     } catch (e) {
-      AppLogger.d('Error loading dropdowns: $e');
+      if (AppLogger.on) AppLogger.d('Error loading dropdowns: $e');
     }
   }
 
@@ -140,7 +140,7 @@ class _MaintenanceEditScreenState extends State<MaintenanceEditScreen> {
       );
       if (mounted) setState(() => _tparts = tparts);
     } catch (e) {
-      AppLogger.d('Error loading tparts: $e');
+      if (AppLogger.on) AppLogger.d('Error loading tparts: $e');
     }
   }
 

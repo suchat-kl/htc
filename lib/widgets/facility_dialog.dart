@@ -79,8 +79,8 @@ class _FacilityDialogState extends State<FacilityDialog> {
         // AppLogger.d(facility.description);
         // ✅ Check if facilityID is not null before accessing
         final facilityId = widget.facility?.facilityID;
-        AppLogger.d("edit");
-        AppLogger.d("facilityID: ${facilityId ?? 'null'}");
+        if (AppLogger.on) AppLogger.d("edit");
+        if (AppLogger.on) AppLogger.d("facilityID: ${facilityId ?? 'null'}");
 
         // if (facilityId == null) {
         //   throw Exception('Facility ID is null - cannot update');
