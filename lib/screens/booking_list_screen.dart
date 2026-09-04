@@ -1,7 +1,7 @@
 // lib/screens/booking_list_screen.dart
 import 'package:flutter/material.dart';
 import 'package:highway_training/providers/auth_provider.dart';
-import 'package:highway_training/screens/NoAuthbooking_detail_screen.dart';
+import 'package:highway_training/screens/no_auth_booking_detail_screen.dart';
 import 'package:highway_training/screens/booking_detail_screen.dart';
 import 'package:intl/intl.dart';
 import '../config/theme.dart';
