@@ -16,6 +16,11 @@ class Bookroom {
   final String? bookremark;
   final int? statusId;
   final String? statusName;
+  // ฟิลด์ที่มีอยู่แล้วใน BookroomDTO ฝั่ง Spring Boot แต่ยังไม่เคยประกาศที่นี่
+  // address จำเป็นต่อหน้าข้อมูลสำรองห้อง เพราะเป็นช่องที่แก้ไขและต้องบันทึกได้
+  final String? bookdate;
+  final String? address;
+  final String? branchName;
   final String? c; // ห้องกิจกรรม
   // ignore: non_constant_identifier_names
   final String? c_color; // สีห้องกิจกรรม
@@ -40,6 +45,9 @@ class Bookroom {
     this.bookremark,
     this.statusId,
     this.statusName,
+    this.bookdate,
+    this.address,
+    this.branchName,
     this.c,
     this.c_color,
     this.r,
@@ -64,6 +72,9 @@ class Bookroom {
       bookremark: json['bookremark'] as String?,
       statusId: json['statusId'] as int?,
       statusName: json['statusName'] as String?,
+      bookdate: json['bookdate'] as String?,
+      address: json['address'] as String?,
+      branchName: json['branchName'] as String?,
       c: json['c'] as String?,
       c_color: json['c_color'] as String?,
       r: json['r'] as String?,
@@ -89,6 +100,9 @@ class Bookroom {
       'bookremark': bookremark,
       'statusId': statusId,
       'statusName': statusName,
+      'bookdate': bookdate,
+      'address': address,
+      'branchName': branchName,
       'c': c,
       'c_color': c_color,
       'r': r,

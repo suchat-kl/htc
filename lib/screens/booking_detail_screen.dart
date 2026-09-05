@@ -34,6 +34,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen>
   late TabController _tabController;
   // ✅ ตัวแปรสำหรับเก็บข้อมูล
   Map<String, dynamic>? _bookingData;
+   
   bool _isLoading = true;
   String? _error;
   @override
@@ -56,7 +57,21 @@ class _BookingDetailScreenState extends State<BookingDetailScreen>
     });
 
     _loadBookingData();
+    // _loadStatusList();
   }
+  // Future<void> _loadStatusList() async {
+  //   setState(() => _isLoading = true);
+  //   try {
+  //     final statuses = await widget.apiService.getDocumentStatusList();
+  //     setState(() {
+       
+  //       _isLoading = false;
+  //     });
+  //   } catch (e) {
+  //     if (AppLogger.on) AppLogger.d('Error loading status: $e');
+  //     setState(() => _isLoading = false);
+  //   }
+  // }
 
   @override
   void dispose() {
@@ -112,12 +127,12 @@ class _BookingDetailScreenState extends State<BookingDetailScreen>
           // const RoomAssignmentTab(),
           // const CheckInTab(),
           // Tab 1: ข้อมูลสำรองห้อง
-          SingleChildScrollView(
-            child: BookingInfoTab(
-              apiService: widget.apiService,
-              bookId: widget.bookId,
-             bookingData:  _bookingData,
-            ),
+          // BookingInfoTab มี SingleChildScrollView ของตัวเองอยู่แล้ว
+          // ถ้าครอบซ้ำอีกชั้น viewport ชั้นในจะได้ความสูงแบบ unbounded แล้ว assert
+          BookingInfoTab(
+            apiService: widget.apiService,
+            bookId: widget.bookId,
+            bookingData: _bookingData,
           ),
           // Tab 2: กำหนดห้อง
           SingleChildScrollView(
