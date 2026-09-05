@@ -738,8 +738,8 @@ class _BookingListScreenState extends State<BookingListScreen> {
     );
   }
 
-  void _showBookingDetail(int bookId) {
-    Navigator.push(
+  Future<void> _showBookingDetail(int bookId) async {
+    final result = await Navigator.push<bool>(
       context,
       MaterialPageRoute(
         builder: (context) {
@@ -758,5 +758,15 @@ class _BookingListScreenState extends State<BookingListScreen> {
         },
       ),
     );
+
+    // หน้ารายละเอียดส่ง true กลับมาเมื่อลบข้อมูลสำเร็จ (ปิดเฉยๆ จะได้ null)
+    if (result != true || !mounted) return;
+
+    // ถ้าเพิ่งลบรายการสุดท้ายของหน้านี้ ให้ถอยไปหน้าก่อนหน้า
+    // ไม่งั้นผู้ใช้จะค้างอยู่บนหน้าเปล่าและต้องกดย้อนเอง
+    if (_bookings.length <= 1 && _currentPage > 0) {
+      setState(() => _currentPage--);
+    }
+    await _searchBookings();
   }
 }
