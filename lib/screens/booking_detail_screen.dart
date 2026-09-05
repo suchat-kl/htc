@@ -37,6 +37,10 @@ class _BookingDetailScreenState extends State<BookingDetailScreen>
    
   bool _isLoading = true;
   String? _error;
+
+  /// true เมื่อแท็บใดแท็บหนึ่งบันทึกข้อมูลสำเร็จ — ส่งกลับตอนปิดหน้าจอ
+  /// เพื่อให้ BookingListScreen โหลดรายการใหม่
+  bool _dataChanged = false;
   @override
   void initState() {
     super.initState();
@@ -85,7 +89,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen>
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.close, size: 28),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => Navigator.pop(context, _dataChanged),
         ),
         title: const Text(
           'ขออนุญาตใช้บริการ',
@@ -133,6 +137,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen>
             apiService: widget.apiService,
             bookId: widget.bookId,
             bookingData: _bookingData,
+            onSaved: () => _dataChanged = true,
           ),
           // Tab 2: กำหนดห้อง
           SingleChildScrollView(

@@ -759,14 +759,16 @@ class _BookingListScreenState extends State<BookingListScreen> {
       ),
     );
 
-    // หน้ารายละเอียดส่ง true กลับมาเมื่อลบข้อมูลสำเร็จ (ปิดเฉยๆ จะได้ null)
+    // หน้ารายละเอียดส่ง true กลับมาเมื่อลบหรือบันทึกสำเร็จ (ปิดเฉยๆ จะได้ null)
     if (result != true || !mounted) return;
 
-    // ถ้าเพิ่งลบรายการสุดท้ายของหน้านี้ ให้ถอยไปหน้าก่อนหน้า
-    // ไม่งั้นผู้ใช้จะค้างอยู่บนหน้าเปล่าและต้องกดย้อนเอง
-    if (_bookings.length <= 1 && _currentPage > 0) {
-      setState(() => _currentPage--);
-    }
     await _searchBookings();
+
+    // ถ้าหน้าปัจจุบันว่างเพราะเพิ่งลบรายการสุดท้ายไป ให้ถอยไปหน้าก่อนหน้า
+    // เช็คจากผลลัพธ์จริงหลังโหลด จึงไม่ถอยหน้าผิดตอนที่แค่กดบันทึก
+    if (mounted && _bookings.isEmpty && _currentPage > 0) {
+      setState(() => _currentPage--);
+      await _searchBookings();
+    }
   }
 }

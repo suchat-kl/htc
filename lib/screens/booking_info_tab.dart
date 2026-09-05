@@ -17,11 +17,17 @@ class BookingInfoTab extends StatefulWidget {
 
   final int bookId;
   final ApiService apiService;
+
+  /// แจ้งหน้าแม่เมื่อบันทึกสำเร็จ เพื่อให้ปุ่มปิด (X) บน AppBar
+  /// ส่งสัญญาณให้หน้ารายการรีเฟรชได้เหมือนกับปุ่ม "กลับ" ในแท็บนี้
+  final VoidCallback? onSaved;
+
   const BookingInfoTab({
     super.key,
     required this.apiService,
     required this.bookId,
     required this.bookingData,
+    this.onSaved,
   });
 
   @override
@@ -60,6 +66,10 @@ class _BookingInfoTabState extends State<BookingInfoTab> {
   List<DocumentStatus> _statusList = [];
   bool _isLoading = false;
   bool _isSaving = false;
+
+  /// true เมื่อบันทึกสำเร็จอย่างน้อยหนึ่งครั้ง — ใช้บอกหน้ารายการว่าต้องโหลดใหม่
+  /// เพราะปุ่ม "บันทึก" ไม่ได้ปิดหน้าจอ ค่าจึงต้องรอส่งกลับตอนกด "กลับ"
+  bool _hasSaved = false;
   bool _isDeleting = false;
   String? _error;
 
@@ -181,6 +191,9 @@ class _BookingInfoTabState extends State<BookingInfoTab> {
       );
 
       await widget.apiService.updateBooking(_bookID, d);
+
+      _hasSaved = true;
+      widget.onSaved?.call();
 
       if (mounted) {
         await AppDialog.showSuccess(
@@ -560,7 +573,8 @@ class _BookingInfoTabState extends State<BookingInfoTab> {
           icon: Icons.arrow_back,
           color: const Color(0xFF00ACC1),
           busy: false,
-          onPressed: busy ? null : () => Navigator.pop(context),
+          // ส่ง _hasSaved กลับไป หน้ารายการจะรีเฟรชเฉพาะตอนที่ข้อมูลถูกแก้จริง
+          onPressed: busy ? null : () => Navigator.pop(context, _hasSaved),
         ),
       ],
     );
