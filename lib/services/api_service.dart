@@ -127,6 +127,24 @@ class ApiService {
           error: true,
         ),
       );
+
+      // LogInterceptor พิมพ์แค่ว่า "400" แต่ไม่พิมพ์ body ที่บอกสาเหตุจริง
+      // ตัวนี้เติมให้เฉพาะตอน error และเฉพาะ debug build โดยผ่าน redact()
+      // เพื่อไม่ให้ token/PII หลุดลง console
+      dio.interceptors.add(
+        InterceptorsWrapper(
+          onError: (e, handler) {
+            AppLogger.lazy(
+              () =>
+                  '🔴 ${e.response?.statusCode} ${e.requestOptions.method} '
+                  '${e.requestOptions.path}\n'
+                  '${AppLogger.redact(e.response?.data)}',
+              tag: 'API',
+            );
+            handler.next(e);
+          },
+        ),
+      );
     }
 
     // Add auth interceptor

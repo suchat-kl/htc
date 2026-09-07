@@ -1,9 +1,20 @@
 // lib/widgets/room_availability_dialog.dart
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 import '../config/theme.dart';
 import '../services/api_service.dart';
 import '../utils/logger.dart';
+
+/// ข้อผิดพลาดที่รู้แล้วว่ามาจาก API ตัวไหน — ใช้ส่งข้อความที่อ่านรู้เรื่อง
+/// ขึ้นไปให้ผู้ใช้แทน DioException ดิบ
+class _ApiFailure implements Exception {
+  final String message;
+  _ApiFailure(this.message);
+  @override
+  String toString() => message;
+}
 
 /// หน้าจอ "ตรวจสอบห้องว่าง" (displayRoom)
 ///
@@ -53,27 +64,50 @@ class _RoomAvailabilityDialogState extends State<RoomAvailabilityDialog> {
       _error = null;
     });
 
+    // controller ประกาศ startdate/stopdate เป็น @RequestParam ที่ไม่มี
+    // required=false และไม่มีค่า default → ถ้าไม่ส่งไป Spring ตอบ 400 ทันที
+    final sd = _isoDate(widget.startDate);
+    final ed = _isoDate(widget.stopDate);
+    if (sd == null || ed == null) {
+      setState(() {
+        _error = 'รายการนี้ไม่มีวันที่เริ่มต้นหรือวันที่สิ้นสุด '
+            'จึงตรวจสอบห้องว่างไม่ได้\nกรุณาแก้ไขรายการให้มีช่วงวันที่ก่อน';
+        _isLoading = false;
+      });
+      return;
+    }
+
     try {
       // ห้องทั้งหมดของประเภทห้องนี้ — ส่งแค่ page/size/roomTypeID ตามที่กำหนด
-      final roomsRes = await widget.apiService.getRooms(
-        page: 0,
-        size: 500,
-        roomTypeID: widget.roomTypeId,
-      );
+      late final Map<String, dynamic> roomsRes;
+      try {
+        roomsRes = await widget.apiService.getRooms(
+          page: 0,
+          size: 500,
+          roomTypeID: widget.roomTypeId,
+        );
+      } catch (e) {
+        throw _ApiFailure(_describe(e, 'ดึงรายการห้องทั้งหมด (rooms)'));
+      }
       final total = (roomsRes['rooms'] as List? ?? const [])
           .map((j) => (j as Map)['roomNO']?.toString() ?? '')
           .where((s) => s.isNotEmpty)
           .toList();
 
       // ห้องที่ถูกใช้งานตามเงื่อนไขของแถวนี้
-      final usedRes = await widget.apiService.getBookDetailsR(
-        bookID: widget.bookId,
-        roomTypeId: widget.roomTypeId,
-        startdate: widget.startDate,
-        stopdate: widget.stopDate,
-        page: 0,
-        size: 500,
-      );
+      late final Map<String, dynamic> usedRes;
+      try {
+        usedRes = await widget.apiService.getBookDetailsR(
+          bookID: widget.bookId,
+          roomTypeId: widget.roomTypeId,
+          startdate: sd,
+          stopdate: ed,
+          page: 0,
+          size: 500,
+        );
+      } catch (e) {
+        throw _ApiFailure(_describe(e, 'ดึงห้องที่ใช้งาน (by-bookR)'));
+      }
       final used = (usedRes['bookdetails'] as List? ?? const [])
           .map((j) => (j as Map)['roomNo']?.toString() ?? '')
           .where((s) => s.isNotEmpty)
@@ -89,10 +123,40 @@ class _RoomAvailabilityDialogState extends State<RoomAvailabilityDialog> {
       if (AppLogger.on) AppLogger.d('Error loading room availability: $e');
       if (!mounted) return;
       setState(() {
-        _error = e.toString().replaceAll('Exception: ', '');
+        _error = e is _ApiFailure
+            ? e.message
+            : e.toString().replaceAll('Exception: ', '');
         _isLoading = false;
       });
     }
+  }
+
+  /// บังคับรูปแบบเป็น yyyy-MM-dd ให้ตรงกับ @RequestParam LocalDate ฝั่ง Spring
+  /// เผื่อ backend ส่งกลับมาเป็น '2026-08-23T00:00:00.000' หรือรูปแบบอื่น
+  static String? _isoDate(String? s) {
+    if (s == null || s.trim().isEmpty) return null;
+    final d = DateTime.tryParse(s);
+    if (d != null) return DateFormat('yyyy-MM-dd').format(d);
+    return RegExp(r'^\d{4}-\d{2}-\d{2}').firstMatch(s)?.group(0);
+  }
+
+  /// ดึงข้อความจริงจากเซิร์ฟเวอร์ออกมาแสดง แทนข้อความ DioException ยาวๆ
+  /// ที่ไม่บอกว่าพังตรงไหน
+  String _describe(Object e, String what) {
+    if (e is DioException) {
+      final code = e.response?.statusCode;
+      final data = e.response?.data;
+      String detail = '';
+      if (data is Map) {
+        detail = (data['message'] ?? data['error'] ?? '').toString();
+      } else if (data is String && data.trim().isNotEmpty) {
+        detail = data.trim();
+      }
+      if (detail.length > 300) detail = '${detail.substring(0, 300)}…';
+      return '$what ไม่สำเร็จ (HTTP ${code ?? '-'})'
+          '${detail.isEmpty ? '' : '\n$detail'}';
+    }
+    return '$what ไม่สำเร็จ\n${e.toString().replaceAll('Exception: ', '')}';
   }
 
   /// จัดห้องเป็นแถวตามตัวเลขตัวแรกของหมายเลขห้อง เช่น 201–210 อยู่แถวเดียวกัน

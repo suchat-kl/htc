@@ -1,4 +1,5 @@
 // สร้างไฟล์ booking_info_tab.dart
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
@@ -204,10 +205,29 @@ class _BookingInfoTabState extends State<BookingInfoTab> {
       if (AppLogger.on) AppLogger.d('Error loading bookroomdetails: $e');
       if (!mounted) return;
       setState(() {
-        _rdError = e.toString().replaceAll('Exception: ', '');
+        _rdError = _describeApiError(e, 'ดึงรายการห้องพัก (by-bookidtype)');
         _rdLoading = false;
       });
     }
+  }
+
+  /// แสดงข้อความจริงจากเซิร์ฟเวอร์ พร้อมบอกว่าเรียก endpoint ไหนถึงพัง
+  /// เพราะ DioException ดิบบอกแค่ว่า 400 แต่ไม่บอกว่าเป็นคำขอไหน
+  static String _describeApiError(Object e, String what) {
+    if (e is DioException) {
+      final code = e.response?.statusCode;
+      final data = e.response?.data;
+      String detail = '';
+      if (data is Map) {
+        detail = (data['message'] ?? data['error'] ?? '').toString();
+      } else if (data is String && data.trim().isNotEmpty) {
+        detail = data.trim();
+      }
+      if (detail.length > 300) detail = '${detail.substring(0, 300)}…';
+      return '$what ไม่สำเร็จ (HTTP ${code ?? '-'})'
+          '${detail.isEmpty ? '' : '\n$detail'}';
+    }
+    return '$what ไม่สำเร็จ\n${e.toString().replaceAll('Exception: ', '')}';
   }
 
   /// ประเภทห้องสำหรับ dropdown ใน dialog — เอาเฉพาะ type 'R' (ห้องพัก)
