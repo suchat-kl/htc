@@ -4,12 +4,16 @@ import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
 import 'package:highway_training/models/bookroom.dart';
+import 'package:highway_training/models/bookroomdetail.dart';
 import 'package:highway_training/models/documentstatus.dart';
+import 'package:highway_training/models/roomtype.dart';
 import 'package:highway_training/services/api_service.dart';
 import 'package:highway_training/utils/dialog.dart';
 import 'package:highway_training/utils/logger.dart';
 import 'package:highway_training/utils/snackbar_helper.dart';
 import 'package:highway_training/utils/util.dart';
+import 'package:highway_training/widgets/bookroomdetail_dialog.dart';
+import 'package:highway_training/widgets/room_availability_dialog.dart';
 import '../config/theme.dart';
 
 class BookingInfoTab extends StatefulWidget {
@@ -73,6 +77,19 @@ class _BookingInfoTabState extends State<BookingInfoTab> {
   bool _isDeleting = false;
   String? _error;
 
+  // ===== รายการห้องพัก (bookroomdetail, type = 'R') =====
+  /// ประเภทห้องพัก — ค่าคงที่ที่ส่งให้ getBookRoomDetailsRC
+  static const String _roomType = 'R';
+
+  List<BookRoomDetail> _roomDetails = [];
+  List<Roomtype> _roomTypes = [];
+  int _rdPage = 0;
+  final int _rdSize = 5; // ค่าเริ่มต้น row/page = 5
+  int _rdTotalItems = 0;
+  int _rdTotalPages = 0;
+  bool _rdLoading = false;
+  String? _rdError;
+
   /// JSON ตัวเลขอาจมาเป็น int, double หรือ String แล้วแต่ serializer
   /// ใช้ตัวช่วยนี้แทนการ cast ตรงๆ เพื่อไม่ให้หน้าจอพังทั้งหน้าเพราะชนิดไม่ตรง
   static int? _asInt(Object? v) {
@@ -89,6 +106,8 @@ class _BookingInfoTabState extends State<BookingInfoTab> {
     super.initState();
     _loadFromBookingData();
     _loadStatusList();
+    _loadRoomDetails();
+    _loadRoomTypes();
   }
 
   @override
@@ -157,6 +176,138 @@ class _BookingInfoTabState extends State<BookingInfoTab> {
       if (AppLogger.on) AppLogger.d('Error loading status: $e');
       setState(() => _isLoading = false);
     }
+  }
+
+  // ===== รายการห้องพัก =====
+
+  Future<void> _loadRoomDetails() async {
+    setState(() {
+      _rdLoading = true;
+      _rdError = null;
+    });
+    try {
+      final r = await widget.apiService.getBookRoomDetailsRC(
+        bookId: _bookID,
+        type: _roomType,
+        page: _rdPage,
+        size: _rdSize,
+      );
+      if (!mounted) return;
+      setState(() {
+        _roomDetails = (r['items'] as List).cast<BookRoomDetail>();
+        _rdTotalItems = _asInt(r['totalItems']) ?? 0;
+        _rdTotalPages = _asInt(r['totalPages']) ?? 0;
+        _rdPage = _asInt(r['currentPage']) ?? _rdPage;
+        _rdLoading = false;
+      });
+    } catch (e) {
+      if (AppLogger.on) AppLogger.d('Error loading bookroomdetails: $e');
+      if (!mounted) return;
+      setState(() {
+        _rdError = e.toString().replaceAll('Exception: ', '');
+        _rdLoading = false;
+      });
+    }
+  }
+
+  /// ประเภทห้องสำหรับ dropdown ใน dialog — เอาเฉพาะ type 'R' (ห้องพัก)
+  Future<void> _loadRoomTypes() async {
+    try {
+      final all = await widget.apiService.getRoomtypeList();
+      if (!mounted) return;
+      setState(() {
+        _roomTypes = all.where((r) => r.type == _roomType).toList();
+      });
+    } catch (e) {
+      if (AppLogger.on) AppLogger.d('Error loading roomtypes: $e');
+    }
+  }
+
+  Future<void> _addRoomDetail() async {
+    if (_roomTypes.isEmpty) {
+      context.showInfoSnackBar('ยังโหลดข้อมูลประเภทห้องไม่สำเร็จ');
+      return;
+    }
+    final ok = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => BookRoomDetailDialog(
+        apiService: widget.apiService,
+        bookId: _bookID,
+        roomTypes: _roomTypes,
+        defaultStartDate: _startDate,
+        defaultStopDate: _stopDate,
+      ),
+    );
+    if (ok == true) await _loadRoomDetails();
+  }
+
+  Future<void> _editRoomDetail(BookRoomDetail d) async {
+    if (_roomTypes.isEmpty) {
+      context.showInfoSnackBar('ยังโหลดข้อมูลประเภทห้องไม่สำเร็จ');
+      return;
+    }
+    final ok = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => BookRoomDetailDialog(
+        apiService: widget.apiService,
+        bookId: _bookID,
+        roomTypes: _roomTypes,
+        detail: d,
+      ),
+    );
+    if (ok == true) await _loadRoomDetails();
+  }
+
+  Future<void> _deleteRoomDetail(BookRoomDetail d) async {
+    if (d.bookRoomId == null) {
+      context.showErrorSnackBar('ไม่พบรหัสรายการที่ต้องการลบ');
+      return;
+    }
+
+    final confirmed = await AppDialog.showConfirm(
+      context,
+      'ต้องการลบรายการห้องพักนี้ใช่หรือไม่?\n'
+      'เลขที่ขออนุญาต $_bookID\n'
+      'ลำดับ ${d.sequence ?? '-'} • ${d.name ?? '-'}',
+      confirmText: 'ลบ',
+    );
+    if (confirmed != true) return;
+
+    try {
+      // ลบเฉพาะแถวนี้ — deleteBookRoomDetailsByBookId จะลบทุกแถวของใบจอง
+      await widget.apiService.deleteBookRoomDetail(d.bookRoomId!);
+      if (!mounted) return;
+      context.showSuccessSnackBar('ลบรายการเรียบร้อยแล้ว');
+
+      // ถ้าลบรายการสุดท้ายของหน้านี้ ให้ถอยกลับไปหน้าก่อนหน้า
+      if (_roomDetails.length <= 1 && _rdPage > 0) _rdPage--;
+      await _loadRoomDetails();
+    } catch (e) {
+      if (AppLogger.on) AppLogger.d('Error deleting bookroomdetail: $e');
+      if (mounted) {
+        context.showErrorSnackBar(e.toString().replaceAll('Exception: ', ''));
+      }
+    }
+  }
+
+  Future<void> _checkRoomAvailability(BookRoomDetail d) async {
+    if (d.roomTypeId == null) {
+      context.showErrorSnackBar('ไม่พบประเภทห้องของรายการนี้');
+      return;
+    }
+    await showDialog<void>(
+      context: context,
+      builder: (_) => RoomAvailabilityDialog(
+        apiService: widget.apiService,
+        bookId: _bookID,
+        roomTypeId: d.roomTypeId!,
+        startDate: d.startDate,
+        stopDate: d.stopDate,
+        roomTypeName: d.name ?? '',
+      ),
+    );
   }
 
   // ===== บันทึก =====
@@ -293,6 +444,8 @@ class _BookingInfoTabState extends State<BookingInfoTab> {
                           ],
                           const SizedBox(height: 16),
                           _actionBar(isWide),
+                          const SizedBox(height: 16),
+                          _roomListSection(),
                         ],
                       ),
                     );
@@ -634,6 +787,238 @@ class _BookingInfoTabState extends State<BookingInfoTab> {
     );
   }
 
+  // ===================== ตารางรายการห้องพัก =====================
+
+  Widget _roomListSection() {
+    return _card(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Expanded(child: _sectionHeader('รายการห้องพัก', Icons.hotel)),
+              ElevatedButton.icon(
+                onPressed: _rdLoading ? null : _addRoomDetail,
+                icon: const Icon(Icons.add, size: 18),
+                label: const Text('เพิ่มรายการ'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF43A047),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 18,
+                    vertical: 12,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          if (_rdError != null) ...[
+            _errorBanner(_rdError!),
+            const SizedBox(height: 12),
+          ],
+          if (_rdLoading)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 40),
+              child: Center(child: CircularProgressIndicator()),
+            )
+          else if (_roomDetails.isEmpty)
+            _roomListEmpty()
+          else ...[
+            _roomTable(),
+            const SizedBox(height: 12),
+            _roomPagination(),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _roomListEmpty() {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 34),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Center(
+        child: Column(
+          children: [
+            Icon(
+              Icons.hotel_outlined,
+              size: 34,
+              color: Colors.grey.shade400,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'ยังไม่มีรายการห้องพัก',
+              style: TextStyle(color: Colors.grey.shade600),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _roomTable() {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey.shade200),
+        ),
+        // ตารางกว้างกว่าจอบนมือถือ ให้เลื่อนแนวนอนในกล่องตัวเอง
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: DataTable(
+            headingRowColor: WidgetStateProperty.all(
+              AppTheme.primaryColor.withValues(alpha: 0.05),
+            ),
+            headingRowHeight: 52,
+            dataRowMinHeight: 48,
+            dataRowMaxHeight: 60,
+            columnSpacing: 22,
+            horizontalMargin: 18,
+            columns: const [
+              DataColumn(label: _ColHead('ลำดับ'), numeric: true),
+              DataColumn(label: _ColHead('ประเภทห้อง')),
+              DataColumn(label: _ColHead('จำนวนผู้ใช้บริการ'), numeric: true),
+              DataColumn(label: _ColHead('จำนวนห้อง'), numeric: true),
+              DataColumn(label: _ColHead('วันที่เริ่มต้น')),
+              DataColumn(label: _ColHead('วันที่สิ้นสุด')),
+              DataColumn(label: _ColHead('')),
+            ],
+            rows: _roomDetails.map((d) {
+              return DataRow(
+                cells: [
+                  DataCell(_cellText('${d.sequence ?? '-'}')),
+                  DataCell(_cellText(d.name ?? '-')),
+                  DataCell(_cellText('${d.numberMember ?? '-'}')),
+                  DataCell(_cellText('${d.numberRoom ?? '-'}')),
+                  DataCell(_cellText(Util.formatThaiDateStr(d.startDate))),
+                  DataCell(_cellText(Util.formatThaiDateStr(d.stopDate))),
+                  DataCell(_rowActions(d)),
+                ],
+              );
+            }).toList(),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _cellText(String v) =>
+      Text(v, style: const TextStyle(fontSize: 14));
+
+  Widget _rowActions(BookRoomDetail d) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _iconAction(
+          icon: Icons.edit_outlined,
+          color: Colors.blue.shade700,
+          tooltip: 'แก้ไขข้อมูล',
+          onTap: () => _editRoomDetail(d),
+        ),
+        const SizedBox(width: 6),
+        _iconAction(
+          icon: Icons.delete_outline,
+          color: Colors.red.shade600,
+          tooltip: 'ลบข้อมูล',
+          onTap: () => _deleteRoomDetail(d),
+        ),
+        const SizedBox(width: 10),
+        ElevatedButton(
+          onPressed: () => _checkRoomAvailability(d),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFF00ACC1),
+            foregroundColor: Colors.white,
+            elevation: 0,
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+          child: const Text(
+            'ตรวจสอบห้องว่าง',
+            style: TextStyle(fontSize: 13),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _iconAction({
+    required IconData icon,
+    required Color color,
+    required String tooltip,
+    required VoidCallback onTap,
+  }) {
+    return Tooltip(
+      message: tooltip,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          padding: const EdgeInsets.all(7),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(icon, size: 18, color: color),
+        ),
+      ),
+    );
+  }
+
+  Widget _roomPagination() {
+    final totalPages = _rdTotalPages == 0 ? 1 : _rdTotalPages;
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.end,
+      children: [
+        Text(
+          'ทั้งหมด $_rdTotalItems รายการ',
+          style: const TextStyle(fontSize: 13, color: AppTheme.textSecondary),
+        ),
+        const SizedBox(width: 16),
+        IconButton(
+          onPressed: _rdPage > 0
+              ? () {
+                  setState(() => _rdPage--);
+                  _loadRoomDetails();
+                }
+              : null,
+          icon: const Icon(Icons.chevron_left),
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          child: Text(
+            '${_rdPage + 1} / $totalPages',
+            style: const TextStyle(fontSize: 13),
+          ),
+        ),
+        IconButton(
+          onPressed: _rdPage < totalPages - 1
+              ? () {
+                  setState(() => _rdPage++);
+                  _loadRoomDetails();
+                }
+              : null,
+          icon: const Icon(Icons.chevron_right),
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(),
+        ),
+      ],
+    );
+  }
+
   // ===================== ชิ้นส่วน UI ที่ใช้ซ้ำ =====================
 
   Widget _emptyState() {
@@ -920,6 +1305,24 @@ class _BookingInfoTabState extends State<BookingInfoTab> {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// หัวคอลัมน์ของตารางรายการห้องพัก
+class _ColHead extends StatelessWidget {
+  final String text;
+  const _ColHead(this.text);
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text,
+      style: const TextStyle(
+        fontSize: 14,
+        fontWeight: FontWeight.bold,
+        color: AppTheme.primaryColor,
+      ),
     );
   }
 }
