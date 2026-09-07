@@ -285,7 +285,20 @@ class _RoomAvailabilityDialogState extends State<RoomAvailabilityDialog> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _summary(),
+          // สรุปจำนวนชิดซ้าย คำอธิบายสีชิดขวา อยู่บรรทัดเดียวกันด้านบน
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              // Expanded ฝั่งซ้ายกินพื้นที่ที่เหลือทั้งหมด จึงดัน _legend()
+              // ไปชิดขอบขวาสุด
+              //
+              // _legend() ต้องไม่ห่อด้วย Flexible/Expanded เพราะค่า flex เริ่มต้น
+              // เป็น 1 เท่ากัน จะกลายเป็นแบ่งพื้นที่คนละครึ่งแล้วไม่ชิดขวา
+              Expanded(child: _summary()),
+              const SizedBox(width: 16),
+              _legend(),
+            ],
+          ),
           const SizedBox(height: 18),
           for (final entry in _grouped.entries) ...[
             Wrap(
@@ -295,8 +308,6 @@ class _RoomAvailabilityDialogState extends State<RoomAvailabilityDialog> {
             ),
             const SizedBox(height: 6),
           ],
-          const SizedBox(height: 12),
-          _legend(),
         ],
       ),
     );
@@ -364,10 +375,15 @@ class _RoomAvailabilityDialogState extends State<RoomAvailabilityDialog> {
   }
 
   Widget _legend() {
-    return Row(
+    return Wrap(
+      // Wrap แทน Row เพื่อไม่ให้ล้นบนจอแคบ และต้องไม่กินความกว้างเกินเนื้อหา
+      // เพราะถูกวางเป็นลูกแบบไม่ยืดหยุ่นอยู่ใน Row ของหัวตาราง
+      spacing: 20,
+      runSpacing: 6,
+      alignment: WrapAlignment.end,
+      crossAxisAlignment: WrapCrossAlignment.center,
       children: [
         _legendItem(_usedColor, 'ห้องที่ใช้งาน'),
-        const SizedBox(width: 20),
         _legendItem(_freeColor, 'ห้องที่ว่าง'),
       ],
     );
