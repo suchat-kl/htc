@@ -471,16 +471,7 @@ class ApiService {
   ) async {
     try {
       // Check if token is about to expire
-      if (await isTokenExpired()) {
-        if (AppLogger.on) {
-          AppLogger.d('Token expired or about to expire, refreshing...');
-        }
-        try {
-          await refreshToken();
-        } catch (e) {
-          throw Exception('กรุณาเข้าสู่ระบบใหม่');
-        }
-      }
+      await _ensureToken();
 
       if (AppLogger.on) AppLogger.d('🔵 Change Password Request:');
       if (AppLogger.on) AppLogger.d('   Username: $username');
@@ -541,16 +532,7 @@ class ApiService {
   ) async {
     try {
       // Check if token is about to expire
-      if (await isTokenExpired()) {
-        if (AppLogger.on) {
-          AppLogger.d('Token expired or about to expire, refreshing...');
-        }
-        try {
-          await refreshToken();
-        } catch (e) {
-          throw Exception('กรุณาเข้าสู่ระบบใหม่');
-        }
-      }
+      await _ensureToken();
 
       if (AppLogger.on) AppLogger.d('🔵 Reset Password Request:');
       if (AppLogger.on) AppLogger.d('   Username: $username');
@@ -607,16 +589,7 @@ class ApiService {
       if (AppLogger.on) AppLogger.d('🔵 Get Roles Request:');
       if (AppLogger.on) AppLogger.d('   URL: $baseUrl/api/auth/roles');
       // Check if token is about to expire
-      if (await isTokenExpired()) {
-        if (AppLogger.on) {
-          AppLogger.d('Token expired or about to expire, refreshing...');
-        }
-        try {
-          await refreshToken();
-        } catch (e) {
-          throw Exception('กรุณาเข้าสู่ระบบใหม่');
-        }
-      }
+      await _ensureToken();
       final response = await dio.get(
         '/api/auth/roles',
         // options: Options(
@@ -688,6 +661,23 @@ class ApiService {
     }
   }
 
+  /// ต่ออายุ token ก่อนยิง request ถ้าใกล้หมดอายุ
+  ///
+  /// เมธอดที่ต้องยืนยันตัวตนทุกตัวเรียกตัวนี้เป็นบรรทัดแรก แทนการเขียนบล็อก
+  /// ตรวจ token ซ้ำเองทีละเมธอด (เดิมซ้ำอยู่ 104 จุด)
+  Future<void> _ensureToken() async {
+    if (await isTokenExpired()) {
+      if (AppLogger.on) {
+        AppLogger.d('Token expired or about to expire, refreshing...');
+      }
+      try {
+        await refreshToken();
+      } catch (e) {
+        throw Exception('กรุณาเข้าสู่ระบบใหม่');
+      }
+    }
+  }
+
   // Register new user
   Future<Map<String, dynamic>> registerUser({
     required String fullName,
@@ -701,16 +691,7 @@ class ApiService {
   }) async {
     try {
       // Check if token is about to expire
-      if (await isTokenExpired()) {
-        if (AppLogger.on) {
-          AppLogger.d('Token expired or about to expire, refreshing...');
-        }
-        try {
-          await refreshToken();
-        } catch (e) {
-          throw Exception('กรุณาเข้าสู่ระบบใหม่');
-        }
-      }
+      await _ensureToken();
 
       if (AppLogger.on) AppLogger.d('🔵 Register User Request:');
       if (AppLogger.on) AppLogger.d('   URL: $baseUrl/api/auth/register');
@@ -814,16 +795,7 @@ class ApiService {
   Future<List<TickerMessage>> getAllTickerMessages() async {
     try {
       // Check if token is about to expire
-      if (await isTokenExpired()) {
-        if (AppLogger.on) {
-          AppLogger.d('Token expired or about to expire, refreshing...');
-        }
-        try {
-          await refreshToken();
-        } catch (e) {
-          throw Exception('กรุณาเข้าสู่ระบบใหม่');
-        }
-      }
+      await _ensureToken();
       final response = await publicDio.get(
         '/api/auth/ticker-msg/all',
         // options: Options(
@@ -853,16 +825,7 @@ class ApiService {
   Future<void> saveAllTickerMessages(List<TickerMessage> messages) async {
     try {
       // Check if token is about to expire
-      if (await isTokenExpired()) {
-        if (AppLogger.on) {
-          AppLogger.d('Token expired or about to expire, refreshing...');
-        }
-        try {
-          await refreshToken();
-        } catch (e) {
-          throw Exception('กรุณาเข้าสู่ระบบใหม่');
-        }
-      }
+      await _ensureToken();
       final data = messages.map((m) => m.toJson()).toList();
 
       final response = await dio.post(
@@ -906,16 +869,7 @@ class ApiService {
   }) async {
     try {
       // Check if token is about to expire
-      if (await isTokenExpired()) {
-        if (AppLogger.on) {
-          AppLogger.d('Token expired or about to expire, refreshing...');
-        }
-        try {
-          await refreshToken();
-        } catch (e) {
-          throw Exception('กรุณาเข้าสู่ระบบใหม่');
-        }
-      }
+      await _ensureToken();
       final queryParams = <String, dynamic>{'page': page, 'size': size};
       if (name != null && name.isNotEmpty) queryParams['name'] = name;
       if (type != null && type.isNotEmpty) queryParams['type'] = type;
@@ -939,16 +893,7 @@ class ApiService {
   // Create commodity
   Future<Commodity> createCommodity(Commodity commodity) async {
     // Check if token is about to expire
-    if (await isTokenExpired()) {
-      if (AppLogger.on) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
-      }
-      try {
-        await refreshToken();
-      } catch (e) {
-        throw Exception('กรุณาเข้าสู่ระบบใหม่');
-      }
-    }
+    await _ensureToken();
     final response = await dio.post(
       '/api/auth/commodities',
       data: commodity.toJson(),
@@ -963,16 +908,7 @@ class ApiService {
   // Update commodity
   Future<Commodity> updateCommodity(int id, Commodity commodity) async {
     // Check if token is about to expire
-    if (await isTokenExpired()) {
-      if (AppLogger.on) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
-      }
-      try {
-        await refreshToken();
-      } catch (e) {
-        throw Exception('กรุณาเข้าสู่ระบบใหม่');
-      }
-    }
+    await _ensureToken();
     final response = await dio.put(
       '/api/auth/commodities/$id',
       data: commodity.toJson(),
@@ -987,16 +923,7 @@ class ApiService {
   // Delete commodity
   Future<void> deleteCommodity(int id) async {
     // Check if token is about to expire
-    if (await isTokenExpired()) {
-      if (AppLogger.on) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
-      }
-      try {
-        await refreshToken();
-      } catch (e) {
-        throw Exception('กรุณาเข้าสู่ระบบใหม่');
-      }
-    }
+    await _ensureToken();
     final response = await dio.delete('/api/auth/commodities/$id');
 
     if (response.statusCode != 200 || response.data['success'] != true) {
@@ -1015,16 +942,7 @@ class ApiService {
   }) async {
     try {
       // Check if token is about to expire
-      if (await isTokenExpired()) {
-        if (AppLogger.on) {
-          AppLogger.d('Token expired or about to expire, refreshing...');
-        }
-        try {
-          await refreshToken();
-        } catch (e) {
-          throw Exception('กรุณาเข้าสู่ระบบใหม่');
-        }
-      }
+      await _ensureToken();
       final queryParams = <String, dynamic>{'page': page, 'size': size};
       if (name != null && name.isNotEmpty) queryParams['name'] = name;
       // if (type != null && type.isNotEmpty) queryParams['type'] = type;
@@ -1048,16 +966,7 @@ class ApiService {
   // Create commodity
   Future<Facility> createFacility(Facility facility) async {
     // Check if token is about to expire
-    if (await isTokenExpired()) {
-      if (AppLogger.on) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
-      }
-      try {
-        await refreshToken();
-      } catch (e) {
-        throw Exception('กรุณาเข้าสู่ระบบใหม่');
-      }
-    }
+    await _ensureToken();
     final response = await dio.post(
       '/api/auth/facilities',
       data: facility.toJson(),
@@ -1072,16 +981,7 @@ class ApiService {
   // Update commodity
   Future<Facility> updateFacility(int id, Facility facility) async {
     // Check if token is about to expire
-    if (await isTokenExpired()) {
-      if (AppLogger.on) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
-      }
-      try {
-        await refreshToken();
-      } catch (e) {
-        throw Exception('กรุณาเข้าสู่ระบบใหม่');
-      }
-    }
+    await _ensureToken();
     final response = await dio.put(
       '/api/auth/facilities/$id',
       data: facility.toJson(),
@@ -1096,16 +996,7 @@ class ApiService {
   // Delete commodity
   Future<void> deleteFacility(int id) async {
     // Check if token is about to expire
-    if (await isTokenExpired()) {
-      if (AppLogger.on) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
-      }
-      try {
-        await refreshToken();
-      } catch (e) {
-        throw Exception('กรุณาเข้าสู่ระบบใหม่');
-      }
-    }
+    await _ensureToken();
     final response = await dio.delete('/api/auth/facilities/$id');
 
     if (response.statusCode != 200 || response.data['success'] != true) {
@@ -1125,16 +1016,7 @@ class ApiService {
   }) async {
     try {
       // Check if token is about to expire
-      if (await isTokenExpired()) {
-        if (AppLogger.on) {
-          AppLogger.d('Token expired or about to expire, refreshing...');
-        }
-        try {
-          await refreshToken();
-        } catch (e) {
-          throw Exception('กรุณาเข้าสู่ระบบใหม่');
-        }
-      }
+      await _ensureToken();
       final queryParams = <String, dynamic>{'page': page, 'size': size};
       if (name != null && name.isNotEmpty) queryParams['name'] = name;
       if (type != null && type.isNotEmpty) queryParams['type'] = type;
@@ -1159,16 +1041,7 @@ class ApiService {
   // Create roomtype
   Future<Roomtype> createRoomtype(Roomtype roomtype) async {
     // Check if token is about to expire
-    if (await isTokenExpired()) {
-      if (AppLogger.on) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
-      }
-      try {
-        await refreshToken();
-      } catch (e) {
-        throw Exception('กรุณาเข้าสู่ระบบใหม่');
-      }
-    }
+    await _ensureToken();
     final response = await dio.post(
       '/api/auth/roomtype',
       data: roomtype.toJson(),
@@ -1182,16 +1055,7 @@ class ApiService {
   // Update roomtype
   Future<Roomtype> updateRoomtype(int id, Roomtype roomtype) async {
     // Check if token is about to expire
-    if (await isTokenExpired()) {
-      if (AppLogger.on) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
-      }
-      try {
-        await refreshToken();
-      } catch (e) {
-        throw Exception('กรุณาเข้าสู่ระบบใหม่');
-      }
-    }
+    await _ensureToken();
     final response = await dio.put(
       '/api/auth/roomtype/$id',
       data: roomtype.toJson(),
@@ -1205,16 +1069,7 @@ class ApiService {
   // Delete roomtype
   Future<void> deleteRoomtype(int id) async {
     // Check if token is about to expire
-    if (await isTokenExpired()) {
-      if (AppLogger.on) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
-      }
-      try {
-        await refreshToken();
-      } catch (e) {
-        throw Exception('กรุณาเข้าสู่ระบบใหม่');
-      }
-    }
+    await _ensureToken();
     final response = await dio.delete('/api/auth/roomtype/$id');
     if (response.statusCode != 200 || response.data['success'] != true) {
       throw Exception(response.data['message'] ?? 'ลบไม่สำเร็จ');
@@ -1229,16 +1084,7 @@ class ApiService {
     int page = 0,
     int size = 5,
   }) async {
-    if (await isTokenExpired()) {
-      if (AppLogger.on) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
-      }
-      try {
-        await refreshToken();
-      } catch (e) {
-        throw Exception('กรุณาเข้าสู่ระบบใหม่');
-      }
-    }
+    await _ensureToken();
     final response = await dio.get(
       '/api/auth/roomtype-commodity/$roomTypeID',
       queryParameters: {'page': page, 'size': size},
@@ -1249,16 +1095,7 @@ class ApiService {
 
   // Create roomtype commodity
   Future<void> createRoomtypeCommodity(RoomtypeCommodity rc) async {
-    if (await isTokenExpired()) {
-      if (AppLogger.on) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
-      }
-      try {
-        await refreshToken();
-      } catch (e) {
-        throw Exception('กรุณาเข้าสู่ระบบใหม่');
-      }
-    }
+    await _ensureToken();
     final response = await dio.post(
       '/api/auth/roomtype-commodity',
       data: rc.toJson(),
@@ -1274,16 +1111,7 @@ class ApiService {
     int commodityID,
     RoomtypeCommodity rc,
   ) async {
-    if (await isTokenExpired()) {
-      if (AppLogger.on) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
-      }
-      try {
-        await refreshToken();
-      } catch (e) {
-        throw Exception('กรุณาเข้าสู่ระบบใหม่');
-      }
-    }
+    await _ensureToken();
     final response = await dio.put(
       '/api/auth/roomtype-commodity/$roomTypeID/$commodityID',
       data: rc.toJson(),
@@ -1295,16 +1123,7 @@ class ApiService {
 
   // Delete roomtype commodity
   Future<void> deleteRoomtypeCommodity(int roomTypeID, int commodityID) async {
-    if (await isTokenExpired()) {
-      if (AppLogger.on) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
-      }
-      try {
-        await refreshToken();
-      } catch (e) {
-        throw Exception('กรุณาเข้าสู่ระบบใหม่');
-      }
-    }
+    await _ensureToken();
     final response = await dio.delete(
       '/api/auth/roomtype-commodity/$roomTypeID/$commodityID',
     );
@@ -1318,16 +1137,7 @@ class ApiService {
     int roomTypeID = 0,
     String mode = "none",
   }) async {
-    if (await isTokenExpired()) {
-      if (AppLogger.on) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
-      }
-      try {
-        await refreshToken();
-      } catch (e) {
-        throw Exception('กรุณาเข้าสู่ระบบใหม่');
-      }
-    }
+    await _ensureToken();
     final response = await dio.get(
       '/api/auth/commodities',
       queryParameters: {
@@ -1354,16 +1164,7 @@ class ApiService {
     int page = 0,
     int size = 5,
   }) async {
-    if (await isTokenExpired()) {
-      if (AppLogger.on) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
-      }
-      try {
-        await refreshToken();
-      } catch (e) {
-        throw Exception('กรุณาเข้าสู่ระบบใหม่');
-      }
-    }
+    await _ensureToken();
     final response = await dio.get(
       '/api/auth/roomtype-facility/$roomTypeID',
       queryParameters: {'page': page, 'size': size},
@@ -1374,16 +1175,7 @@ class ApiService {
 
   // Create roomtype commodity
   Future<void> createRoomtypeFacility(RoomtypeFacility rc) async {
-    if (await isTokenExpired()) {
-      if (AppLogger.on) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
-      }
-      try {
-        await refreshToken();
-      } catch (e) {
-        throw Exception('กรุณาเข้าสู่ระบบใหม่');
-      }
-    }
+    await _ensureToken();
     final response = await dio.post(
       '/api/auth/roomtype-facility',
       data: rc.toJson(),
@@ -1399,16 +1191,7 @@ class ApiService {
     int facilityID,
     RoomtypeFacility rc,
   ) async {
-    if (await isTokenExpired()) {
-      if (AppLogger.on) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
-      }
-      try {
-        await refreshToken();
-      } catch (e) {
-        throw Exception('กรุณาเข้าสู่ระบบใหม่');
-      }
-    }
+    await _ensureToken();
     final response = await dio.put(
       '/api/auth/roomtype-facility/$roomTypeID/$facilityID',
       data: rc.toJson(),
@@ -1420,16 +1203,7 @@ class ApiService {
 
   // Delete roomtype commodity
   Future<void> deleteRoomtypeFacility(int roomTypeID, int facilityID) async {
-    if (await isTokenExpired()) {
-      if (AppLogger.on) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
-      }
-      try {
-        await refreshToken();
-      } catch (e) {
-        throw Exception('กรุณาเข้าสู่ระบบใหม่');
-      }
-    }
+    await _ensureToken();
     final response = await dio.delete(
       '/api/auth/roomtype-facility/$roomTypeID/$facilityID',
     );
@@ -1443,16 +1217,7 @@ class ApiService {
     int roomTypeID = 0,
     String mode = "none",
   }) async {
-    if (await isTokenExpired()) {
-      if (AppLogger.on) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
-      }
-      try {
-        await refreshToken();
-      } catch (e) {
-        throw Exception('กรุณาเข้าสู่ระบบใหม่');
-      }
-    }
+    await _ensureToken();
     final response = await dio.get(
       '/api/auth/facilities',
       queryParameters: {
@@ -1483,16 +1248,7 @@ class ApiService {
     int? floor,
     String? status,
   }) async {
-    if (await isTokenExpired()) {
-      if (AppLogger.on) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
-      }
-      try {
-        await refreshToken();
-      } catch (e) {
-        throw Exception('กรุณาเข้าสู่ระบบใหม่');
-      }
-    }
+    await _ensureToken();
     final queryParams = <String, dynamic>{'page': page, 'size': size};
     if (roomNO != null && roomNO.isNotEmpty) queryParams['roomNO'] = roomNO;
     if (roomTypeID != null) queryParams['roomTypeID'] = roomTypeID;
@@ -1510,16 +1266,7 @@ class ApiService {
 
   // Create room
   Future<Room> createRoom(Room room) async {
-    if (await isTokenExpired()) {
-      if (AppLogger.on) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
-      }
-      try {
-        await refreshToken();
-      } catch (e) {
-        throw Exception('กรุณาเข้าสู่ระบบใหม่');
-      }
-    }
+    await _ensureToken();
     final response = await dio.post('/api/auth/rooms', data: room.toJson());
     if (response.statusCode == 200 && response.data['success'] == true) {
       return Room.fromJson(response.data['room']);
@@ -1529,16 +1276,7 @@ class ApiService {
 
   // Update room
   Future<Room> updateRoom(int id, Room room) async {
-    if (await isTokenExpired()) {
-      if (AppLogger.on) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
-      }
-      try {
-        await refreshToken();
-      } catch (e) {
-        throw Exception('กรุณาเข้าสู่ระบบใหม่');
-      }
-    }
+    await _ensureToken();
     final response = await dio.put('/api/auth/rooms/$id', data: room.toJson());
     if (response.statusCode == 200 && response.data['success'] == true) {
       return Room.fromJson(response.data['room']);
@@ -1548,16 +1286,7 @@ class ApiService {
 
   // Delete room
   Future<void> deleteRoom(int id) async {
-    if (await isTokenExpired()) {
-      if (AppLogger.on) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
-      }
-      try {
-        await refreshToken();
-      } catch (e) {
-        throw Exception('กรุณาเข้าสู่ระบบใหม่');
-      }
-    }
+    await _ensureToken();
     final response = await dio.delete('/api/auth/rooms/$id');
     if (response.statusCode != 200 || response.data['success'] != true) {
       throw Exception(response.data['message'] ?? 'ลบไม่สำเร็จ');
@@ -1566,16 +1295,7 @@ class ApiService {
 
   // Get room types for dropdown
   Future<List<Roomtype>> getRoomtypeList() async {
-    if (await isTokenExpired()) {
-      if (AppLogger.on) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
-      }
-      try {
-        await refreshToken();
-      } catch (e) {
-        throw Exception('กรุณาเข้าสู่ระบบใหม่');
-      }
-    }
+    await _ensureToken();
     final response = await dio.get(
       '/api/auth/roomtype',
       queryParameters: {'page': 0, 'size': 100},
@@ -1598,16 +1318,7 @@ class ApiService {
     String? type,
     String? status,
   }) async {
-    if (await isTokenExpired()) {
-      if (AppLogger.on) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
-      }
-      try {
-        await refreshToken();
-      } catch (e) {
-        throw Exception('กรุณาเข้าสู่ระบบใหม่');
-      }
-    }
+    await _ensureToken();
 
     final queryParams = <String, dynamic>{'page': page, 'size': size};
     if (name != null && name.isNotEmpty) queryParams['name'] = name;
@@ -1622,16 +1333,7 @@ class ApiService {
   }
 
   Future<Part> createPart(Part part) async {
-    if (await isTokenExpired()) {
-      if (AppLogger.on) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
-      }
-      try {
-        await refreshToken();
-      } catch (e) {
-        throw Exception('กรุณาเข้าสู่ระบบใหม่');
-      }
-    }
+    await _ensureToken();
 
     final response = await dio.post('/api/auth/parts', data: part.toJson());
     if (response.statusCode == 200 && response.data['success'] == true) {
@@ -1641,16 +1343,7 @@ class ApiService {
   }
 
   Future<Part> updatePart(int id, Part part) async {
-    if (await isTokenExpired()) {
-      if (AppLogger.on) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
-      }
-      try {
-        await refreshToken();
-      } catch (e) {
-        throw Exception('กรุณาเข้าสู่ระบบใหม่');
-      }
-    }
+    await _ensureToken();
 
     final response = await dio.put('/api/auth/parts/$id', data: part.toJson());
     if (response.statusCode == 200 && response.data['success'] == true) {
@@ -1660,16 +1353,7 @@ class ApiService {
   }
 
   Future<void> deletePart(int id) async {
-    if (await isTokenExpired()) {
-      if (AppLogger.on) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
-      }
-      try {
-        await refreshToken();
-      } catch (e) {
-        throw Exception('กรุณาเข้าสู่ระบบใหม่');
-      }
-    }
+    await _ensureToken();
 
     final response = await dio.delete('/api/auth/parts/$id');
     if (response.statusCode != 200 || response.data['success'] != true) {
@@ -1684,16 +1368,7 @@ class ApiService {
 
   /// Get commodities by type for report
   Future<List<Commodity>> getCommoditiesByType(String type) async {
-    if (await isTokenExpired()) {
-      if (AppLogger.on) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
-      }
-      try {
-        await refreshToken();
-      } catch (e) {
-        throw Exception('กรุณาเข้าสู่ระบบใหม่');
-      }
-    }
+    await _ensureToken();
 
     try {
       if (AppLogger.on) AppLogger.d('🔵 Getting commodities by type: $type');
@@ -1728,16 +1403,7 @@ class ApiService {
     required String type,
     required String date,
   }) async {
-    if (await isTokenExpired()) {
-      if (AppLogger.on) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
-      }
-      try {
-        await refreshToken();
-      } catch (e) {
-        throw Exception('กรุณาเข้าสู่ระบบใหม่');
-      }
-    }
+    await _ensureToken();
 
     try {
       if (AppLogger.on) {
@@ -1814,16 +1480,7 @@ class ApiService {
     String? orgName,
     String? orgLevel,
   }) async {
-    if (await isTokenExpired()) {
-      if (AppLogger.on) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
-      }
-      try {
-        await refreshToken();
-      } catch (e) {
-        throw Exception('กรุณาเข้าสู่ระบบใหม่');
-      }
-    }
+    await _ensureToken();
     final params = <String, dynamic>{'page': page, 'size': size};
     if (orgCode != null && orgCode.isNotEmpty) params['orgCode'] = orgCode;
     if (orgName != null && orgName.isNotEmpty) params['orgName'] = orgName;
@@ -1837,16 +1494,7 @@ class ApiService {
   }
 
   Future<Organization> createOrganization(Organization org) async {
-    if (await isTokenExpired()) {
-      if (AppLogger.on) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
-      }
-      try {
-        await refreshToken();
-      } catch (e) {
-        throw Exception('กรุณาเข้าสู่ระบบใหม่');
-      }
-    }
+    await _ensureToken();
     final response = await dio.post(
       '/api/auth/organizations',
       data: org.toJson(),
@@ -1858,16 +1506,7 @@ class ApiService {
   }
 
   Future<Organization> updateOrganization(int id, Organization org) async {
-    if (await isTokenExpired()) {
-      if (AppLogger.on) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
-      }
-      try {
-        await refreshToken();
-      } catch (e) {
-        throw Exception('กรุณาเข้าสู่ระบบใหม่');
-      }
-    }
+    await _ensureToken();
     final response = await dio.put(
       '/api/auth/organizations/$id',
       data: org.toJson(),
@@ -1879,16 +1518,7 @@ class ApiService {
   }
 
   Future<void> deleteOrganization(int id) async {
-    if (await isTokenExpired()) {
-      if (AppLogger.on) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
-      }
-      try {
-        await refreshToken();
-      } catch (e) {
-        throw Exception('กรุณาเข้าสู่ระบบใหม่');
-      }
-    }
+    await _ensureToken();
     final response = await dio.delete('/api/auth/organizations/$id');
     if (response.statusCode != 200 || response.data['success'] != true) {
       throw Exception(response.data['message'] ?? 'ลบไม่สำเร็จ');
@@ -1897,16 +1527,7 @@ class ApiService {
 
   // Get organization list for parent dropdown
   Future<List<Organization>> getOrganizationList() async {
-    if (await isTokenExpired()) {
-      if (AppLogger.on) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
-      }
-      try {
-        await refreshToken();
-      } catch (e) {
-        throw Exception('กรุณาเข้าสู่ระบบใหม่');
-      }
-    }
+    await _ensureToken();
     final response = await dio.get(
       '/api/auth/organizations',
       queryParameters: {'page': 0, 'size': 1000},
@@ -1928,16 +1549,7 @@ class ApiService {
     String? name,
     int? orgID,
   }) async {
-    if (await isTokenExpired()) {
-      if (AppLogger.on) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
-      }
-      try {
-        await refreshToken();
-      } catch (e) {
-        throw Exception('กรุณาเข้าสู่ระบบใหม่');
-      }
-    }
+    await _ensureToken();
     final params = <String, dynamic>{'page': page, 'size': size};
     if (name != null && name.isNotEmpty) params['name'] = name;
     if (orgID != null) params['orgID'] = orgID;
@@ -1950,16 +1562,7 @@ class ApiService {
   }
 
   Future<Section> createSection(Section section) async {
-    if (await isTokenExpired()) {
-      if (AppLogger.on) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
-      }
-      try {
-        await refreshToken();
-      } catch (e) {
-        throw Exception('กรุณาเข้าสู่ระบบใหม่');
-      }
-    }
+    await _ensureToken();
     final response = await dio.post(
       '/api/auth/sections',
       data: section.toJson(),
@@ -1971,16 +1574,7 @@ class ApiService {
   }
 
   Future<Section> updateSection(int id, Section section) async {
-    if (await isTokenExpired()) {
-      if (AppLogger.on) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
-      }
-      try {
-        await refreshToken();
-      } catch (e) {
-        throw Exception('กรุณาเข้าสู่ระบบใหม่');
-      }
-    }
+    await _ensureToken();
     final response = await dio.put(
       '/api/auth/sections/$id',
       data: section.toJson(),
@@ -1992,16 +1586,7 @@ class ApiService {
   }
 
   Future<void> deleteSection(int id) async {
-    if (await isTokenExpired()) {
-      if (AppLogger.on) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
-      }
-      try {
-        await refreshToken();
-      } catch (e) {
-        throw Exception('กรุณาเข้าสู่ระบบใหม่');
-      }
-    }
+    await _ensureToken();
     final response = await dio.delete('/api/auth/sections/$id');
     if (response.statusCode != 200 || response.data['success'] != true) {
       throw Exception(response.data['message'] ?? 'ลบไม่สำเร็จ');
@@ -2012,16 +1597,7 @@ class ApiService {
   //emp
   // Get employees
   Future<List<Employee>> getEmployeesList() async {
-    if (await isTokenExpired()) {
-      if (AppLogger.on) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
-      }
-      try {
-        await refreshToken();
-      } catch (e) {
-        throw Exception('กรุณาเข้าสู่ระบบใหม่');
-      }
-    }
+    await _ensureToken();
     final response = await dio.get(
       '/api/auth/employees',
       queryParameters: {'page': 0, 'size': 1000},
@@ -2042,16 +1618,7 @@ class ApiService {
     int? orgID,
     int? userID,
   }) async {
-    if (await isTokenExpired()) {
-      if (AppLogger.on) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
-      }
-      try {
-        await refreshToken();
-      } catch (e) {
-        throw Exception('กรุณาเข้าสู่ระบบใหม่');
-      }
-    }
+    await _ensureToken();
     final params = <String, dynamic>{'page': page, 'size': size};
     if (name != null && name.isNotEmpty) params['name'] = name;
     if (lastname != null && lastname.isNotEmpty) params['lastname'] = lastname;
@@ -2066,16 +1633,7 @@ class ApiService {
   }
 
   Future<Employee> createEmployee(Employee emp) async {
-    if (await isTokenExpired()) {
-      if (AppLogger.on) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
-      }
-      try {
-        await refreshToken();
-      } catch (e) {
-        throw Exception('กรุณาเข้าสู่ระบบใหม่');
-      }
-    }
+    await _ensureToken();
     final response = await dio.post('/api/auth/employees', data: emp.toJson());
     if (response.statusCode == 200 && response.data['success'] == true) {
       return Employee.fromJson(response.data['employee']);
@@ -2084,16 +1642,7 @@ class ApiService {
   }
 
   Future<Employee> updateEmployee(int id, Employee emp) async {
-    if (await isTokenExpired()) {
-      if (AppLogger.on) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
-      }
-      try {
-        await refreshToken();
-      } catch (e) {
-        throw Exception('กรุณาเข้าสู่ระบบใหม่');
-      }
-    }
+    await _ensureToken();
     final response = await dio.put(
       '/api/auth/employees/$id',
       data: emp.toJson(),
@@ -2105,16 +1654,7 @@ class ApiService {
   }
 
   Future<void> deleteEmployee(int id) async {
-    if (await isTokenExpired()) {
-      if (AppLogger.on) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
-      }
-      try {
-        await refreshToken();
-      } catch (e) {
-        throw Exception('กรุณาเข้าสู่ระบบใหม่');
-      }
-    }
+    await _ensureToken();
     final response = await dio.delete('/api/auth/employees/$id');
     if (response.statusCode != 200 || response.data['success'] != true) {
       throw Exception(response.data['message'] ?? 'ลบไม่สำเร็จ');
@@ -2123,16 +1663,7 @@ class ApiService {
 
   // Get user list for dropdown
   Future<List<Map<String, dynamic>>> getUserList() async {
-    if (await isTokenExpired()) {
-      if (AppLogger.on) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
-      }
-      try {
-        await refreshToken();
-      } catch (e) {
-        throw Exception('กรุณาเข้าสู่ระบบใหม่');
-      }
-    }
+    await _ensureToken();
     try {
       final response = await dio.get(
         '/api/auth/users',
@@ -2185,16 +1716,7 @@ class ApiService {
     String? type,
     int? employeeID,
   }) async {
-    if (await isTokenExpired()) {
-      if (AppLogger.on) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
-      }
-      try {
-        await refreshToken();
-      } catch (e) {
-        throw Exception('กรุณาเข้าสู่ระบบใหม่');
-      }
-    }
+    await _ensureToken();
     final queryParams = <String, dynamic>{'page': page, 'size': size};
     if (commodityID != null) queryParams['commodityID'] = commodityID;
     if (type != null && type.isNotEmpty) queryParams['type'] = type;
@@ -2208,16 +1730,7 @@ class ApiService {
   }
 
   Future<CommodityIn> createCommodityIn(CommodityIn data) async {
-    if (await isTokenExpired()) {
-      if (AppLogger.on) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
-      }
-      try {
-        await refreshToken();
-      } catch (e) {
-        throw Exception('กรุณาเข้าสู่ระบบใหม่');
-      }
-    }
+    await _ensureToken();
     try {
       final response = await dio.post(
         '/api/auth/commodityin',
@@ -2238,16 +1751,7 @@ class ApiService {
   }
 
   Future<CommodityIn> updateCommodityIn(int id, CommodityIn data) async {
-    if (await isTokenExpired()) {
-      if (AppLogger.on) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
-      }
-      try {
-        await refreshToken();
-      } catch (e) {
-        throw Exception('กรุณาเข้าสู่ระบบใหม่');
-      }
-    }
+    await _ensureToken();
     try {
       final response = await dio.put(
         '/api/auth/commodityin/$id',
@@ -2267,16 +1771,7 @@ class ApiService {
   }
 
   Future<void> deleteCommodityIn(int id) async {
-    if (await isTokenExpired()) {
-      if (AppLogger.on) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
-      }
-      try {
-        await refreshToken();
-      } catch (e) {
-        throw Exception('กรุณาเข้าสู่ระบบใหม่');
-      }
-    }
+    await _ensureToken();
     try {
       final response = await dio.delete('/api/auth/commodityin/$id');
       if (response.statusCode != 200 || response.data['success'] != true) {
@@ -2302,16 +1797,7 @@ class ApiService {
     int? roomtypeid,
     String? place,
   }) async {
-    if (await isTokenExpired()) {
-      if (AppLogger.on) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
-      }
-      try {
-        await refreshToken();
-      } catch (e) {
-        throw Exception('กรุณาเข้าสู่ระบบใหม่');
-      }
-    }
+    await _ensureToken();
     final params = <String, dynamic>{'page': page, 'size': size};
     if (bookingid != null) params['bookingid'] = bookingid;
     if (roomtypeid != null) params['roomtypeid'] = roomtypeid;
@@ -2325,16 +1811,7 @@ class ApiService {
   }
 
   Future<List<Map<String, dynamic>>> getBooktitles() async {
-    if (await isTokenExpired()) {
-      if (AppLogger.on) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
-      }
-      try {
-        await refreshToken();
-      } catch (e) {
-        throw Exception('กรุณาเข้าสู่ระบบใหม่');
-      }
-    }
+    await _ensureToken();
     final response = await dio.get('/api/auth/equipment/booktitlesList');
     if (response.statusCode == 200) {
       return List<Map<String, dynamic>>.from(
@@ -2345,16 +1822,7 @@ class ApiService {
   }
 
   Future<Equipment> createEquipment(Equipment data) async {
-    if (await isTokenExpired()) {
-      if (AppLogger.on) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
-      }
-      try {
-        await refreshToken();
-      } catch (e) {
-        throw Exception('กรุณาเข้าสู่ระบบใหม่');
-      }
-    }
+    await _ensureToken();
     try {
       final response = await dio.post(
         '/api/auth/equipment',
@@ -2374,16 +1842,7 @@ class ApiService {
   }
 
   Future<Equipment> updateEquipment(int id, Equipment data) async {
-    if (await isTokenExpired()) {
-      if (AppLogger.on) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
-      }
-      try {
-        await refreshToken();
-      } catch (e) {
-        throw Exception('กรุณาเข้าสู่ระบบใหม่');
-      }
-    }
+    await _ensureToken();
     try {
       final response = await dio.put(
         '/api/auth/equipment/$id',
@@ -2403,16 +1862,7 @@ class ApiService {
   }
 
   Future<void> deleteEquipment(int id) async {
-    if (await isTokenExpired()) {
-      if (AppLogger.on) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
-      }
-      try {
-        await refreshToken();
-      } catch (e) {
-        throw Exception('กรุณาเข้าสู่ระบบใหม่');
-      }
-    }
+    await _ensureToken();
     try {
       final response = await dio.delete('/api/auth/equipment/$id');
       if (response.statusCode != 200 || response.data['success'] != true) {
@@ -2438,16 +1888,7 @@ class ApiService {
     int? employeeid,
     int? maintenanceid,
   }) async {
-    if (await isTokenExpired()) {
-      if (AppLogger.on) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
-      }
-      try {
-        await refreshToken();
-      } catch (e) {
-        throw Exception('กรุณาเข้าสู่ระบบใหม่');
-      }
-    }
+    await _ensureToken();
     final p = <String, dynamic>{'page': page, 'size': size};
     if (partid != null) p['partid'] = partid;
     if (type != null && type.isNotEmpty) p['type'] = type;
@@ -2459,16 +1900,7 @@ class ApiService {
   }
 
   Future<Tpart> createTpart(Tpart d) async {
-    if (await isTokenExpired()) {
-      if (AppLogger.on) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
-      }
-      try {
-        await refreshToken();
-      } catch (e) {
-        throw Exception('กรุณาเข้าสู่ระบบใหม่');
-      }
-    }
+    await _ensureToken();
     try {
       final r = await dio.post('/api/auth/tparts', data: d.toJson());
       if (r.statusCode == 200 && r.data['success'] == true) {
@@ -2484,16 +1916,7 @@ class ApiService {
   }
 
   Future<Tpart> updateTpart(int id, Tpart d) async {
-    if (await isTokenExpired()) {
-      if (AppLogger.on) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
-      }
-      try {
-        await refreshToken();
-      } catch (e) {
-        throw Exception('กรุณาเข้าสู่ระบบใหม่');
-      }
-    }
+    await _ensureToken();
     try {
       final r = await dio.put('/api/auth/tparts/$id', data: d.toJson());
       if (r.statusCode == 200 && r.data['success'] == true) {
@@ -2509,16 +1932,7 @@ class ApiService {
   }
 
   Future<void> deleteTpart(int id) async {
-    if (await isTokenExpired()) {
-      if (AppLogger.on) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
-      }
-      try {
-        await refreshToken();
-      } catch (e) {
-        throw Exception('กรุณาเข้าสู่ระบบใหม่');
-      }
-    }
+    await _ensureToken();
     try {
       final r = await dio.delete('/api/auth/tparts/$id');
       if (r.statusCode != 200 || r.data['success'] != true) {
@@ -2534,16 +1948,7 @@ class ApiService {
 
   // Get parts list for dropdown
   Future<List<Part>> getPartsList() async {
-    if (await isTokenExpired()) {
-      if (AppLogger.on) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
-      }
-      try {
-        await refreshToken();
-      } catch (e) {
-        throw Exception('กรุณาเข้าสู่ระบบใหม่');
-      }
-    }
+    await _ensureToken();
     final r = await dio.get(
       '/api/auth/partsList',
       queryParameters: {'page': 0, 'size': 1000},
@@ -2556,16 +1961,7 @@ class ApiService {
 
   // Get maintenance list for dropdown
   Future<List<Maintenance>> getMaintenanceList() async {
-    if (await isTokenExpired()) {
-      if (AppLogger.on) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
-      }
-      try {
-        await refreshToken();
-      } catch (e) {
-        throw Exception('กรุณาเข้าสู่ระบบใหม่');
-      }
-    }
+    await _ensureToken();
     final r = await dio.get(
       '/api/auth/maintenanceList',
       queryParameters: {'page': 0, 'size': 1000},
@@ -2582,16 +1978,7 @@ class ApiService {
   //maintainance
   // Get room list for dropdown
   Future<List<Map<String, dynamic>>> getRoomList() async {
-    if (await isTokenExpired()) {
-      if (AppLogger.on) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
-      }
-      try {
-        await refreshToken();
-      } catch (e) {
-        throw Exception('กรุณาเข้าสู่ระบบใหม่');
-      }
-    }
+    await _ensureToken();
     final r = await dio.get('/api/auth/rooms/list');
     if (r.statusCode == 200) return List<Map<String, dynamic>>.from(r.data);
     return [];
@@ -2599,16 +1986,7 @@ class ApiService {
 
   // Get Tparts by maintenance ID
   Future<List<Tpart>> getTpartsByMaintenanceId(int maintenanceid) async {
-    if (await isTokenExpired()) {
-      if (AppLogger.on) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
-      }
-      try {
-        await refreshToken();
-      } catch (e) {
-        throw Exception('กรุณาเข้าสู่ระบบใหม่');
-      }
-    }
+    await _ensureToken();
     final r = await dio.get(
       '/api/auth/tparts',
       queryParameters: {'maintenanceid': maintenanceid, 'page': 0, 'size': 100},
@@ -2623,16 +2001,7 @@ class ApiService {
 
   // Delete maintenance (cascades to tparts)
   Future<void> deleteMaintenance(int id) async {
-    if (await isTokenExpired()) {
-      if (AppLogger.on) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
-      }
-      try {
-        await refreshToken();
-      } catch (e) {
-        throw Exception('กรุณาเข้าสู่ระบบใหม่');
-      }
-    }
+    await _ensureToken();
     try {
       final r = await dio.delete('/api/auth/maintenance/$id');
       if (r.statusCode != 200 || r.data['success'] != true) {
@@ -2656,16 +2025,7 @@ class ApiService {
     String? worktype,
     String? placetype,
   }) async {
-    if (await isTokenExpired()) {
-      if (AppLogger.on) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
-      }
-      try {
-        await refreshToken();
-      } catch (e) {
-        throw Exception('กรุณาเข้าสู่ระบบใหม่');
-      }
-    }
+    await _ensureToken();
     final p = <String, dynamic>{'page': page, 'size': size};
     if (reportname != null && reportname.isNotEmpty) {
       p['reportname'] = reportname;
@@ -2682,16 +2042,7 @@ class ApiService {
 
   Future<Maintenance> createMaintenance(Maintenance d) async {
     try {
-      if (await isTokenExpired()) {
-        if (AppLogger.on) {
-          AppLogger.d('Token expired or about to expire, refreshing...');
-        }
-        try {
-          await refreshToken();
-        } catch (e) {
-          throw Exception('กรุณาเข้าสู่ระบบใหม่');
-        }
-      }
+      await _ensureToken();
       final r = await dio.post('/api/auth/maintenance', data: d.toJson());
       if (r.statusCode == 200 && r.data['success'] == true) {
         return Maintenance.fromJson(r.data['maintenance']);
@@ -2707,16 +2058,7 @@ class ApiService {
 
   // ✅ ADD THIS METHOD
   Future<Maintenance> updateMaintenance(int id, Maintenance d) async {
-    if (await isTokenExpired()) {
-      if (AppLogger.on) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
-      }
-      try {
-        await refreshToken();
-      } catch (e) {
-        throw Exception('กรุณาเข้าสู่ระบบใหม่');
-      }
-    }
+    await _ensureToken();
     try {
       final r = await dio.put('/api/auth/maintenance/$id', data: d.toJson());
       if (r.statusCode == 200 && r.data['success'] == true) {
@@ -2790,16 +2132,7 @@ class ApiService {
     String? name,
     int? foodgroupID,
   }) async {
-    if (await isTokenExpired()) {
-      if (AppLogger.on) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
-      }
-      try {
-        await refreshToken();
-      } catch (e) {
-        throw Exception('กรุณาเข้าสู่ระบบใหม่');
-      }
-    }
+    await _ensureToken();
     final p = <String, dynamic>{'page': page, 'size': size};
     if (name != null && name.isNotEmpty) p['name'] = name;
     if (foodgroupID != null) p['foodgroupID'] = foodgroupID;
@@ -2809,16 +2142,7 @@ class ApiService {
   }
 
   Future<Foodtype> createFoodtype(Foodtype d) async {
-    if (await isTokenExpired()) {
-      if (AppLogger.on) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
-      }
-      try {
-        await refreshToken();
-      } catch (e) {
-        throw Exception('กรุณาเข้าสู่ระบบใหม่');
-      }
-    }
+    await _ensureToken();
     try {
       final r = await dio.post('/api/auth/foodtypes', data: d.toJson());
       if (r.statusCode == 200 && r.data['success'] == true) {
@@ -2834,16 +2158,7 @@ class ApiService {
   }
 
   Future<Foodtype> updateFoodtype(int id, Foodtype d) async {
-    if (await isTokenExpired()) {
-      if (AppLogger.on) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
-      }
-      try {
-        await refreshToken();
-      } catch (e) {
-        throw Exception('กรุณาเข้าสู่ระบบใหม่');
-      }
-    }
+    await _ensureToken();
     try {
       final r = await dio.put('/api/auth/foodtypes/$id', data: d.toJson());
       if (r.statusCode == 200 && r.data['success'] == true) {
@@ -2859,16 +2174,7 @@ class ApiService {
   }
 
   Future<void> deleteFoodtype(int id) async {
-    if (await isTokenExpired()) {
-      if (AppLogger.on) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
-      }
-      try {
-        await refreshToken();
-      } catch (e) {
-        throw Exception('กรุณาเข้าสู่ระบบใหม่');
-      }
-    }
+    await _ensureToken();
     try {
       final r = await dio.delete('/api/auth/foodtypes/$id');
       if (r.statusCode != 200 || r.data['success'] != true) {
@@ -2967,16 +2273,7 @@ class ApiService {
   }
 
   Future<void> deleteBooking(int id) async {
-    if (await isTokenExpired()) {
-      if (AppLogger.on) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
-      }
-      try {
-        await refreshToken();
-      } catch (e) {
-        throw Exception('กรุณาเข้าสู่ระบบใหม่');
-      }
-    }
+    await _ensureToken();
     try {
       final r = await dio.delete('/api/auth/bookings/$id');
       if (r.statusCode != 200 || r.data['success'] != true) {
@@ -3116,16 +2413,7 @@ class ApiService {
     int size = 5,
     String? keyword,
   }) async {
-    if (await isTokenExpired()) {
-      if (AppLogger.on) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
-      }
-      try {
-        await refreshToken();
-      } catch (e) {
-        throw Exception('กรุณาเข้าสู่ระบบใหม่');
-      }
-    }
+    await _ensureToken();
     final queryParams = {
       'page': page.toString(),
       'size': size.toString(),
@@ -3143,16 +2431,7 @@ class ApiService {
   Future<DocumentStatus> createDocumentStatus(
     DocumentStatus documentStatus,
   ) async {
-    if (await isTokenExpired()) {
-      if (AppLogger.on) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
-      }
-      try {
-        await refreshToken();
-      } catch (e) {
-        throw Exception('กรุณาเข้าสู่ระบบใหม่');
-      }
-    }
+    await _ensureToken();
     final response = await dio.post(
       '/api/auth/documentstatus',
       data: documentStatus.toJson(),
@@ -3167,16 +2446,7 @@ class ApiService {
     int id,
     DocumentStatus documentStatus,
   ) async {
-    if (await isTokenExpired()) {
-      if (AppLogger.on) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
-      }
-      try {
-        await refreshToken();
-      } catch (e) {
-        throw Exception('กรุณาเข้าสู่ระบบใหม่');
-      }
-    }
+    await _ensureToken();
     final response = await dio.put(
       '/api/auth/documentstatus/$id',
       data: documentStatus.toJson(),
@@ -3190,16 +2460,7 @@ class ApiService {
   }
 
   Future<void> deleteDocumentStatus(int id) async {
-    if (await isTokenExpired()) {
-      if (AppLogger.on) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
-      }
-      try {
-        await refreshToken();
-      } catch (e) {
-        throw Exception('กรุณาเข้าสู่ระบบใหม่');
-      }
-    }
+    await _ensureToken();
     await dio.delete('/api/auth/documentstatus/$id');
   }
   // lib/services/api_service.dart
@@ -3210,16 +2471,7 @@ class ApiService {
     int size = 5,
     String? keyword,
   }) async {
-    if (await isTokenExpired()) {
-      if (AppLogger.on) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
-      }
-      try {
-        await refreshToken();
-      } catch (e) {
-        throw Exception('กรุณาเข้าสู่ระบบใหม่');
-      }
-    }
+    await _ensureToken();
     final queryParams = {
       'page': page.toString(),
       'size': size.toString(),
@@ -3235,16 +2487,7 @@ class ApiService {
   }
 
   Future<StatusCheck> createStatusCheck(StatusCheck statusCheck) async {
-    if (await isTokenExpired()) {
-      if (AppLogger.on) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
-      }
-      try {
-        await refreshToken();
-      } catch (e) {
-        throw Exception('กรุณาเข้าสู่ระบบใหม่');
-      }
-    }
+    await _ensureToken();
     final response = await dio.post(
       '/api/auth/statuschecks',
       data: statusCheck.toJson(),
@@ -3257,16 +2500,7 @@ class ApiService {
   }
 
   Future<StatusCheck> updateStatusCheck(int id, StatusCheck statusCheck) async {
-    if (await isTokenExpired()) {
-      if (AppLogger.on) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
-      }
-      try {
-        await refreshToken();
-      } catch (e) {
-        throw Exception('กรุณาเข้าสู่ระบบใหม่');
-      }
-    }
+    await _ensureToken();
     final response = await dio.put(
       '/api/auth/statuschecks/$id',
       data: statusCheck.toJson(),
@@ -3279,16 +2513,7 @@ class ApiService {
   }
 
   Future<void> deleteStatusCheck(int id) async {
-    if (await isTokenExpired()) {
-      if (AppLogger.on) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
-      }
-      try {
-        await refreshToken();
-      } catch (e) {
-        throw Exception('กรุณาเข้าสู่ระบบใหม่');
-      }
-    }
+    await _ensureToken();
     await dio.delete('/api/auth/statuschecks/$id');
   }
 
@@ -3300,16 +2525,7 @@ class ApiService {
     int size = 5,
     String? keyword,
   }) async {
-    if (await isTokenExpired()) {
-      if (AppLogger.on) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
-      }
-      try {
-        await refreshToken();
-      } catch (e) {
-        throw Exception('กรุณาเข้าสู่ระบบใหม่');
-      }
-    }
+    await _ensureToken();
     final queryParams = {
       'page': page.toString(),
       'size': size.toString(),
@@ -3325,16 +2541,7 @@ class ApiService {
   }
 
   Future<Response<dynamic>> getBookRoomDetailsByBookId(int bookId) async {
-    if (await isTokenExpired()) {
-      if (AppLogger.on) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
-      }
-      try {
-        await refreshToken();
-      } catch (e) {
-        throw Exception('กรุณาเข้าสู่ระบบใหม่');
-      }
-    }
+    await _ensureToken();
     final response = await dio.get('/api/auth/bookroomdetails/by-book/$bookId');
     return response;
   }
@@ -3342,16 +2549,7 @@ class ApiService {
   Future<Response<dynamic>> getBookRoomDetailsByRoomTypeId(
     int roomTypeId,
   ) async {
-    if (await isTokenExpired()) {
-      if (AppLogger.on) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
-      }
-      try {
-        await refreshToken();
-      } catch (e) {
-        throw Exception('กรุณาเข้าสู่ระบบใหม่');
-      }
-    }
+    await _ensureToken();
     final response = await dio.get(
       '/api/auth/bookroomdetails/by-roomtype/$roomTypeId',
     );
@@ -3361,16 +2559,7 @@ class ApiService {
   Future<BookRoomDetail> createBookRoomDetail(
     BookRoomDetail bookRoomDetail,
   ) async {
-    if (await isTokenExpired()) {
-      if (AppLogger.on) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
-      }
-      try {
-        await refreshToken();
-      } catch (e) {
-        throw Exception('กรุณาเข้าสู่ระบบใหม่');
-      }
-    }
+    await _ensureToken();
     final response = await dio.post(
       '/api/auth/bookroomdetails',
       data: bookRoomDetail.toJson(),
@@ -3382,16 +2571,7 @@ class ApiService {
     int id,
     BookRoomDetail bookRoomDetail,
   ) async {
-    if (await isTokenExpired()) {
-      if (AppLogger.on) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
-      }
-      try {
-        await refreshToken();
-      } catch (e) {
-        throw Exception('กรุณาเข้าสู่ระบบใหม่');
-      }
-    }
+    await _ensureToken();
     final response = await dio.put(
       '/api/auth/bookroomdetails/$id',
       data: bookRoomDetail.toJson(),
@@ -3400,30 +2580,12 @@ class ApiService {
   }
 
   Future<void> deleteBookRoomDetail(int id) async {
-    if (await isTokenExpired()) {
-      if (AppLogger.on) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
-      }
-      try {
-        await refreshToken();
-      } catch (e) {
-        throw Exception('กรุณาเข้าสู่ระบบใหม่');
-      }
-    }
+    await _ensureToken();
     await dio.delete('/api/auth/bookroomdetails/$id');
   }
 
   Future<void> deleteBookRoomDetailsByBookId(int bookId) async {
-    if (await isTokenExpired()) {
-      if (AppLogger.on) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
-      }
-      try {
-        await refreshToken();
-      } catch (e) {
-        throw Exception('กรุณาเข้าสู่ระบบใหม่');
-      }
-    }
+    await _ensureToken();
     await dio.delete('/api/auth/bookroomdetails/by-book/$bookId');
   }
 
@@ -3439,16 +2601,7 @@ class ApiService {
     int page = 0,
     int size = 5,
   }) async {
-    if (await isTokenExpired()) {
-      if (AppLogger.on) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
-      }
-      try {
-        await refreshToken();
-      } catch (e) {
-        throw Exception('กรุณาเข้าสู่ระบบใหม่');
-      }
-    }
+    await _ensureToken();
     final queryParams = <String, dynamic>{
       'bookId': bookId,
       'type': type,
@@ -3485,16 +2638,7 @@ class ApiService {
     int size = 5,
     String? keyword,
   }) async {
-    if (await isTokenExpired()) {
-      if (AppLogger.on) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
-      }
-      try {
-        await refreshToken();
-      } catch (e) {
-        throw Exception('กรุณาเข้าสู่ระบบใหม่');
-      }
-    }
+    await _ensureToken();
     final queryParams = {
       'page': page.toString(),
       'size': size.toString(),
@@ -3511,16 +2655,7 @@ class ApiService {
   }
 
   Future<Map<String, dynamic>> getBookDetailsByBookId(int bookId) async {
-    if (await isTokenExpired()) {
-      if (AppLogger.on) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
-      }
-      try {
-        await refreshToken();
-      } catch (e) {
-        throw Exception('กรุณาเข้าสู่ระบบใหม่');
-      }
-    }
+    await _ensureToken();
     final response = await dio.get('/api/auth/bookdetails/by-book/$bookId');
     return response.data;
     //["bookdetails"];
@@ -3529,16 +2664,7 @@ class ApiService {
   Future<Map<String, dynamic>> getBookDetailsByBookRoomId(
     int bookRoomId,
   ) async {
-    if (await isTokenExpired()) {
-      if (AppLogger.on) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
-      }
-      try {
-        await refreshToken();
-      } catch (e) {
-        throw Exception('กรุณาเข้าสู่ระบบใหม่');
-      }
-    }
+    await _ensureToken();
     final response = await dio.get(
       '/api/auth/bookdetails/by-bookroom/$bookRoomId',
     );
@@ -3547,16 +2673,7 @@ class ApiService {
   }
 
   Future<BookDetail> createBookDetail(BookDetail bookDetail) async {
-    if (await isTokenExpired()) {
-      if (AppLogger.on) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
-      }
-      try {
-        await refreshToken();
-      } catch (e) {
-        throw Exception('กรุณาเข้าสู่ระบบใหม่');
-      }
-    }
+    await _ensureToken();
     final response = await dio.post(
       '/api/auth/bookdetails',
       data: bookDetail.toJson(),
@@ -3565,16 +2682,7 @@ class ApiService {
   }
 
   Future<BookDetail> updateBookDetail(int id, BookDetail bookDetail) async {
-    if (await isTokenExpired()) {
-      if (AppLogger.on) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
-      }
-      try {
-        await refreshToken();
-      } catch (e) {
-        throw Exception('กรุณาเข้าสู่ระบบใหม่');
-      }
-    }
+    await _ensureToken();
     final response = await dio.put(
       '/api/auth/bookdetails/$id',
       data: bookDetail.toJson(),
@@ -3583,30 +2691,12 @@ class ApiService {
   }
 
   Future<void> deleteBookDetail(int id) async {
-    if (await isTokenExpired()) {
-      if (AppLogger.on) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
-      }
-      try {
-        await refreshToken();
-      } catch (e) {
-        throw Exception('กรุณาเข้าสู่ระบบใหม่');
-      }
-    }
+    await _ensureToken();
     await dio.delete('/api/auth/bookdetails/$id');
   }
 
   Future<void> deleteBookDetailsByBookId(int bookId) async {
-    if (await isTokenExpired()) {
-      if (AppLogger.on) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
-      }
-      try {
-        await refreshToken();
-      } catch (e) {
-        throw Exception('กรุณาเข้าสู่ระบบใหม่');
-      }
-    }
+    await _ensureToken();
     await dio.delete('/api/auth/bookdetails/by-book/$bookId');
   }
 
@@ -3618,16 +2708,7 @@ class ApiService {
     int page = 0,
     int size = 5,
   }) async {
-    if (await isTokenExpired()) {
-      if (AppLogger.on) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
-      }
-      try {
-        await refreshToken();
-      } catch (e) {
-        throw Exception('กรุณาเข้าสู่ระบบใหม่');
-      }
-    }
+    await _ensureToken();
 
     final p = <String, dynamic>{'page': page, 'size': size};
 
@@ -3655,19 +2736,6 @@ class ApiService {
   //
   // ตารางนี้ใช้ composite key roomID + scheduleDate + fromTime + toTime
   // ทุกเมธอดที่อ้างถึงรายการเดียวจึงต้องส่งครบทั้งสี่ค่า
-
-  Future<void> _ensureToken() async {
-    if (await isTokenExpired()) {
-      if (AppLogger.on) {
-        AppLogger.d('Token expired or about to expire, refreshing...');
-      }
-      try {
-        await refreshToken();
-      } catch (e) {
-        throw Exception('กรุณาเข้าสู่ระบบใหม่');
-      }
-    }
-  }
 
   /// ตารางเวลาของห้องในใบจองหนึ่ง ตามช่วงวันที่และประเภทห้อง
   ///
