@@ -64,7 +64,8 @@ class _BookRoomDetailDialogState extends State<BookRoomDetailDialog> {
     final d = widget.detail;
     _startDate =
         _parse(d?.startDate) ?? widget.defaultStartDate ?? DateTime.now();
-    _stopDate = _parse(d?.stopDate) ??
+    _stopDate =
+        _parse(d?.stopDate) ??
         widget.defaultStopDate ??
         DateTime.now().add(const Duration(days: 1));
 
@@ -201,6 +202,9 @@ class _BookRoomDetailDialogState extends State<BookRoomDetailDialog> {
                         ),
                         const SizedBox(height: 16),
                       ],
+                      const SizedBox(height: 18),
+                      _numField('ลำดับ', _sequenceCtrl, required: false),
+                      const SizedBox(height: 18),
                       _label('ประเภทห้อง'),
                       const SizedBox(height: 6),
                       DropdownButtonFormField<int>(
@@ -234,17 +238,20 @@ class _BookRoomDetailDialogState extends State<BookRoomDetailDialog> {
                       _numField('จำนวนห้อง', _numberRoomCtrl, suffix: 'ห้อง'),
                       const SizedBox(height: 18),
                       _dateField('วันที่เริ่มต้น', _startDate, () async {
-                        final p =
-                            await Util.dateFieldPicker(context, _startDate);
+                        final p = await Util.dateFieldPicker(
+                          context,
+                          _startDate,
+                        );
                         if (p != _startDate) setState(() => _startDate = p);
                       }),
                       const SizedBox(height: 18),
                       _dateField('วันที่สิ้นสุด', _stopDate, () async {
-                        final p = await Util.dateFieldPicker(context, _stopDate);
+                        final p = await Util.dateFieldPicker(
+                          context,
+                          _stopDate,
+                        );
                         if (p != _stopDate) setState(() => _stopDate = p);
                       }),
-                      const SizedBox(height: 18),
-                      _numField('ลำดับ', _sequenceCtrl, required: false),
                     ],
                   ),
                 ),
@@ -308,10 +315,7 @@ class _BookRoomDetailDialogState extends State<BookRoomDetailDialog> {
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF43A047),
               foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(
-                horizontal: 22,
-                vertical: 14,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10),
               ),
@@ -370,9 +374,8 @@ class _BookRoomDetailDialogState extends State<BookRoomDetailDialog> {
           decoration: _decoration(suffix: suffix),
           style: const TextStyle(fontSize: 14),
           validator: required
-              ? (v) => (v == null || v.trim().isEmpty)
-                    ? 'กรุณากรอก$label'
-                    : null
+              ? (v) =>
+                    (v == null || v.trim().isEmpty) ? 'กรุณากรอก$label' : null
               : null,
         ),
       ],
