@@ -17,6 +17,7 @@ import 'package:highway_training/models/maintenance.dart';
 import 'package:highway_training/models/organization.dart';
 import 'package:highway_training/models/part.dart';
 import 'package:highway_training/models/room.dart';
+import 'package:highway_training/models/schedule.dart';
 import 'package:highway_training/models/roomtype.dart';
 import 'package:highway_training/models/roomtype_commodity.dart';
 import 'package:highway_training/models/roomtype_facility.dart';
@@ -3648,5 +3649,176 @@ class ApiService {
     );
 
     return response.data; //["bookdetails"];
+  }
+
+  // ============ SCHEDULE API (t_schedule) ============
+  //
+  // ตารางนี้ใช้ composite key roomID + scheduleDate + fromTime + toTime
+  // ทุกเมธอดที่อ้างถึงรายการเดียวจึงต้องส่งครบทั้งสี่ค่า
+
+  Future<void> _ensureToken() async {
+    if (await isTokenExpired()) {
+      if (AppLogger.on) {
+        AppLogger.d('Token expired or about to expire, refreshing...');
+      }
+      try {
+        await refreshToken();
+      } catch (e) {
+        throw Exception('กรุณาเข้าสู่ระบบใหม่');
+      }
+    }
+  }
+
+  /// ตารางเวลาของห้องในใบจองหนึ่ง ตามช่วงวันที่และประเภทห้อง
+  ///
+  /// ตรงกับ query ที่กันประเภทห้องกิจกรรม (7, 8) ออกแล้วฝั่ง backend
+  Future<List<Schedule>> getSchedulesByBook({
+    required int bookId,
+    required int roomTypeId,
+    required String startdate,
+    required String stopdate,
+  }) async {
+    await _ensureToken();
+    final r = await dio.get(
+      '/api/auth/schedules/by-book/',
+      queryParameters: {
+        'bookId': bookId,
+        'roomTypeId': roomTypeId,
+        'startdate': startdate,
+        'stopdate': stopdate,
+      },
+    );
+    final list = r.data['schedules'] as List? ?? const [];
+    return list
+        .map((j) => Schedule.fromJson(j as Map<String, dynamic>))
+        .toList();
+  }
+
+  /// รายการทั้งหมดแบบแบ่งหน้า
+  Future<Map<String, dynamic>> getSchedules({
+    int page = 0,
+    int size = 5,
+  }) async {
+    await _ensureToken();
+    final r = await dio.get(
+      '/api/auth/schedules',
+      queryParameters: {'page': page, 'size': size},
+    );
+    return _schedulePage(r.data);
+  }
+
+  /// ค้นหาตามช่วงวันที่
+  Future<Map<String, dynamic>> getSchedulesByDateRange({
+    required String startdate,
+    required String stopdate,
+    int page = 0,
+    int size = 500,
+  }) async {
+    await _ensureToken();
+    final r = await dio.get(
+      '/api/auth/schedules/by-date/',
+      queryParameters: {
+        'startdate': startdate,
+        'stopdate': stopdate,
+        'page': page,
+        'size': size,
+      },
+    );
+    return _schedulePage(r.data);
+  }
+
+  Future<List<Schedule>> getSchedulesByRoom(int roomID) async {
+    await _ensureToken();
+    final r = await dio.get('/api/auth/schedules/by-room/$roomID');
+    final list = r.data['schedules'] as List? ?? const [];
+    return list
+        .map((j) => Schedule.fromJson(j as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<Schedule> getSchedule({
+    required int roomID,
+    required String scheduleDate,
+    required int fromTime,
+    required int toTime,
+  }) async {
+    await _ensureToken();
+    final r = await dio.get(
+      '/api/auth/schedules/one/',
+      queryParameters: {
+        'roomID': roomID,
+        'scheduleDate': scheduleDate,
+        'fromTime': fromTime,
+        'toTime': toTime,
+      },
+    );
+    return Schedule.fromJson(r.data['schedule'] as Map<String, dynamic>);
+  }
+
+  Future<Schedule> createSchedule(Schedule d) async {
+    await _ensureToken();
+    final r = await dio.post('/api/auth/schedules', data: d.toJson());
+    if (r.statusCode == 200 && r.data['success'] == true) {
+      return Schedule.fromJson(r.data['schedule'] as Map<String, dynamic>);
+    }
+    throw Exception(r.data['message'] ?? 'บันทึกไม่สำเร็จ');
+  }
+
+  /// แก้ไขรายการเดิม — คีย์ทั้งสี่ที่ส่งไปคือคีย์ "เดิม" ส่วนค่าใหม่อยู่ใน [d]
+  Future<Schedule> updateSchedule({
+    required int roomID,
+    required String scheduleDate,
+    required int fromTime,
+    required int toTime,
+    required Schedule d,
+  }) async {
+    await _ensureToken();
+    final r = await dio.put(
+      '/api/auth/schedules',
+      queryParameters: {
+        'roomID': roomID,
+        'scheduleDate': scheduleDate,
+        'fromTime': fromTime,
+        'toTime': toTime,
+      },
+      data: d.toJson(),
+    );
+    if (r.statusCode == 200 && r.data['success'] == true) {
+      return Schedule.fromJson(r.data['schedule'] as Map<String, dynamic>);
+    }
+    throw Exception(r.data['message'] ?? 'อัปเดตไม่สำเร็จ');
+  }
+
+  Future<void> deleteSchedule({
+    required int roomID,
+    required String scheduleDate,
+    required int fromTime,
+    required int toTime,
+  }) async {
+    await _ensureToken();
+    final r = await dio.delete(
+      '/api/auth/schedules',
+      queryParameters: {
+        'roomID': roomID,
+        'scheduleDate': scheduleDate,
+        'fromTime': fromTime,
+        'toTime': toTime,
+      },
+    );
+    if (r.statusCode != 200 || r.data['success'] != true) {
+      throw Exception(r.data['message'] ?? 'ลบไม่สำเร็จ');
+    }
+  }
+
+  Map<String, dynamic> _schedulePage(dynamic data) {
+    final list = data['schedules'] as List? ?? const [];
+    return {
+      'items': list
+          .map((j) => Schedule.fromJson(j as Map<String, dynamic>))
+          .toList(),
+      'totalItems': data['totalItems'] ?? list.length,
+      'totalPages': data['totalPages'] ?? 1,
+      'currentPage': data['currentPage'] ?? 0,
+    };
   }
 }
