@@ -2378,6 +2378,28 @@ class ApiService {
     }
   }
 
+  /// แก้ไขรายการอาหาร — PUT /api/auth/tfoods/{id}
+  ///
+  /// ใช้ publicDio เหมือน create/delete ของ tfoods เพราะ SecurityConfig
+  /// เปิด /api/auth/tfoods/** ไว้เป็น permitAll
+  Future<Tfood> updateTfood(int id, Tfood d) async {
+    try {
+      final r = await publicDio.put(
+        '/api/auth/tfoods/$id',
+        data: d.toJson(),
+      );
+      if (r.statusCode == 200 && r.data['success'] == true) {
+        return Tfood.fromJson(r.data['tfood']);
+      }
+      throw Exception(r.data['message'] ?? 'อัปเดตไม่สำเร็จ');
+    } on DioException catch (e) {
+      if (e.response?.data is Map) {
+        throw Exception(e.response!.data['message'] ?? 'เกิดข้อผิดพลาด');
+      }
+      throw Exception('เกิดข้อผิดพลาดในการเชื่อมต่อ');
+    }
+  }
+
   Future<void> deleteTfood(int id) async {
     try {
       final r = await publicDio.delete('/api/auth/tfoods/$id');
