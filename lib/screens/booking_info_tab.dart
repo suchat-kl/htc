@@ -10,6 +10,7 @@ import 'package:highway_training/utils/dialog.dart';
 import 'package:highway_training/utils/logger.dart';
 import 'package:highway_training/utils/snackbar_helper.dart';
 import 'package:highway_training/utils/util.dart';
+import 'package:highway_training/widgets/booking_equipment_section.dart';
 import 'package:highway_training/widgets/booking_room_list_section.dart';
 import 'package:highway_training/widgets/room_availability_dialog.dart';
 import 'package:highway_training/widgets/schedule_availability_dialog.dart';
@@ -335,6 +336,11 @@ class _BookingInfoTabState extends State<BookingInfoTab> {
                                   startDate: d.startDate,
                                   stopDate: d.stopDate,
                                 ),
+                          ),
+                          const SizedBox(height: 16),
+                          BookingEquipmentSection(
+                            apiService: widget.apiService,
+                            bookId: _bookID,
                           ),
                         ],
                       ),

@@ -13,12 +13,17 @@ class EquipmentDialog extends StatefulWidget {
   final List<Map<String, dynamic>> booktitles;
   final List<Roomtype> roomtypes;
 
+  /// เมื่อเปิดจากหน้าใบจอง กิจกรรม/โครงการถูกกำหนดไว้แล้ว ไม่ให้ผู้ใช้เลือกเอง
+  /// ไม่งั้นอาจบันทึกไปผูกกับใบจองอื่นแล้วแถวไม่โผล่ในตารางที่กรองด้วย bookingid
+  final int? fixedBookingId;
+
   const EquipmentDialog({
     super.key,
     this.equipment,
     required this.apiService,
     required this.booktitles,
     required this.roomtypes,
+    this.fixedBookingId,
   });
 
   @override
@@ -43,6 +48,7 @@ class _EquipmentDialogState extends State<EquipmentDialog> {
   @override
   void initState() {
     super.initState();
+    _selectedBookingid = widget.fixedBookingId;
     if (isEdit) {
       _selectedBookingid = widget.equipment!.bookingid;
       _selectedRoomtypeid = widget.equipment!.roomtypeid;
@@ -242,7 +248,10 @@ class _EquipmentDialogState extends State<EquipmentDialog> {
                               ),
                             )
                             .toList(),
-                        (v) => setState(() => _selectedBookingid = v),
+                        widget.fixedBookingId != null
+                            ? null
+                            : (int? v) =>
+                                  setState(() => _selectedBookingid = v),
                       ),
                       const SizedBox(height: 12),
                       _field('สถานที่', _placeController),
@@ -259,7 +268,7 @@ class _EquipmentDialogState extends State<EquipmentDialog> {
                               ),
                             )
                             .toList(),
-                        (v) => setState(() => _selectedRoomtypeid = v),
+                        (int? v) => setState(() => _selectedRoomtypeid = v),
                       ),
                       const SizedBox(height: 12),
                       _dateField(
@@ -378,9 +387,12 @@ class _EquipmentDialogState extends State<EquipmentDialog> {
 
   Widget _dropdown<T>(
     String label,
-    T value,
+    // T? เพราะค่าที่ส่งมาเป็น nullable ส่วน items เป็น DropdownMenuItem<T>
+    // ถ้าประกาศเป็น T เฉยๆ Dart จะสรุปชนิด T ไม่ได้เมื่อ onChanged ระบุชนิดชัด
+    T? value,
     List<DropdownMenuItem<T>> items,
-    Function(T?) onChanged,
+    // null = ปิดไม่ให้แก้ไข
+    Function(T?)? onChanged,
   ) => Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
