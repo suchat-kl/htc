@@ -139,11 +139,43 @@ class _BookingTfoodSectionState extends State<BookingTfoodSection> {
 
   int get _grandTotal => _items.fold(0, (sum, t) => sum + _total(t));
 
+  /// ลำดับถัดไป = ลำดับสูงสุดที่มีอยู่ + 1
+  ///
+  /// ต้องดึงทุกแถวไม่ใช่แค่หน้าปัจจุบัน เพราะตารางแบ่งหน้าละ 5 ถ้าดูแค่หน้าที่
+  /// เปิดอยู่จะได้ลำดับซ้ำกับแถวในหน้าอื่น
+  Future<int> _nextSequence() async {
+    try {
+      final r = await widget.apiService.getTfoods(
+        page: 0,
+        size: 1000,
+        bookID: widget.bookId,
+      );
+      final list = (r['tfoods'] as List?) ?? const [];
+      final max = list.fold<int>(0, (m, j) {
+        final s = _asInt((j as Map)['sequence']) ?? 0;
+        return s > m ? s : m;
+      });
+      return max + 1;
+    } catch (e) {
+      if (AppLogger.on) AppLogger.d('Error reading max sequence: $e');
+      // ดึงไม่ได้ก็ใช้เท่าที่เห็นในหน้านี้ ดีกว่าปล่อยว่าง
+      final max = _items.fold<int>(
+        0,
+        (m, t) => (t.sequence ?? 0) > m ? (t.sequence ?? 0) : m,
+      );
+      return max + 1;
+    }
+  }
+
   Future<void> _openDialog({Tfood? tfood}) async {
     if (_foodtypes.isEmpty) {
       context.showInfoSnackBar('ยังโหลดข้อมูลรายการอาหารไม่สำเร็จ');
       return;
     }
+
+    final nextSeq = tfood == null ? await _nextSequence() : null;
+    if (!mounted) return;
+
     final ok = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
@@ -154,6 +186,7 @@ class _BookingTfoodSectionState extends State<BookingTfoodSection> {
         tfood: tfood,
         defaultStartDate: widget.defaultStartDate,
         defaultStopDate: widget.defaultStopDate,
+        defaultSequence: nextSeq,
       ),
     );
     if (ok == true) await _load();

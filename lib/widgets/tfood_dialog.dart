@@ -27,6 +27,9 @@ class TfoodDialog extends StatefulWidget {
   final DateTime? defaultStartDate;
   final DateTime? defaultStopDate;
 
+  /// ลำดับตั้งต้นตอนเพิ่มใหม่ ปกติคือลำดับสุดท้ายในตาราง + 1
+  final int? defaultSequence;
+
   const TfoodDialog({
     super.key,
     required this.apiService,
@@ -35,6 +38,7 @@ class TfoodDialog extends StatefulWidget {
     this.tfood,
     this.defaultStartDate,
     this.defaultStopDate,
+    this.defaultSequence,
   });
 
   @override
@@ -76,6 +80,10 @@ class _TfoodDialogState extends State<TfoodDialog> {
       _amountCtrl.text = '${t.amount ?? ''}';
       _timesCtrl.text = '${t.times ?? ''}';
       _foodtypeId = t.foodtypeid;
+    } else {
+      // เพิ่มรายการใหม่ — เติมค่าที่เดาได้ให้ก่อน ผู้ใช้แก้เองต่อได้
+      _sequenceCtrl.text = '${widget.defaultSequence ?? 1}';
+      _timesCtrl.text = '${_dayCount(_startDate, _stopDate)}';
     }
 
     // ถ้า foodtypeid ที่ได้มาไม่มีในรายการ ปล่อยเป็น null ไม่งั้น dropdown จะ assert
@@ -87,6 +95,22 @@ class _TfoodDialogState extends State<TfoodDialog> {
   static DateTime? _parse(String? s) {
     if (s == null || s.isEmpty) return null;
     return DateTime.tryParse(s);
+  }
+
+  /// จำนวนวันแบบนับรวมวันเริ่มและวันสิ้นสุด เช่น วันที่ 1 ถึง 3 ได้ 3
+  /// ตัดเวลาทิ้งก่อนเทียบ ไม่งั้นเศษชั่วโมงจะทำให้ผลคลาดไปหนึ่งวัน
+  static int _dayCount(DateTime from, DateTime to) {
+    final a = DateTime(from.year, from.month, from.day);
+    final b = DateTime(to.year, to.month, to.day);
+    final n = b.difference(a).inDays + 1;
+    return n < 1 ? 1 : n;
+  }
+
+  /// จำนวนมื้อผูกกับช่วงวันที่ ตอนเพิ่มใหม่จึงคำนวณให้ทุกครั้งที่เปลี่ยนวันที่
+  /// โหมดแก้ไขไม่แตะ เพราะค่าที่บันทึกไว้อาจถูกปรับด้วยมือมาแล้ว
+  void _syncTimesWithDates() {
+    if (isEdit) return;
+    _timesCtrl.text = '${_dayCount(_startDate, _stopDate)}';
   }
 
   @override
@@ -228,12 +252,22 @@ class _TfoodDialogState extends State<TfoodDialog> {
                       _dateField('วันที่เริ่มต้น', _startDate, () async {
                         final p =
                             await Util.dateFieldPicker(context, _startDate);
-                        if (p != _startDate) setState(() => _startDate = p);
+                        if (p != _startDate) {
+                          setState(() {
+                            _startDate = p;
+                            _syncTimesWithDates();
+                          });
+                        }
                       }),
                       const SizedBox(height: 18),
                       _dateField('วันที่สิ้นสุด', _stopDate, () async {
                         final p = await Util.dateFieldPicker(context, _stopDate);
-                        if (p != _stopDate) setState(() => _stopDate = p);
+                        if (p != _stopDate) {
+                          setState(() {
+                            _stopDate = p;
+                            _syncTimesWithDates();
+                          });
+                        }
                       }),
                       const SizedBox(height: 18),
                       _totalPreview(),
