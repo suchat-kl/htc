@@ -144,6 +144,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen>
             child: RoomAssignmentTab(
               apiService: widget.apiService,
               bookId: widget.bookId,
+               bookingData: _bookingData,
             ),
           ),
           // Tab 3: Check in
@@ -151,6 +152,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen>
             child: CheckInTab(
               apiService: widget.apiService,
               bookId: widget.bookId,
+               bookingData: _bookingData,
             ),
           ),
         ],
