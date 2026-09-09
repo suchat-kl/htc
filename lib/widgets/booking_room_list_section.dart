@@ -32,10 +32,19 @@ class BookingRoomListSection extends StatefulWidget {
   final DateTime? defaultStartDate;
   final DateTime? defaultStopDate;
 
-  /// สร้างหน้าจอ "ตรวจสอบห้องว่าง" ให้เหมาะกับชนิดห้อง
+  /// สร้างหน้าจอที่เปิดจากปุ่มท้ายแถว
   /// ห้องพักดูเป็นหมายเลขห้อง ส่วนห้องกิจกรรมดูเป็นช่วงเวลา
   final Widget Function(BuildContext context, BookRoomDetail detail)
   availabilityDialogBuilder;
+
+  /// ข้อความบนปุ่มท้ายแถว
+  final String actionLabel;
+
+  /// แสดงไอคอนแก้ไข/ลบในแต่ละแถว — ปิดในแท็บที่ใช้ดูอย่างเดียว
+  final bool showRowActions;
+
+  /// แสดงปุ่ม "เพิ่มรายการ" ด้านบน — ปิดในแท็บที่ไม่ได้จัดการรายการ
+  final bool showAddButton;
 
   const BookingRoomListSection({
     super.key,
@@ -46,6 +55,9 @@ class BookingRoomListSection extends StatefulWidget {
     required this.icon,
     required this.emptyText,
     required this.availabilityDialogBuilder,
+    this.actionLabel = 'ตรวจสอบห้องว่าง',
+    this.showRowActions = true,
+    this.showAddButton = true,
     this.defaultStartDate,
     this.defaultStopDate,
   });
@@ -245,7 +257,8 @@ class _BookingRoomListSectionState extends State<BookingRoomListSection> {
           Row(
             children: [
               Expanded(child: _sectionHeader()),
-              ElevatedButton.icon(
+              if (widget.showAddButton)
+                ElevatedButton.icon(
                 onPressed: _loading ? null : _add,
                 icon: const Icon(Icons.add, size: 18),
                 label: const Text('เพิ่มรายการ'),
@@ -401,20 +414,22 @@ class _BookingRoomListSectionState extends State<BookingRoomListSection> {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        _iconAction(
-          icon: Icons.edit_outlined,
-          color: Colors.blue.shade700,
-          tooltip: 'แก้ไขข้อมูล',
-          onTap: () => _edit(d),
-        ),
-        const SizedBox(width: 6),
-        _iconAction(
-          icon: Icons.delete_outline,
-          color: Colors.red.shade600,
-          tooltip: 'ลบข้อมูล',
-          onTap: () => _delete(d),
-        ),
-        const SizedBox(width: 10),
+        if (widget.showRowActions) ...[
+          _iconAction(
+            icon: Icons.edit_outlined,
+            color: Colors.blue.shade700,
+            tooltip: 'แก้ไขข้อมูล',
+            onTap: () => _edit(d),
+          ),
+          const SizedBox(width: 6),
+          _iconAction(
+            icon: Icons.delete_outline,
+            color: Colors.red.shade600,
+            tooltip: 'ลบข้อมูล',
+            onTap: () => _delete(d),
+          ),
+          const SizedBox(width: 10),
+        ],
         ElevatedButton(
           onPressed: () => _checkAvailability(d),
           style: ElevatedButton.styleFrom(
@@ -426,9 +441,9 @@ class _BookingRoomListSectionState extends State<BookingRoomListSection> {
               borderRadius: BorderRadius.circular(8),
             ),
           ),
-          child: const Text(
-            'ตรวจสอบห้องว่าง',
-            style: TextStyle(fontSize: 13),
+          child: Text(
+            widget.actionLabel,
+            style: const TextStyle(fontSize: 13),
           ),
         ),
       ],

@@ -144,7 +144,8 @@ class _BookingDetailScreenState extends State<BookingDetailScreen>
             child: RoomAssignmentTab(
               apiService: widget.apiService,
               bookId: widget.bookId,
-               bookingData: _bookingData,
+              bookingData: _bookingData,
+              onSaved: () => _dataChanged = true,
             ),
           ),
           // Tab 3: Check in

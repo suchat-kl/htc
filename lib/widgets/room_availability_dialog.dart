@@ -29,6 +29,12 @@ class RoomAvailabilityDialog extends StatefulWidget {
   final String? stopDate; // yyyy-MM-dd
   final String roomTypeName;
 
+  /// แสดงปุ่ม "บันทึก" คู่กับปุ่มปิด — เปิดใช้จากแท็บกำหนดห้อง
+  ///
+  /// ตอนนี้ปุ่มยังไม่ผูกการทำงาน รอเงื่อนไขว่าจะบันทึกอะไรลงตารางไหน
+  /// จึงแสดงเป็นปุ่มที่กดไม่ได้ไปก่อน เพื่อไม่ให้ผู้ใช้เข้าใจผิดว่าบันทึกได้แล้ว
+  final bool showSaveButton;
+
   const RoomAvailabilityDialog({
     super.key,
     required this.apiService,
@@ -37,6 +43,7 @@ class RoomAvailabilityDialog extends StatefulWidget {
     required this.startDate,
     required this.stopDate,
     required this.roomTypeName,
+    this.showSaveButton = false,
   });
 
   @override
@@ -410,21 +417,52 @@ class _RoomAvailabilityDialogState extends State<RoomAvailabilityDialog> {
   Widget _footer() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
-      child: Align(
-        alignment: Alignment.centerRight,
-        child: ElevatedButton.icon(
-          onPressed: () => Navigator.pop(context),
-          icon: const Icon(Icons.close, size: 18),
-          label: const Text('ปิด'),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFFE53935),
-            foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 14),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          if (widget.showSaveButton) ...[
+            Tooltip(
+              message: 'ยังไม่เปิดใช้งาน — รอกำหนดเงื่อนไขการบันทึก',
+              child: ElevatedButton.icon(
+                onPressed: null,
+                icon: const Icon(Icons.save_outlined, size: 18),
+                label: const Text('บันทึก'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF43A047),
+                  foregroundColor: Colors.white,
+                  disabledBackgroundColor: const Color(
+                    0xFF43A047,
+                  ).withValues(alpha: 0.45),
+                  disabledForegroundColor: Colors.white70,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 26,
+                    vertical: 14,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+          ],
+          ElevatedButton.icon(
+            onPressed: () => Navigator.pop(context),
+            icon: const Icon(Icons.close, size: 18),
+            label: const Text('ปิด'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFE53935),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(
+                horizontal: 26,
+                vertical: 14,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
             ),
           ),
-        ),
+        ],
       ),
     );
   }

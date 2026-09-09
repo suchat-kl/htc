@@ -89,6 +89,13 @@ class _BookingInfoTabState extends State<BookingInfoTab> {
 
   int get _bookID => _asInt(widget.bookingData?['bookID']) ?? widget.bookId;
 
+  /// ช่วงวันที่ของ "ใบจอง" ไม่ใช่ของแต่ละแถว
+  ///
+  /// การตรวจสอบห้องว่างต้องดูทั้งช่วงที่จองไว้ ไม่งั้นถ้าแถวหนึ่งกินแค่บางวัน
+  /// จะมองไม่เห็นห้องที่ถูกใช้ในวันที่เหลือของใบจองเดียวกัน
+  String? get _bookingStartDate => widget.bookingData?['startdate']?.toString();
+  String? get _bookingStopDate => widget.bookingData?['stopdate']?.toString();
+
   @override
   void initState() {
     super.initState();
@@ -313,8 +320,8 @@ class _BookingInfoTabState extends State<BookingInfoTab> {
                                   apiService: widget.apiService,
                                   bookId: _bookID,
                                   roomTypeId: d.roomTypeId!,
-                                  startDate: d.startDate,
-                                  stopDate: d.stopDate,
+                                  startDate: _bookingStartDate,
+                                  stopDate: _bookingStopDate,
                                   roomTypeName: d.name ?? '',
                                 ),
                           ),
@@ -334,6 +341,8 @@ class _BookingInfoTabState extends State<BookingInfoTab> {
                                   bookId: _bookID,
                                   roomTypeId: d.roomTypeId!,
                                   roomName: d.name ?? '',
+                                  // ห้องกิจกรรมใช้ช่วงวันที่ของแถวนั้น ต่างจาก
+                                  // ห้องพักที่ดูทั้งช่วงของใบจอง
                                   startDate: d.startDate,
                                   stopDate: d.stopDate,
                                 ),
