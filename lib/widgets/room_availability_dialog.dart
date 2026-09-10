@@ -33,8 +33,19 @@ class RoomAvailabilityDialog extends StatefulWidget {
   /// bookdetail.bookroomid เป็น NOT NULL และไม่มีความสัมพันธ์ JPA ให้ Hibernate
   /// เติมให้ จึงต้องส่งค่านี้ไปเองตอนบันทึก ไม่มีค่านี้ = บันทึกไม่ได้
   final int? bookRoomId;
+  /// ช่วงวันที่ของ "ใบจอง" — ใช้ตรวจสอบห้องว่างเท่านั้น
+  ///
+  /// ห้องว่างต้องดูจากช่วงของทั้งใบจองเสมอ ไม่ใช่ช่วงของแถวใดแถวหนึ่ง
+  /// ไม่งั้นห้องที่ถูกใช้อยู่ในช่วงอื่นของใบจองเดียวกันจะโผล่มาเป็นว่าง
   final String? startDate; // yyyy-MM-dd
   final String? stopDate; // yyyy-MM-dd
+
+  /// ช่วงวันที่ของ "แถวที่กำลังกำหนดห้อง" — ใช้ตอนบันทึกลง bookdetail เท่านั้น
+  ///
+  /// ไม่ส่งมาจะถอยไปใช้ช่วงของใบจองแทน
+  final String? rowStartDate; // yyyy-MM-dd
+  final String? rowStopDate; // yyyy-MM-dd
+
   final String roomTypeName;
 
   /// โหมดเลือกห้อง — เปิดจากแท็บกำหนดห้องเท่านั้น
@@ -54,6 +65,8 @@ class RoomAvailabilityDialog extends StatefulWidget {
     required this.startDate,
     required this.stopDate,
     required this.roomTypeName,
+    this.rowStartDate,
+    this.rowStopDate,
     this.bookRoomId,
     this.selectionMode = false,
   });
@@ -543,8 +556,9 @@ class _RoomAvailabilityDialogState extends State<RoomAvailabilityDialog> {
       return;
     }
 
-    final sd = _isoDate(widget.startDate);
-    final ed = _isoDate(widget.stopDate);
+    // บันทึกด้วยช่วงวันที่ของแถว ไม่ใช่ของใบจองที่ใช้ตรวจห้องว่าง
+    final sd = _isoDate(widget.rowStartDate ?? widget.startDate);
+    final ed = _isoDate(widget.rowStopDate ?? widget.stopDate);
     if (sd == null || ed == null) {
       context.showOverlayMessage(
         'รายการนี้ไม่มีช่วงวันที่ จึงบันทึกไม่ได้',
