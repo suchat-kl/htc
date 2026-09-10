@@ -42,7 +42,7 @@ class RoomAvailabilityDialog extends StatefulWidget {
 
   /// ช่วงวันที่ของ "แถวที่กำลังกำหนดห้อง" — ใช้ตอนบันทึกลง bookdetail เท่านั้น
   ///
-  /// ไม่ส่งมาจะถอยไปใช้ช่วงของใบจองแทน
+  /// เป็น null ได้ คอลัมน์ปลายทางเป็น nullable จึงบันทึกเป็น null ไปตามจริง
   final String? rowStartDate; // yyyy-MM-dd
   final String? rowStopDate; // yyyy-MM-dd
 
@@ -557,16 +557,11 @@ class _RoomAvailabilityDialogState extends State<RoomAvailabilityDialog> {
     }
 
     // บันทึกด้วยช่วงวันที่ของแถว ไม่ใช่ของใบจองที่ใช้ตรวจห้องว่าง
-    final sd = _isoDate(widget.rowStartDate ?? widget.startDate);
-    final ed = _isoDate(widget.rowStopDate ?? widget.stopDate);
-    if (sd == null || ed == null) {
-      context.showOverlayMessage(
-        'รายการนี้ไม่มีช่วงวันที่ จึงบันทึกไม่ได้',
-        icon: Icons.error_outline,
-        background: Colors.red,
-      );
-      return;
-    }
+    //
+    // bookdetail.startdate/stopdate เป็น nullable แถวที่ไม่มีวันที่จึงบันทึก
+    // เป็น null ไปตามจริง ไม่ถอยไปใช้วันที่ของใบจองซึ่งจะได้ค่าที่ผิด
+    final sd = _isoDate(widget.rowStartDate);
+    final ed = _isoDate(widget.rowStopDate);
 
     final rooms = _selected.toList()..sort(_byRoomNo);
     setState(() => _saving = true);
