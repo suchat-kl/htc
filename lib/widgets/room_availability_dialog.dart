@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import '../config/theme.dart';
 import '../services/api_service.dart';
 import '../utils/logger.dart';
+import '../utils/snackbar_helper.dart';
 
 /// ข้อผิดพลาดที่รู้แล้วว่ามาจาก API ตัวไหน — ใช้ส่งข้อความที่อ่านรู้เรื่อง
 /// ขึ้นไปให้ผู้ใช้แทน DioException ดิบ
@@ -31,8 +32,8 @@ class RoomAvailabilityDialog extends StatefulWidget {
 
   /// แสดงปุ่ม "บันทึก" คู่กับปุ่มปิด — เปิดใช้จากแท็บกำหนดห้อง
   ///
-  /// ตอนนี้ปุ่มยังไม่ผูกการทำงาน รอเงื่อนไขว่าจะบันทึกอะไรลงตารางไหน
-  /// จึงแสดงเป็นปุ่มที่กดไม่ได้ไปก่อน เพื่อไม่ให้ผู้ใช้เข้าใจผิดว่าบันทึกได้แล้ว
+  /// ปุ่มจะกดได้เมื่อเลือกห้องว่างไว้อย่างน้อย 1 ห้อง
+  /// ตัวการบันทึกลงตารางยังไม่ผูก รอขั้นตอนการบันทึกที่จะกำหนดต่อไป
   final bool showSaveButton;
 
   const RoomAvailabilityDialog({
@@ -54,8 +55,17 @@ class _RoomAvailabilityDialogState extends State<RoomAvailabilityDialog> {
   static const Color _usedColor = Color(0xFF7A6FCB); // ม่วง = ใช้งานอยู่
   static const Color _freeColor = Color(0xFF34D3AE); // เขียว = ว่าง
 
+  /// ส้ม = ห้องว่างที่ผู้ใช้เลือกไว้
+  ///
+  /// เลี่ยงเขียวและม่วงเพราะสองสีนั้นสื่อสถานะของห้องอยู่แล้ว
+  /// การเลือกจึงต้องเป็นสีที่สามที่แยกออกจากกันได้ชัด
+  static const Color _selectedColor = Color(0xFFF57C00);
+
   List<String> _totalRoom = [];
   List<String> _useRoom = [];
+
+  /// หมายเลขห้องที่ถูกเลือก — เลือกได้เฉพาะห้องว่างเท่านั้น
+  final Set<String> _selected = {};
   bool _isLoading = true;
   String? _error;
 
@@ -69,6 +79,8 @@ class _RoomAvailabilityDialogState extends State<RoomAvailabilityDialog> {
     setState(() {
       _isLoading = true;
       _error = null;
+      // ห้องที่เคยเลือกอาจถูกคนอื่นจองไปแล้วระหว่างนี้ จึงต้องเริ่มนับใหม่
+      _selected.clear();
     });
 
     // controller ประกาศ startdate/stopdate เป็น @RequestParam ที่ไม่มี
@@ -183,6 +195,15 @@ class _RoomAvailabilityDialogState extends State<RoomAvailabilityDialog> {
 
   int get _freeCount =>
       _totalRoom.where((r) => !_useRoom.contains(r)).length;
+
+  /// สลับสถานะเลือก/ไม่เลือกของห้องหนึ่ง
+  ///
+  /// Set.remove คืน false เมื่อยังไม่มีอยู่ จึงใช้เป็นตัวตัดสินได้ในบรรทัดเดียว
+  void _toggleSelect(String roomNo) {
+    setState(() {
+      if (!_selected.remove(roomNo)) _selected.add(roomNo);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -328,6 +349,7 @@ class _RoomAvailabilityDialogState extends State<RoomAvailabilityDialog> {
         _summaryItem('ห้องทั้งหมด', '${_totalRoom.length}', AppTheme.primaryColor),
         _summaryItem('ห้องที่ใช้งาน', '${_useRoom.length}', _usedColor),
         _summaryItem('จำนวนห้องที่ว่าง', '$_freeCount', _freeColor),
+        _summaryItem('จำนวนที่เลือก', '${_selected.length}', _selectedColor),
       ],
     );
   }
@@ -358,24 +380,56 @@ class _RoomAvailabilityDialogState extends State<RoomAvailabilityDialog> {
 
   Widget _roomChip(String roomNo) {
     final isUsed = _useRoom.contains(roomNo);
-    final color = isUsed ? _usedColor : _freeColor;
+    final isSelected = _selected.contains(roomNo);
+    final color = isUsed
+        ? _usedColor
+        : (isSelected ? _selectedColor : _freeColor);
+
+    const label = TextStyle(
+      color: Colors.white,
+      fontSize: 14,
+      fontWeight: FontWeight.bold,
+    );
+
+    final chip = Container(
+      width: 78,
+      height: 40,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(6),
+      ),
+      // ติ๊กถูกกำกับไว้ด้วย เพื่อให้แยกออกแม้ผู้ใช้แยกสีไม่ได้
+      child: isSelected
+          ? Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.check, size: 15, color: Colors.white),
+                const SizedBox(width: 3),
+                Text(roomNo, style: label),
+              ],
+            )
+          : Text(roomNo, style: label),
+    );
+
+    // ห้องที่ใช้งานอยู่กดไม่ได้ ไม่ห่อ InkWell เพื่อไม่ให้มี ripple ชวนให้กด
+    if (isUsed) {
+      return Tooltip(
+        message: 'ห้อง $roomNo — ใช้งานอยู่ (เลือกไม่ได้)',
+        child: chip,
+      );
+    }
+
     return Tooltip(
-      message: isUsed ? 'ห้อง $roomNo — ใช้งานอยู่' : 'ห้อง $roomNo — ว่าง',
-      child: Container(
-        width: 78,
-        height: 40,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: color,
+      message: isSelected
+          ? 'ห้อง $roomNo — เลือกไว้ (คลิกอีกครั้งเพื่อยกเลิก)'
+          : 'ห้อง $roomNo — ว่าง (คลิกเพื่อเลือก)',
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
           borderRadius: BorderRadius.circular(6),
-        ),
-        child: Text(
-          roomNo,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 14,
-            fontWeight: FontWeight.bold,
-          ),
+          onTap: () => _toggleSelect(roomNo),
+          child: chip,
         ),
       ),
     );
@@ -392,6 +446,7 @@ class _RoomAvailabilityDialogState extends State<RoomAvailabilityDialog> {
       children: [
         _legendItem(_usedColor, 'ห้องที่ใช้งาน'),
         _legendItem(_freeColor, 'ห้องที่ว่าง'),
+        _legendItem(_selectedColor, 'ห้องที่เลือก'),
       ],
     );
   }
@@ -414,7 +469,18 @@ class _RoomAvailabilityDialogState extends State<RoomAvailabilityDialog> {
     );
   }
 
+  /// ยังไม่ผูกการบันทึกจริง — รอขั้นตอนที่จะกำหนดต่อไป
+  /// ตอนนี้แสดงห้องที่เลือกไว้เพื่อให้ทดสอบการเลือกได้ก่อน
+  void _onSavePressed() {
+    final rooms = _selected.toList()..sort();
+    context.showInfoSnackBar(
+      'เลือกไว้ ${rooms.length} ห้อง: ${rooms.join(', ')} '
+      '(ยังไม่ได้บันทึกลงระบบ)',
+    );
+  }
+
   Widget _footer() {
+    final canSave = _selected.isNotEmpty;
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
       child: Row(
@@ -422,11 +488,15 @@ class _RoomAvailabilityDialogState extends State<RoomAvailabilityDialog> {
         children: [
           if (widget.showSaveButton) ...[
             Tooltip(
-              message: 'ยังไม่เปิดใช้งาน — รอกำหนดเงื่อนไขการบันทึก',
+              message: canSave
+                  ? 'บันทึกห้องที่เลือกไว้ ${_selected.length} ห้อง'
+                  : 'เลือกห้องว่าง (สีเขียว) อย่างน้อย 1 ห้องก่อนจึงจะบันทึกได้',
               child: ElevatedButton.icon(
-                onPressed: null,
+                onPressed: canSave ? _onSavePressed : null,
                 icon: const Icon(Icons.save_outlined, size: 18),
-                label: const Text('บันทึก'),
+                label: Text(
+                  canSave ? 'บันทึก (${_selected.length})' : 'บันทึก',
+                ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF43A047),
                   foregroundColor: Colors.white,
