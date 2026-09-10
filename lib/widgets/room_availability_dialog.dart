@@ -30,11 +30,14 @@ class RoomAvailabilityDialog extends StatefulWidget {
   final String? stopDate; // yyyy-MM-dd
   final String roomTypeName;
 
-  /// แสดงปุ่ม "บันทึก" คู่กับปุ่มปิด — เปิดใช้จากแท็บกำหนดห้อง
+  /// โหมดเลือกห้อง — เปิดจากแท็บกำหนดห้องเท่านั้น
   ///
-  /// ปุ่มจะกดได้เมื่อเลือกห้องว่างไว้อย่างน้อย 1 ห้อง
+  /// เปิดอยู่: คลิกเลือกห้องว่างได้ มีตัวนับ "จำนวนที่เลือก" และปุ่มบันทึก
+  /// ปิดอยู่ (ค่าเริ่มต้น): เป็นหน้าดูอย่างเดียว คลิกห้องไม่ได้ ไม่มีปุ่มบันทึก
+  /// เช่นตอนเปิดจากแท็บข้อมูลสำรองห้อง
+  ///
   /// ตัวการบันทึกลงตารางยังไม่ผูก รอขั้นตอนการบันทึกที่จะกำหนดต่อไป
-  final bool showSaveButton;
+  final bool selectionMode;
 
   const RoomAvailabilityDialog({
     super.key,
@@ -44,7 +47,7 @@ class RoomAvailabilityDialog extends StatefulWidget {
     required this.startDate,
     required this.stopDate,
     required this.roomTypeName,
-    this.showSaveButton = false,
+    this.selectionMode = false,
   });
 
   @override
@@ -349,7 +352,8 @@ class _RoomAvailabilityDialogState extends State<RoomAvailabilityDialog> {
         _summaryItem('ห้องทั้งหมด', '${_totalRoom.length}', AppTheme.primaryColor),
         _summaryItem('ห้องที่ใช้งาน', '${_useRoom.length}', _usedColor),
         _summaryItem('จำนวนห้องที่ว่าง', '$_freeCount', _freeColor),
-        _summaryItem('จำนวนที่เลือก', '${_selected.length}', _selectedColor),
+        if (widget.selectionMode)
+          _summaryItem('จำนวนที่เลือก', '${_selected.length}', _selectedColor),
       ],
     );
   }
@@ -412,6 +416,14 @@ class _RoomAvailabilityDialogState extends State<RoomAvailabilityDialog> {
           : Text(roomNo, style: label),
     );
 
+    // นอกแท็บกำหนดห้องเป็นหน้าดูอย่างเดียว จึงไม่ห่อ InkWell เลย
+    if (!widget.selectionMode) {
+      return Tooltip(
+        message: isUsed ? 'ห้อง $roomNo — ใช้งานอยู่' : 'ห้อง $roomNo — ว่าง',
+        child: chip,
+      );
+    }
+
     // ห้องที่ใช้งานอยู่กดไม่ได้ ไม่ห่อ InkWell เพื่อไม่ให้มี ripple ชวนให้กด
     if (isUsed) {
       return Tooltip(
@@ -446,7 +458,7 @@ class _RoomAvailabilityDialogState extends State<RoomAvailabilityDialog> {
       children: [
         _legendItem(_usedColor, 'ห้องที่ใช้งาน'),
         _legendItem(_freeColor, 'ห้องที่ว่าง'),
-        _legendItem(_selectedColor, 'ห้องที่เลือก'),
+        if (widget.selectionMode) _legendItem(_selectedColor, 'ห้องที่เลือก'),
       ],
     );
   }
@@ -486,7 +498,7 @@ class _RoomAvailabilityDialogState extends State<RoomAvailabilityDialog> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
-          if (widget.showSaveButton) ...[
+          if (widget.selectionMode) ...[
             Tooltip(
               message: canSave
                   ? 'บันทึกห้องที่เลือกไว้ ${_selected.length} ห้อง'

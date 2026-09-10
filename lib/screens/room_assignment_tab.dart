@@ -66,7 +66,7 @@ class _RoomAssignmentTabState extends State<RoomAssignmentTab> {
                   startDate: widget.bookingData?['startdate']?.toString(),
                   stopDate: widget.bookingData?['stopdate']?.toString(),
                   roomTypeName: d.name ?? '',
-                  showSaveButton: true,
+                  selectionMode: true,
                 ),
               ),
             ],
