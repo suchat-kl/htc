@@ -91,6 +91,13 @@ class _RoomAvailabilityDialogState extends State<RoomAvailabilityDialog> {
   /// หมายเลขห้องที่ถูกเลือก — เลือกได้เฉพาะห้องว่างเท่านั้น
   final Set<String> _selected = {};
 
+  /// สถานะเริ่มต้นของ bookdetail ที่สร้างจากการกำหนดห้องพัก
+  ///
+  /// ต้องส่งไปกับ payload เอง ตั้งค่า default ไว้ที่ entity ฝั่ง Spring ไม่ได้ผล
+  /// เพราะ mapDtoToEntity เรียก setStatus(dto.getStatus()) ทับทุกครั้ง
+  /// ไม่ส่งมาก็จะกลายเป็น null
+  static const int _defaultStatus = 2;
+
   /// กันกดบันทึกซ้ำระหว่างที่ยังยิง API ไม่ครบทุกห้อง
   bool _saving = false;
   bool _isLoading = true;
@@ -586,6 +593,7 @@ class _RoomAvailabilityDialogState extends State<RoomAvailabilityDialog> {
             sequence: nextSequence + i,
             startDate: sd,
             stopDate: ed,
+            status: _defaultStatus,
           ),
         );
       }
