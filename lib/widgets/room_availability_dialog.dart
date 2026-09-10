@@ -485,7 +485,8 @@ class _RoomAvailabilityDialogState extends State<RoomAvailabilityDialog> {
   /// ตอนนี้แสดงห้องที่เลือกไว้เพื่อให้ทดสอบการเลือกได้ก่อน
   void _onSavePressed() {
     final rooms = _selected.toList()..sort();
-    context.showInfoSnackBar(
+    // ใช้ overlay ไม่ใช่ SnackBar ปกติ เพราะ dialog นี้บัง SnackBar จนอ่านไม่ออก
+    context.showOverlayMessage(
       'เลือกไว้ ${rooms.length} ห้อง: ${rooms.join(', ')} '
       '(ยังไม่ได้บันทึกลงระบบ)',
     );
