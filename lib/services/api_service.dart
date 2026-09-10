@@ -2754,6 +2754,28 @@ class ApiService {
     return response.data; //["bookdetails"];
   }
 
+  /// ลำดับห้องพักถัดไปที่ควรใช้ตอนบันทึกกำหนดห้องพัก
+  ///
+  /// backend คำนวณจาก max(sequence) ของ bookdetail ในใบจองนี้ เฉพาะประเภทห้อง
+  /// ที่ระบุ โดยกรองด้วยช่วงวันที่ของ "ใบจอง" (bookroom) ไม่ใช่วันที่ของแถวที่
+  /// กำลังบันทึก จึงไม่ต้องส่งวันที่มาเอง
+  ///
+  /// คืน 1 เมื่อใบจองนั้นยังไม่มีห้องประเภทนี้เลย
+  Future<int> getNextRoomSequence({
+    required int bookId,
+    required int roomTypeId,
+  }) async {
+    await _ensureToken();
+
+    final response = await dio.get(
+      '/api/auth/bookdetails/max-sequence',
+      queryParameters: {'bookId': bookId, 'roomTypeId': roomTypeId},
+    );
+
+    final sequence = response.data['sequence'] as Map<String, dynamic>?;
+    return (sequence?['nextSequence'] as int?) ?? 1;
+  }
+
   // ============ SCHEDULE API (t_schedule) ============
   //
   // ตารางนี้ใช้ composite key roomID + scheduleDate + fromTime + toTime
