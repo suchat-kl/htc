@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../config/theme.dart';
+import '../models/bookdetail.dart';
 import '../services/api_service.dart';
 import '../utils/logger.dart';
 import '../utils/snackbar_helper.dart';
@@ -26,6 +27,12 @@ class RoomAvailabilityDialog extends StatefulWidget {
   final ApiService apiService;
   final int bookId;
   final int roomTypeId;
+
+  /// รหัสรายการขอจอง (bookroomdetail) ของแถวที่กดปุ่มกำหนดห้องพัก
+  ///
+  /// bookdetail.bookroomid เป็น NOT NULL และไม่มีความสัมพันธ์ JPA ให้ Hibernate
+  /// เติมให้ จึงต้องส่งค่านี้ไปเองตอนบันทึก ไม่มีค่านี้ = บันทึกไม่ได้
+  final int? bookRoomId;
   final String? startDate; // yyyy-MM-dd
   final String? stopDate; // yyyy-MM-dd
   final String roomTypeName;
@@ -47,6 +54,7 @@ class RoomAvailabilityDialog extends StatefulWidget {
     required this.startDate,
     required this.stopDate,
     required this.roomTypeName,
+    this.bookRoomId,
     this.selectionMode = false,
   });
 
@@ -69,6 +77,9 @@ class _RoomAvailabilityDialogState extends State<RoomAvailabilityDialog> {
 
   /// หมายเลขห้องที่ถูกเลือก — เลือกได้เฉพาะห้องว่างเท่านั้น
   final Set<String> _selected = {};
+
+  /// กันกดบันทึกซ้ำระหว่างที่ยังยิง API ไม่ครบทุกห้อง
+  bool _saving = false;
   bool _isLoading = true;
   String? _error;
 
@@ -203,6 +214,7 @@ class _RoomAvailabilityDialogState extends State<RoomAvailabilityDialog> {
   ///
   /// Set.remove คืน false เมื่อยังไม่มีอยู่ จึงใช้เป็นตัวตัดสินได้ในบรรทัดเดียว
   void _toggleSelect(String roomNo) {
+    if (_saving) return;
     setState(() {
       if (!_selected.remove(roomNo)) _selected.add(roomNo);
     });
@@ -481,19 +493,126 @@ class _RoomAvailabilityDialogState extends State<RoomAvailabilityDialog> {
     );
   }
 
-  /// ยังไม่ผูกการบันทึกจริง — รอขั้นตอนที่จะกำหนดต่อไป
-  /// ตอนนี้แสดงห้องที่เลือกไว้เพื่อให้ทดสอบการเลือกได้ก่อน
-  void _onSavePressed() {
-    final rooms = _selected.toList()..sort();
-    // ใช้ overlay ไม่ใช่ SnackBar ปกติ เพราะ dialog นี้บัง SnackBar จนอ่านไม่ออก
-    context.showOverlayMessage(
-      'เลือกไว้ ${rooms.length} ห้อง: ${rooms.join(', ')} '
-      '(ยังไม่ได้บันทึกลงระบบ)',
-    );
+  /// เรียงหมายเลขห้องจากน้อยไปมาก
+  ///
+  /// เทียบเป็นตัวเลขเมื่อแปลงได้ทั้งคู่ ไม่งั้น '1001' จะมาก่อน '201'
+  static int _byRoomNo(String a, String b) {
+    final na = int.tryParse(a);
+    final nb = int.tryParse(b);
+    if (na != null && nb != null) return na.compareTo(nb);
+    return a.compareTo(b);
+  }
+
+  /// หา roomID จากหมายเลขห้อง
+  ///
+  /// ฝั่ง backend ค้น roomNO ด้วย LIKE %..% จึงได้ห้องอื่นติดมาด้วย
+  /// (ค้น '201' ได้ '1201' ด้วย) ต้องคัดให้ตรงตัวเองอีกชั้น
+  Future<int> _findRoomId(String roomNo) async {
+    late final Map<String, dynamic> res;
+    try {
+      res = await widget.apiService.getRooms(roomNO: roomNo);
+    } catch (e) {
+      throw _ApiFailure(_describe(e, 'ค้นหารหัสห้อง $roomNo (rooms)'));
+    }
+
+    final rooms = (res['rooms'] as List? ?? const []);
+    for (final j in rooms) {
+      final m = j as Map;
+      if (m['roomNO']?.toString() == roomNo) {
+        final id = m['roomID'] as int?;
+        if (id != null) return id;
+      }
+    }
+    throw _ApiFailure('ไม่พบรหัสห้อง (roomID) ของหมายเลขห้อง $roomNo');
+  }
+
+  /// บันทึกห้องที่เลือกลง bookdetail ทีละห้อง
+  ///
+  /// sequence เริ่มจาก nextSequence ที่ backend คำนวณให้ แล้วไล่ +1 ตามลำดับ
+  /// ห้องที่เรียงจากน้อยไปมาก เช่น 201->10, 202->11, 203->12
+  Future<void> _save() async {
+    if (_saving) return;
+
+    final bookRoomId = widget.bookRoomId;
+    if (bookRoomId == null) {
+      context.showOverlayMessage(
+        'รายการนี้ไม่มีรหัสรายการขอจอง (bookRoomId) จึงบันทึกไม่ได้',
+        icon: Icons.error_outline,
+        background: Colors.red,
+      );
+      return;
+    }
+
+    final sd = _isoDate(widget.startDate);
+    final ed = _isoDate(widget.stopDate);
+    if (sd == null || ed == null) {
+      context.showOverlayMessage(
+        'รายการนี้ไม่มีช่วงวันที่ จึงบันทึกไม่ได้',
+        icon: Icons.error_outline,
+        background: Colors.red,
+      );
+      return;
+    }
+
+    final rooms = _selected.toList()..sort(_byRoomNo);
+    setState(() => _saving = true);
+
+    try {
+      final nextSequence = await widget.apiService.getNextRoomSequence(
+        bookId: widget.bookId,
+        roomTypeId: widget.roomTypeId,
+      );
+
+      for (var i = 0; i < rooms.length; i++) {
+        final roomNo = rooms[i];
+        final roomId = await _findRoomId(roomNo);
+
+        await widget.apiService.createBookDetail(
+          BookDetail(
+            bookRoomId: bookRoomId,
+            bookId: widget.bookId,
+            roomTypeId: widget.roomTypeId,
+            roomId: roomId,
+            roomNo: roomNo,
+            sequence: nextSequence + i,
+            startDate: sd,
+            stopDate: ed,
+          ),
+        );
+      }
+
+      if (!mounted) return;
+      // ใช้ overlay ไม่ใช่ SnackBar ปกติ เพราะ dialog นี้บัง SnackBar จนอ่านไม่ออก
+      context.showOverlayMessage(
+        'บันทึกกำหนดห้องพักแล้ว ${rooms.length} ห้อง '
+        '(ลำดับ $nextSequence-${nextSequence + rooms.length - 1})',
+        icon: Icons.check_circle_outline,
+        background: const Color(0xFF43A047),
+      );
+
+      // โหลดใหม่เพื่อให้ห้องที่เพิ่งบันทึกกลายเป็นสีม่วง และล้างการเลือก
+      setState(() => _saving = false);
+      await _load();
+    } catch (e) {
+      if (AppLogger.on) AppLogger.d('Error saving room assignment: $e');
+      if (!mounted) return;
+      setState(() => _saving = false);
+      context.showOverlayMessage(
+        e is _ApiFailure
+            ? e.message
+            : 'บันทึกไม่สำเร็จ — '
+                  '${e.toString().replaceAll('Exception: ', '')}',
+        icon: Icons.error_outline,
+        background: Colors.red,
+        duration: const Duration(seconds: 5),
+      );
+      // อาจบันทึกสำเร็จไปแล้วบางห้องก่อนจะพัง จึงต้องโหลดใหม่ให้ตรงของจริง
+      await _load();
+    }
   }
 
   Widget _footer() {
-    final canSave = _selected.isNotEmpty;
+    final canSave = _selected.isNotEmpty && !_saving;
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
       child: Row(
@@ -501,14 +620,29 @@ class _RoomAvailabilityDialogState extends State<RoomAvailabilityDialog> {
         children: [
           if (widget.selectionMode) ...[
             Tooltip(
-              message: canSave
-                  ? 'บันทึกห้องที่เลือกไว้ ${_selected.length} ห้อง'
-                  : 'เลือกห้องว่าง (สีเขียว) อย่างน้อย 1 ห้องก่อนจึงจะบันทึกได้',
+              message: _saving
+                  ? 'กำลังบันทึก...'
+                  : (canSave
+                        ? 'บันทึกห้องที่เลือกไว้ ${_selected.length} ห้อง'
+                        : 'เลือกห้องว่าง (สีเขียว) อย่างน้อย 1 ห้องก่อนจึงจะบันทึกได้'),
               child: ElevatedButton.icon(
-                onPressed: canSave ? _onSavePressed : null,
-                icon: const Icon(Icons.save_outlined, size: 18),
+                onPressed: canSave ? _save : null,
+                icon: _saving
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Icon(Icons.save_outlined, size: 18),
                 label: Text(
-                  canSave ? 'บันทึก (${_selected.length})' : 'บันทึก',
+                  _saving
+                      ? 'กำลังบันทึก...'
+                      : (_selected.isEmpty
+                            ? 'บันทึก'
+                            : 'บันทึก (${_selected.length})'),
                 ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF43A047),

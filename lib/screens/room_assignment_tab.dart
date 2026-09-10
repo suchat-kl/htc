@@ -63,9 +63,15 @@ class _RoomAssignmentTabState extends State<RoomAssignmentTab> {
                   apiService: widget.apiService,
                   bookId: widget.bookId,
                   roomTypeId: d.roomTypeId!,
-                  startDate: widget.bookingData?['startdate']?.toString(),
-                  stopDate: widget.bookingData?['stopdate']?.toString(),
+                  // ใช้ช่วงวันที่ของแถวที่กำลังกำหนดห้อง ถ้าแถวไม่มีค่อยถอย
+                  // ไปใช้ของใบจอง — ค่านี้ถูกบันทึกลง bookdetail ด้วย
+                  startDate:
+                      d.startDate ??
+                      widget.bookingData?['startdate']?.toString(),
+                  stopDate:
+                      d.stopDate ?? widget.bookingData?['stopdate']?.toString(),
                   roomTypeName: d.name ?? '',
+                  bookRoomId: d.bookRoomId,
                   selectionMode: true,
                 ),
               ),
