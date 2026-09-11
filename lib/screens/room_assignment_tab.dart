@@ -1,6 +1,7 @@
 // สร้างไฟล์ room_assignment_tab.dart
 import 'package:flutter/material.dart';
 import 'package:highway_training/services/api_service.dart';
+import 'package:highway_training/widgets/booking_room_assignment_section.dart';
 import 'package:highway_training/widgets/booking_room_list_section.dart';
 import 'package:highway_training/widgets/booking_summary_bar.dart';
 import 'package:highway_training/widgets/room_availability_dialog.dart';
@@ -28,6 +29,17 @@ class RoomAssignmentTab extends StatefulWidget {
 class _RoomAssignmentTabState extends State<RoomAssignmentTab> {
   /// จำกัดความกว้างบนจอกว้าง ให้ตรงกับแท็บข้อมูลสำรองห้อง
   static const double _maxFormWidth = 1180;
+
+  /// เพิ่มค่าทุกครั้งที่ dialog ตรวจสอบห้องว่างปิดลง ตารางห้องพักที่กำหนดแล้ว
+  /// ฟังค่านี้อยู่ จึงโหลดใหม่ให้เห็นห้องที่เพิ่งบันทึกทันที
+  final _assignmentsChanged = ValueNotifier<int>(0);
+
+  @override
+  void dispose() {
+    _assignmentsChanged.dispose();
+    super.dispose();
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -59,6 +71,7 @@ class _RoomAssignmentTabState extends State<RoomAssignmentTab> {
                 actionLabel: 'กำหนดห้องพัก',
                 showAddButton: false,
                 showRowActions: false,
+                onDialogClosed: () => _assignmentsChanged.value++,
                 availabilityDialogBuilder: (ctx, d) => RoomAvailabilityDialog(
                   apiService: widget.apiService,
                   bookId: widget.bookId,
@@ -73,6 +86,13 @@ class _RoomAssignmentTabState extends State<RoomAssignmentTab> {
                   bookRoomId: d.bookRoomId,
                   selectionMode: true,
                 ),
+              ),
+              const SizedBox(height: 16),
+              // ห้องพักที่กำหนดแล้ว — แก้ไขได้เฉพาะลำดับ ชื่อ เบอร์ติดต่อ และสถานะ
+              BookingRoomAssignmentSection(
+                apiService: widget.apiService,
+                bookId: widget.bookId,
+                refreshSignal: _assignmentsChanged,
               ),
             ],
           ),

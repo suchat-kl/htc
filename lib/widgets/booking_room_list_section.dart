@@ -46,6 +46,10 @@ class BookingRoomListSection extends StatefulWidget {
   /// แสดงปุ่ม "เพิ่มรายการ" ด้านบน — ปิดในแท็บที่ไม่ได้จัดการรายการ
   final bool showAddButton;
 
+  /// เรียกหลัง dialog ที่เปิดจากปุ่มท้ายแถวปิดลง — ให้หน้าแม่โหลดส่วนอื่นใหม่
+  /// เช่นตารางห้องพักที่กำหนดแล้ว ซึ่งถูก dialog บังอยู่ตลอดเวลาที่เปิด
+  final VoidCallback? onDialogClosed;
+
   const BookingRoomListSection({
     super.key,
     required this.apiService,
@@ -58,6 +62,7 @@ class BookingRoomListSection extends StatefulWidget {
     this.actionLabel = 'ตรวจสอบห้องว่าง',
     this.showRowActions = true,
     this.showAddButton = true,
+    this.onDialogClosed,
     this.defaultStartDate,
     this.defaultStopDate,
   });
@@ -230,6 +235,7 @@ class _BookingRoomListSectionState extends State<BookingRoomListSection> {
       context: context,
       builder: (ctx) => widget.availabilityDialogBuilder(ctx, d),
     );
+    widget.onDialogClosed?.call();
   }
 
   /// ให้หน้าแม่สั่งโหลดใหม่ได้ เช่นหลังบันทึกข้อมูลใบจอง

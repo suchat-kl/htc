@@ -7,6 +7,12 @@
 class RoomAssignment {
   /// PK ของ bookdetail — ใช้อ้างถึงแถวตอนลบ
   final int? bookIdDetail;
+
+  /// คอลัมน์ NOT NULL ของ bookdetail — ส่งกลับไปพร้อม update ให้ครบ
+  final int? bookRoomId;
+  final int? bookId;
+  final int? roomId;
+
   final int? sequence;
   final String? roomNo;
   final String? contractName;
@@ -18,6 +24,9 @@ class RoomAssignment {
 
   RoomAssignment({
     this.bookIdDetail,
+    this.bookRoomId,
+    this.bookId,
+    this.roomId,
     this.sequence,
     this.roomNo,
     this.contractName,
@@ -31,6 +40,9 @@ class RoomAssignment {
   factory RoomAssignment.fromJson(Map<String, dynamic> json) {
     return RoomAssignment(
       bookIdDetail: json['bookIdDetail'] as int?,
+      bookRoomId: json['bookRoomId'] as int?,
+      bookId: json['bookId'] as int?,
+      roomId: json['roomId'] as int?,
       sequence: json['sequence'] as int?,
       roomNo: json['roomNo'] as String?,
       contractName: json['contractName'] as String?,
