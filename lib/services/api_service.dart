@@ -2801,7 +2801,8 @@ class ApiService {
 
   /// ตารางเวลาของห้องในใบจองหนึ่ง ตามช่วงวันที่และประเภทห้อง
   ///
-  /// ตรงกับ query ที่กันประเภทห้องกิจกรรม (7, 8) ออกแล้วฝั่ง backend
+  /// ตรงกับ query ฝั่ง backend ที่ตัดประเภทห้องพัก (7, 8) ออก
+  /// เพราะมีเฉพาะห้องกิจกรรมที่จองเป็นช่วงเวลา ห้องพักไม่มีตารางเวลา
   Future<List<Schedule>> getSchedulesByBook({
     required int bookId,
     required int roomTypeId,
