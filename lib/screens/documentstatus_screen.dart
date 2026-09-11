@@ -590,6 +590,15 @@ class _DocumentStatusScreenState extends State<DocumentStatusScreen> {
                                     IconButton(
                                       onPressed: _currentPage > 0
                                           ? () {
+                                              setState(() => _currentPage = 0);
+                                              _loadData();
+                                            }
+                                          : null,
+                                      icon: const Icon(Icons.first_page),
+                                    ),
+                                    IconButton(
+                                      onPressed: _currentPage > 0
+                                          ? () {
                                               setState(() => _currentPage--);
                                               _loadData();
                                             }
@@ -608,6 +617,15 @@ class _DocumentStatusScreenState extends State<DocumentStatusScreen> {
                                             }
                                           : null,
                                       icon: const Icon(Icons.chevron_right),
+                                    ),
+                                    IconButton(
+                                      onPressed: _currentPage < _totalPages - 1
+                                          ? () {
+                                              setState(() => _currentPage = _totalPages - 1);
+                                              _loadData();
+                                            }
+                                          : null,
+                                      icon: const Icon(Icons.last_page),
                                     ),
                                   ],
                                 ),

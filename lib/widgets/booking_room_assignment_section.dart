@@ -433,6 +433,12 @@ class _BookingRoomAssignmentSectionState
         ),
         const SizedBox(width: 16),
         IconButton(
+          onPressed: _page > 0 ? () => setState(() => _page = 0) : null,
+          icon: const Icon(Icons.first_page),
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(),
+        ),
+        IconButton(
           onPressed: _page > 0 ? () => setState(() => _page--) : null,
           icon: const Icon(Icons.chevron_left),
           padding: EdgeInsets.zero,
@@ -450,6 +456,14 @@ class _BookingRoomAssignmentSectionState
               ? () => setState(() => _page++)
               : null,
           icon: const Icon(Icons.chevron_right),
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(),
+        ),
+        IconButton(
+          onPressed: _page < _totalPages - 1
+              ? () => setState(() => _page = _totalPages - 1)
+              : null,
+          icon: const Icon(Icons.last_page),
           padding: EdgeInsets.zero,
           constraints: const BoxConstraints(),
         ),

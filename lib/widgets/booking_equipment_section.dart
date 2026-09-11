@@ -431,6 +431,17 @@ class _BookingEquipmentSectionState extends State<BookingEquipmentSection> {
         IconButton(
           onPressed: _page > 0
               ? () {
+                  setState(() => _page = 0);
+                  _load();
+                }
+              : null,
+          icon: const Icon(Icons.first_page),
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(),
+        ),
+        IconButton(
+          onPressed: _page > 0
+              ? () {
                   setState(() => _page--);
                   _load();
                 }
@@ -454,6 +465,17 @@ class _BookingEquipmentSectionState extends State<BookingEquipmentSection> {
                 }
               : null,
           icon: const Icon(Icons.chevron_right),
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(),
+        ),
+        IconButton(
+          onPressed: _page < totalPages - 1
+              ? () {
+                  setState(() => _page = totalPages - 1);
+                  _load();
+                }
+              : null,
+          icon: const Icon(Icons.last_page),
           padding: EdgeInsets.zero,
           constraints: const BoxConstraints(),
         ),

@@ -708,6 +708,17 @@ class _BookingListScreenState extends State<BookingListScreen> {
               IconButton(
                 onPressed: _currentPage > 0
                     ? () {
+                        setState(() => _currentPage = 0);
+                        _searchBookings();
+                      }
+                    : null,
+                icon: const Icon(Icons.first_page),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+              ),
+              IconButton(
+                onPressed: _currentPage > 0
+                    ? () {
                         setState(() => _currentPage--);
                         _searchBookings();
                       }
@@ -728,6 +739,17 @@ class _BookingListScreenState extends State<BookingListScreen> {
                       }
                     : null,
                 icon: const Icon(Icons.chevron_right),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+              ),
+              IconButton(
+                onPressed: _currentPage < _totalPages - 1
+                    ? () {
+                        setState(() => _currentPage = _totalPages - 1);
+                        _searchBookings();
+                      }
+                    : null,
+                icon: const Icon(Icons.last_page),
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),
               ),
