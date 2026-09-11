@@ -17,6 +17,7 @@ import 'package:highway_training/models/maintenance.dart';
 import 'package:highway_training/models/organization.dart';
 import 'package:highway_training/models/part.dart';
 import 'package:highway_training/models/room.dart';
+import 'package:highway_training/models/room_assignment.dart';
 import 'package:highway_training/models/schedule.dart';
 import 'package:highway_training/models/roomtype.dart';
 import 'package:highway_training/models/roomtype_commodity.dart';
@@ -2774,6 +2775,23 @@ class ApiService {
 
     final sequence = response.data['sequence'] as Map<String, dynamic>?;
     return (sequence?['nextSequence'] as int?) ?? 1;
+  }
+
+  /// รายการกำหนดห้องพักของใบจอง เฉพาะประเภทห้องพัก เรียงตามลำดับ (sequence)
+  ///
+  /// status เป็นรหัสตัวเลข backend แปลงเป็น statusName มาให้แล้ว แสดงผลได้เลย
+  Future<List<RoomAssignment>> getRoomAssignments(int bookId) async {
+    await _ensureToken();
+
+    final response = await dio.get(
+      '/api/auth/bookdetails/room-assignments',
+      queryParameters: {'bookId': bookId},
+    );
+
+    final list = response.data['bookdetails'] as List? ?? const [];
+    return list
+        .map((j) => RoomAssignment.fromJson(j as Map<String, dynamic>))
+        .toList();
   }
 
   // ============ SCHEDULE API (t_schedule) ============
