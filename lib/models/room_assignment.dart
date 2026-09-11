@@ -5,6 +5,8 @@
 /// มาจาก GET /api/auth/bookdetails/room-assignments — ใช้แสดงผลอย่างเดียว
 /// status เป็นรหัสตัวเลข ส่วน statusName คือชื่อสถานะที่ backend แปลงมาให้แล้ว
 class RoomAssignment {
+  /// PK ของ bookdetail — ใช้อ้างถึงแถวตอนลบ
+  final int? bookIdDetail;
   final int? sequence;
   final String? roomNo;
   final String? contractName;
@@ -15,6 +17,7 @@ class RoomAssignment {
   final String? statusName;
 
   RoomAssignment({
+    this.bookIdDetail,
     this.sequence,
     this.roomNo,
     this.contractName,
@@ -27,6 +30,7 @@ class RoomAssignment {
 
   factory RoomAssignment.fromJson(Map<String, dynamic> json) {
     return RoomAssignment(
+      bookIdDetail: json['bookIdDetail'] as int?,
       sequence: json['sequence'] as int?,
       roomNo: json['roomNo'] as String?,
       contractName: json['contractName'] as String?,
