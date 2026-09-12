@@ -189,28 +189,41 @@ class _ScheduleAvailabilityDialogState
     });
   }
 
-  /// หา roomID ของห้องกิจกรรมนี้
+  /// หา roomID ของห้องกิจกรรมนี้ จากประเภทห้องของแถวที่กดเข้ามา
   ///
-  /// หน้าจอนี้รู้แค่ประเภทห้อง จึงใช้ชื่อที่แสดงอยู่ (roomName) เป็น roomNO
-  /// ฝั่ง backend ค้น roomNO ด้วย LIKE %..% จึงได้ห้องอื่นติดมาด้วย
-  /// ต้องคัดให้ตรงตัวเองอีกชั้น
-  Future<int> _findRoomId(String roomNo) async {
+  /// ค้นด้วย roomTypeID ไม่ใช่ชื่อห้อง เพราะ m_room.roomno เก็บว่า "สัมนา 1"
+  /// แต่ชื่อประเภทห้องที่แสดงบนหน้าจอคือ "ห้องสัมนา 1" สองค่านี้ไม่ตรงกัน
+  /// ส่วน roomtypeid จับคู่กับห้องกิจกรรมแบบหนึ่งต่อหนึ่งอยู่แล้ว
+  Future<int> _findRoomId() async {
     late final Map<String, dynamic> res;
     try {
-      res = await widget.apiService.getRooms(roomNO: roomNo);
+      res = await widget.apiService.getRooms(roomTypeID: widget.roomTypeId);
     } catch (e) {
-      throw Exception(_describe(e, 'ค้นหารหัสห้อง $roomNo (rooms)'));
+      throw Exception(_describe(e, 'ค้นหารหัสห้องของ ${widget.roomName}'));
     }
 
-    final rooms = (res['rooms'] as List? ?? const []);
-    for (final j in rooms) {
-      final m = j as Map;
-      if (m['roomNO']?.toString() == roomNo) {
-        final id = m['roomID'] as int?;
-        if (id != null) return id;
-      }
+    // กันไว้อีกชั้นเผื่อ backend เปลี่ยนวิธีกรอง
+    final rooms = (res['rooms'] as List? ?? const [])
+        .cast<Map>()
+        .where((m) => m['roomTypeID'] == widget.roomTypeId)
+        .toList();
+
+    if (rooms.isEmpty) {
+      throw Exception('ไม่พบห้องของประเภทห้อง ${widget.roomName}');
     }
-    throw Exception('ไม่พบรหัสห้อง (roomID) ของห้อง $roomNo');
+    if (rooms.length > 1) {
+      final names = rooms.map((m) => m['roomNO'] ?? '-').join(', ');
+      throw Exception(
+        'ประเภทห้อง ${widget.roomName} มีหลายห้อง ($names) '
+        'จึงเลือกให้ไม่ได้ว่าจะบันทึกลงห้องไหน',
+      );
+    }
+
+    final id = rooms.first['roomID'] as int?;
+    if (id == null) {
+      throw Exception('ไม่พบรหัสห้อง (roomID) ของ ${widget.roomName}');
+    }
+    return id;
   }
 
   /// บันทึกช่วงเวลาที่เลือกลง t_schedule ทีละช่วง
@@ -223,7 +236,7 @@ class _ScheduleAvailabilityDialogState
 
     final slots = _selected.toList()..sort();
     try {
-      final roomId = await _findRoomId(widget.roomName);
+      final roomId = await _findRoomId();
 
       for (final key in slots) {
         final parts = key.split('|');
