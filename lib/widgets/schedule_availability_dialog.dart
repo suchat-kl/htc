@@ -7,6 +7,7 @@ import '../config/theme.dart';
 import '../models/schedule.dart';
 import '../services/api_service.dart';
 import '../utils/logger.dart';
+import '../utils/snackbar_helper.dart';
 import '../utils/util.dart';
 
 /// ช่วงเวลาที่แสดงในตาราง — ค่าเก็บแบบตัวเลขเหมือนในฐานข้อมูล (800 = 08:00)
@@ -23,6 +24,7 @@ class _Slot {
 /// - แถว     = ช่วงเวลาคงที่ 4 ช่วง ตั้งแต่ 08:00 ถึง 22:00
 /// - ม่วง    = มีรายการใน t_schedule ตรงกับวันและช่วงเวลานั้น
 /// - เขียว   = ไม่มีรายการ ถือว่าว่าง
+/// - ส้ม     = ช่วงเวลาที่ผู้ใช้เลือกไว้ (เฉพาะโหมดกำหนดห้องกิจกรรม)
 class ScheduleAvailabilityDialog extends StatefulWidget {
   final ApiService apiService;
   final int bookId;
@@ -34,6 +36,13 @@ class ScheduleAvailabilityDialog extends StatefulWidget {
   final String? startDate; // yyyy-MM-dd
   final String? stopDate; // yyyy-MM-dd
 
+  /// โหมดกำหนดห้องกิจกรรม — เปิดจากแท็บกำหนดห้องเท่านั้น
+  ///
+  /// เปิดอยู่: คลิกเลือกช่วงเวลาที่ว่างได้ มีตัวนับและปุ่มบันทึก
+  /// ปิดอยู่ (ค่าเริ่มต้น): เป็นหน้าดูอย่างเดียว คลิกไม่ได้ ไม่มีปุ่มบันทึก
+  /// เช่นตอนกดปุ่มตรวจสอบห้องว่างจากแท็บข้อมูลสำรองห้อง
+  final bool selectionMode;
+
   const ScheduleAvailabilityDialog({
     super.key,
     required this.apiService,
@@ -42,6 +51,7 @@ class ScheduleAvailabilityDialog extends StatefulWidget {
     required this.roomName,
     required this.startDate,
     required this.stopDate,
+    this.selectionMode = false,
   });
 
   @override
@@ -54,6 +64,17 @@ class _ScheduleAvailabilityDialogState
   static const Color _usedColor = Color(0xFF7A6FCB); // ม่วง = ใช้งานอยู่
   static const Color _freeColor = Color(0xFF34D3AE); // เขียว = ว่าง
 
+  /// ส้ม = ช่วงเวลาที่ผู้ใช้เลือกไว้
+  ///
+  /// เลี่ยงเขียวและม่วงเพราะสองสีนั้นสื่อสถานะของช่วงเวลาอยู่แล้ว
+  static const Color _selectedColor = Color(0xFFF57C00);
+
+  static const TextStyle _cellLabel = TextStyle(
+    color: Colors.white,
+    fontSize: 14,
+    fontWeight: FontWeight.bold,
+  );
+
   /// ช่วงเวลาตามที่กำหนดในสเปก 08:00–22:00
   static const List<_Slot> _slots = [
     _Slot(800, 1600),
@@ -64,6 +85,9 @@ class _ScheduleAvailabilityDialogState
 
   List<Schedule> _schedules = [];
   List<DateTime> _dates = [];
+
+  /// ช่วงเวลาที่เลือกไว้ — เก็บเป็น yyyy-MM-dd|from|to เลือกได้เฉพาะช่องที่ว่าง
+  final Set<String> _selected = {};
   bool _isLoading = true;
   String? _error;
 
@@ -77,6 +101,8 @@ class _ScheduleAvailabilityDialogState
     setState(() {
       _isLoading = true;
       _error = null;
+      // ช่วงเวลาที่เคยเลือกอาจถูกจองไปแล้วระหว่างนี้ จึงต้องเริ่มนับใหม่
+      _selected.clear();
     });
 
     final sd = _parse(widget.startDate);
@@ -145,6 +171,29 @@ class _ScheduleAvailabilityDialogState
     );
   }
 
+  /// คีย์ของช่องหนึ่งในตาราง — วันที่คู่กับช่วงเวลา
+  static String _slotKey(DateTime date, _Slot slot) =>
+      '${DateFormat('yyyy-MM-dd').format(date)}|${slot.from}|${slot.to}';
+
+  /// สลับสถานะเลือก/ไม่เลือกของช่องหนึ่ง
+  ///
+  /// Set.remove คืน false เมื่อยังไม่มีอยู่ จึงใช้เป็นตัวตัดสินได้ในบรรทัดเดียว
+  void _toggleSelect(DateTime date, _Slot slot) {
+    final key = _slotKey(date, slot);
+    setState(() {
+      if (!_selected.remove(key)) _selected.add(key);
+    });
+  }
+
+  /// ยังไม่ผูกการบันทึกจริง — รอขั้นตอนที่จะกำหนดต่อไป
+  /// ตอนนี้แสดงจำนวนที่เลือกไว้เพื่อให้ทดสอบการเลือกได้ก่อน
+  void _save() {
+    // ใช้ overlay เพราะ SnackBar ปกติจะถูก dialog นี้บัง
+    context.showOverlayMessage(
+      'เลือกไว้ ${_selected.length} ช่วงเวลา (ยังไม่ได้บันทึกลงระบบ)',
+    );
+  }
+
   String _describe(Object e, String what) {
     if (e is DioException) {
       final code = e.response?.statusCode;
@@ -193,10 +242,10 @@ class _ScheduleAvailabilityDialogState
         children: [
           const Icon(Icons.event_available_outlined, color: Colors.white),
           const SizedBox(width: 10),
-          const Expanded(
+          Expanded(
             child: Text(
-              'ตรวจสอบห้องว่าง',
-              style: TextStyle(
+              widget.selectionMode ? 'กำหนดห้องกิจกรรม' : 'ตรวจสอบห้องว่าง',
+              style: const TextStyle(
                 color: Colors.white,
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -273,6 +322,10 @@ class _ScheduleAvailabilityDialogState
               _legend(),
             ],
           ),
+          if (widget.selectionMode) ...[
+            const SizedBox(height: 10),
+            _selectedSummary(),
+          ],
           const SizedBox(height: 16),
           // ตารางกว้างกว่าจอได้เมื่อช่วงวันที่ยาว จึงให้เลื่อนแนวนอนในกล่องตัวเอง
           SingleChildScrollView(
@@ -321,31 +374,93 @@ class _ScheduleAvailabilityDialogState
 
   Widget _cell(DateTime date, _Slot slot) {
     final used = _isUsed(date, slot);
+    final selected = _selected.contains(_slotKey(date, slot));
     final label = '${_hhmm(slot.from)} - ${_hhmm(slot.to)}';
-    return Padding(
-      padding: const EdgeInsets.only(right: 4, bottom: 4),
-      child: Tooltip(
-        message: used
-            ? '${Util.toBuddhistYearDisplay(date)} $label — ใช้งานอยู่'
-            : '${Util.toBuddhistYearDisplay(date)} $label — ว่าง',
-        child: Container(
-          width: 146,
-          height: 40,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: used ? _usedColor : _freeColor,
+    final day = Util.toBuddhistYearDisplay(date);
+
+    final box = Container(
+      width: 146,
+      height: 40,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: used ? _usedColor : (selected ? _selectedColor : _freeColor),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      // ติ๊กถูกกำกับไว้ด้วย เพื่อให้แยกออกแม้ผู้ใช้แยกสีไม่ได้
+      child: selected
+          ? Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.check, size: 15, color: Colors.white),
+                const SizedBox(width: 4),
+                Text(label, style: _cellLabel),
+              ],
+            )
+          : Text(label, style: _cellLabel),
+    );
+
+    // นอกโหมดกำหนดห้องกิจกรรมเป็นหน้าดูอย่างเดียว จึงไม่ห่อ InkWell เลย
+    if (!widget.selectionMode) {
+      final state = used ? 'ใช้งานอยู่' : 'ว่าง';
+      return _cellBox(Tooltip(message: '$day $label — $state', child: box));
+    }
+
+    // ช่วงเวลาที่ใช้งานอยู่กดไม่ได้ ไม่ห่อ InkWell เพื่อไม่ให้มี ripple ชวนให้กด
+    if (used) {
+      return _cellBox(
+        Tooltip(message: '$day $label — ใช้งานอยู่ (เลือกไม่ได้)', child: box),
+      );
+    }
+
+    return _cellBox(
+      Tooltip(
+        message: selected
+            ? '$day $label — เลือกไว้ (คลิกอีกครั้งเพื่อยกเลิก)'
+            : '$day $label — ว่าง (คลิกเพื่อเลือก)',
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
             borderRadius: BorderRadius.circular(6),
-          ),
-          child: Text(
-            label,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-            ),
+            onTap: () => _toggleSelect(date, slot),
+            child: box,
           ),
         ),
       ),
+    );
+  }
+
+  Widget _cellBox(Widget child) => Padding(
+    padding: const EdgeInsets.only(right: 4, bottom: 4),
+    child: child,
+  );
+
+  /// จำนวนช่วงเวลาที่เลือกไว้ แสดงเฉพาะโหมดกำหนดห้องกิจกรรม
+  Widget _selectedSummary() {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 10,
+          height: 10,
+          decoration: BoxDecoration(
+            color: _selectedColor,
+            borderRadius: BorderRadius.circular(3),
+          ),
+        ),
+        const SizedBox(width: 8),
+        const Text(
+          'จำนวนช่วงเวลาที่เลือก ',
+          style: TextStyle(fontSize: 15, color: AppTheme.textSecondary),
+        ),
+        Text(
+          '${_selected.length}',
+          style: const TextStyle(
+            fontSize: 17,
+            fontWeight: FontWeight.bold,
+            color: _selectedColor,
+          ),
+        ),
+      ],
     );
   }
 
@@ -358,6 +473,8 @@ class _ScheduleAvailabilityDialogState
       children: [
         _legendItem(_usedColor, 'ช่วงเวลาที่ใช้งาน'),
         _legendItem(_freeColor, 'ช่วงเวลาที่ว่าง'),
+        if (widget.selectionMode)
+          _legendItem(_selectedColor, 'ช่วงเวลาที่เลือก'),
       ],
     );
   }
@@ -381,23 +498,56 @@ class _ScheduleAvailabilityDialogState
   }
 
   Widget _footer() {
+    final canSave = _selected.isNotEmpty;
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
-      child: Align(
-        alignment: Alignment.centerRight,
-        child: ElevatedButton.icon(
-          onPressed: () => Navigator.pop(context),
-          icon: const Icon(Icons.close, size: 18),
-          label: const Text('ปิด'),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFFE53935),
-            foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 14),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          if (widget.selectionMode) ...[
+            Tooltip(
+              message: canSave
+                  ? 'บันทึกช่วงเวลาที่เลือกไว้ ${_selected.length} ช่วง'
+                  : 'เลือกช่วงเวลาที่ว่าง (สีเขียว) อย่างน้อย 1 ช่วงก่อนจึงจะบันทึกได้',
+              child: ElevatedButton.icon(
+                onPressed: canSave ? _save : null,
+                icon: const Icon(Icons.save_outlined, size: 18),
+                label: Text(
+                  canSave ? 'บันทึก (${_selected.length})' : 'บันทึก',
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF43A047),
+                  foregroundColor: Colors.white,
+                  disabledBackgroundColor: const Color(
+                    0xFF43A047,
+                  ).withValues(alpha: 0.45),
+                  disabledForegroundColor: Colors.white70,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 26,
+                    vertical: 14,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+          ],
+          ElevatedButton.icon(
+            onPressed: () => Navigator.pop(context),
+            icon: const Icon(Icons.close, size: 18),
+            label: const Text('ปิด'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFE53935),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 14),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
             ),
           ),
-        ),
+        ],
       ),
     );
   }

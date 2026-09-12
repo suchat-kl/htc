@@ -118,6 +118,7 @@ class _RoomAssignmentTabState extends State<RoomAssignmentTab> {
                       // ห้องพักที่ดูทั้งช่วงของใบจอง
                       startDate: d.startDate,
                       stopDate: d.stopDate,
+                      selectionMode: true,
                     ),
               ),
             ],
