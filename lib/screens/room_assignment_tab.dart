@@ -5,6 +5,7 @@ import 'package:highway_training/widgets/booking_room_assignment_section.dart';
 import 'package:highway_training/widgets/booking_room_list_section.dart';
 import 'package:highway_training/widgets/booking_summary_bar.dart';
 import 'package:highway_training/widgets/room_availability_dialog.dart';
+import 'package:highway_training/widgets/schedule_availability_dialog.dart';
 
 class RoomAssignmentTab extends StatefulWidget {
   final int bookId;
@@ -93,6 +94,31 @@ class _RoomAssignmentTabState extends State<RoomAssignmentTab> {
                 apiService: widget.apiService,
                 bookId: widget.bookId,
                 refreshSignal: _assignmentsChanged,
+              ),
+              const SizedBox(height: 16),
+              // ตารางห้องกิจกรรมชุดเดียวกับแท็บข้อมูลสำรองห้อง แต่แท็บนี้ใช้ดูอย่างเดียว
+              // จึงปิดปุ่มเพิ่ม/ไอคอนแก้ไข-ลบ เหลือปุ่มกำหนดห้องกิจกรรมท้ายแถว
+              BookingRoomListSection(
+                apiService: widget.apiService,
+                bookId: widget.bookId,
+                type: 'C',
+                title: 'รายการห้องกิจกรรม',
+                icon: Icons.groups_outlined,
+                emptyText: 'ยังไม่มีรายการห้องกิจกรรม',
+                actionLabel: 'กำหนดห้องกิจกรรม',
+                showAddButton: false,
+                showRowActions: false,
+                availabilityDialogBuilder: (ctx, d) =>
+                    ScheduleAvailabilityDialog(
+                      apiService: widget.apiService,
+                      bookId: widget.bookId,
+                      roomTypeId: d.roomTypeId!,
+                      roomName: d.name ?? '',
+                      // ห้องกิจกรรมใช้ช่วงวันที่ของแถวนั้น ต่างจาก
+                      // ห้องพักที่ดูทั้งช่วงของใบจอง
+                      startDate: d.startDate,
+                      stopDate: d.stopDate,
+                    ),
               ),
             ],
           ),
