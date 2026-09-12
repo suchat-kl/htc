@@ -88,6 +88,9 @@ class _ScheduleAvailabilityDialogState
 
   /// ช่วงเวลาที่เลือกไว้ — เก็บเป็น yyyy-MM-dd|from|to เลือกได้เฉพาะช่องที่ว่าง
   final Set<String> _selected = {};
+
+  /// กันกดบันทึกซ้ำระหว่างที่ยังยิง API ไม่ครบทุกช่วงเวลา
+  bool _saving = false;
   bool _isLoading = true;
   String? _error;
 
@@ -179,19 +182,85 @@ class _ScheduleAvailabilityDialogState
   ///
   /// Set.remove คืน false เมื่อยังไม่มีอยู่ จึงใช้เป็นตัวตัดสินได้ในบรรทัดเดียว
   void _toggleSelect(DateTime date, _Slot slot) {
+    if (_saving) return;
     final key = _slotKey(date, slot);
     setState(() {
       if (!_selected.remove(key)) _selected.add(key);
     });
   }
 
-  /// ยังไม่ผูกการบันทึกจริง — รอขั้นตอนที่จะกำหนดต่อไป
-  /// ตอนนี้แสดงจำนวนที่เลือกไว้เพื่อให้ทดสอบการเลือกได้ก่อน
-  void _save() {
-    // ใช้ overlay เพราะ SnackBar ปกติจะถูก dialog นี้บัง
-    context.showOverlayMessage(
-      'เลือกไว้ ${_selected.length} ช่วงเวลา (ยังไม่ได้บันทึกลงระบบ)',
-    );
+  /// หา roomID ของห้องกิจกรรมนี้
+  ///
+  /// หน้าจอนี้รู้แค่ประเภทห้อง จึงใช้ชื่อที่แสดงอยู่ (roomName) เป็น roomNO
+  /// ฝั่ง backend ค้น roomNO ด้วย LIKE %..% จึงได้ห้องอื่นติดมาด้วย
+  /// ต้องคัดให้ตรงตัวเองอีกชั้น
+  Future<int> _findRoomId(String roomNo) async {
+    late final Map<String, dynamic> res;
+    try {
+      res = await widget.apiService.getRooms(roomNO: roomNo);
+    } catch (e) {
+      throw Exception(_describe(e, 'ค้นหารหัสห้อง $roomNo (rooms)'));
+    }
+
+    final rooms = (res['rooms'] as List? ?? const []);
+    for (final j in rooms) {
+      final m = j as Map;
+      if (m['roomNO']?.toString() == roomNo) {
+        final id = m['roomID'] as int?;
+        if (id != null) return id;
+      }
+    }
+    throw Exception('ไม่พบรหัสห้อง (roomID) ของห้อง $roomNo');
+  }
+
+  /// บันทึกช่วงเวลาที่เลือกลง t_schedule ทีละช่วง
+  ///
+  /// คีย์ของตารางคือ roomID + scheduleDate + fromTime + toTime ซึ่งได้ครบจาก
+  /// ช่องที่เลือกกับ roomID ที่ค้นมา ฟิลด์อื่นปล่อยว่างไว้ก่อน
+  Future<void> _save() async {
+    if (_saving) return;
+    setState(() => _saving = true);
+
+    final slots = _selected.toList()..sort();
+    try {
+      final roomId = await _findRoomId(widget.roomName);
+
+      for (final key in slots) {
+        final parts = key.split('|');
+        await widget.apiService.createSchedule(
+          Schedule(
+            roomID: roomId,
+            scheduleDate: parts[0],
+            fromTime: int.parse(parts[1]),
+            toTime: int.parse(parts[2]),
+          ),
+        );
+      }
+
+      if (!mounted) return;
+      // ใช้ overlay เพราะ SnackBar ปกติจะถูก dialog นี้บัง
+      context.showOverlayMessage(
+        'บันทึกกำหนดห้องกิจกรรมแล้ว ${slots.length} ช่วงเวลา',
+        icon: Icons.check_circle_outline,
+        background: const Color(0xFF43A047),
+      );
+
+      // โหลดใหม่เพื่อให้ช่วงเวลาที่เพิ่งบันทึกกลายเป็นสีม่วง และล้างการเลือก
+      setState(() => _saving = false);
+      await _load();
+    } catch (e) {
+      if (AppLogger.on) AppLogger.d('Error saving schedules: $e');
+      if (!mounted) return;
+      setState(() => _saving = false);
+      context.showOverlayMessage(
+        e.toString().replaceAll('Exception: ', ''),
+        icon: Icons.error_outline,
+        background: Colors.red,
+        duration: const Duration(seconds: 5),
+      );
+      // อาจบันทึกสำเร็จไปแล้วบางช่วงก่อนจะพัง จึงต้องโหลดใหม่ให้ตรงของจริง
+      await _load();
+    }
   }
 
   String _describe(Object e, String what) {
@@ -498,7 +567,7 @@ class _ScheduleAvailabilityDialogState
   }
 
   Widget _footer() {
-    final canSave = _selected.isNotEmpty;
+    final canSave = _selected.isNotEmpty && !_saving;
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
       child: Row(
@@ -506,14 +575,29 @@ class _ScheduleAvailabilityDialogState
         children: [
           if (widget.selectionMode) ...[
             Tooltip(
-              message: canSave
-                  ? 'บันทึกช่วงเวลาที่เลือกไว้ ${_selected.length} ช่วง'
-                  : 'เลือกช่วงเวลาที่ว่าง (สีเขียว) อย่างน้อย 1 ช่วงก่อนจึงจะบันทึกได้',
+              message: _saving
+                  ? 'กำลังบันทึก...'
+                  : (canSave
+                        ? 'บันทึกช่วงเวลาที่เลือกไว้ ${_selected.length} ช่วง'
+                        : 'เลือกช่วงเวลาที่ว่าง (สีเขียว) อย่างน้อย 1 ช่วงก่อนจึงจะบันทึกได้'),
               child: ElevatedButton.icon(
                 onPressed: canSave ? _save : null,
-                icon: const Icon(Icons.save_outlined, size: 18),
+                icon: _saving
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Icon(Icons.save_outlined, size: 18),
                 label: Text(
-                  canSave ? 'บันทึก (${_selected.length})' : 'บันทึก',
+                  _saving
+                      ? 'กำลังบันทึก...'
+                      : (_selected.isEmpty
+                            ? 'บันทึก'
+                            : 'บันทึก (${_selected.length})'),
                 ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF43A047),
