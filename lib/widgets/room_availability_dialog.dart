@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 
 import '../config/theme.dart';
 import '../models/bookdetail.dart';
+import '../models/schedule.dart';
 import '../services/api_service.dart';
 import '../utils/logger.dart';
 import '../utils/snackbar_helper.dart';
@@ -97,6 +98,13 @@ class _RoomAvailabilityDialogState extends State<RoomAvailabilityDialog> {
   /// เพราะ mapDtoToEntity เรียก setStatus(dto.getStatus()) ทับทุกครั้ง
   /// ไม่ส่งมาก็จะกลายเป็น null
   static const int _defaultStatus = 2;
+
+  /// เวลาเริ่ม/สิ้นสุดของ t_schedule สำหรับห้องพัก
+  ///
+  /// ห้องพักจองเป็นคืน ไม่มีช่วงเวลา แต่คอลัมน์ time/totime เป็นตัวเลข NOT NULL
+  /// และเป็นส่วนหนึ่งของ primary key จึงใส่ "" ไม่ได้ ใช้ 0 แทนค่าว่าง
+  /// ไม่ชนกับห้องกิจกรรมที่ใช้ช่วงเวลา 800–2200
+  static const int _lodgingTime = 0;
 
   /// กันกดบันทึกซ้ำระหว่างที่ยังยิง API ไม่ครบทุกห้อง
   bool _saving = false;
@@ -546,6 +554,51 @@ class _RoomAvailabilityDialogState extends State<RoomAvailabilityDialog> {
     throw _ApiFailure('ไม่พบรหัสห้อง (roomID) ของหมายเลขห้อง $roomNo');
   }
 
+  /// วันที่ของแต่ละคืนที่พัก — ตั้งแต่วันเริ่มต้นถึงวันก่อนวันสิ้นสุด
+  ///
+  /// ค่าห้องคิดเฉพาะคืนที่นอน วันสุดท้ายเช็คเอาท์ไม่มีการนอน จึงไม่นับ
+  /// เช่น 2026-01-01 ถึง 2026-01-03 ได้ 2 คืนคือวันที่ 01 และ 02
+  /// ไม่มีวันที่อย่างใดอย่างหนึ่งจะได้รายการว่าง
+  static List<String> _nights(String? sd, String? ed) {
+    if (sd == null || ed == null) return const [];
+    final start = DateTime.parse(sd);
+    final stop = DateTime.parse(ed);
+    final fmt = DateFormat('yyyy-MM-dd');
+    return [
+      // สร้างวันใหม่จากปี/เดือน/วัน แทนการบวก Duration กันเวลาเพี้ยนช่วงปรับเวลา
+      for (
+        var d = start;
+        d.isBefore(stop);
+        d = DateTime(d.year, d.month, d.day + 1)
+      )
+        fmt.format(d),
+    ];
+  }
+
+  /// ราคาต่อคืนของประเภทห้องนี้ จาก m_roomtype.price
+  Future<double> _roomTypePrice() async {
+    late final Map<String, dynamic> res;
+    try {
+      // name/type/status ไม่ส่ง ปล่อยให้เป็น null ตามที่กำหนด
+      res = await widget.apiService.getRoomtypes(
+        size: 100,
+        roomTypeId: widget.roomTypeId,
+      );
+    } catch (e) {
+      throw _ApiFailure(_describe(e, 'ดึงราคาประเภทห้อง (roomtype)'));
+    }
+
+    // คัดรหัสให้ตรงอีกชั้น backend ที่ยังไม่รองรับ roomTypeId จะคืนมาทุกประเภท
+    for (final j in (res['roomType'] as List? ?? const [])) {
+      final m = j as Map;
+      if (m['roomtypeID'] == widget.roomTypeId) {
+        final p = m['price'];
+        if (p is num) return p.toDouble();
+      }
+    }
+    throw _ApiFailure('ไม่พบราคาของประเภทห้อง ${widget.roomTypeName}');
+  }
+
   /// บันทึกห้องที่เลือกลง bookdetail ทีละห้อง
   ///
   /// sequence เริ่มจาก nextSequence ที่ backend คำนวณให้ แล้วไล่ +1 ตามลำดับ
@@ -579,6 +632,10 @@ class _RoomAvailabilityDialogState extends State<RoomAvailabilityDialog> {
         roomTypeId: widget.roomTypeId,
       );
 
+      // ดึงราคาและคำนวณคืนก่อนเริ่มบันทึก ถ้าพลาดจะหยุดตั้งแต่ยังไม่มีอะไรถูกบันทึก
+      final price = await _roomTypePrice();
+      final nights = _nights(sd, ed);
+
       for (var i = 0; i < rooms.length; i++) {
         final roomNo = rooms[i];
         final roomId = await _findRoomId(roomNo);
@@ -596,13 +653,31 @@ class _RoomAvailabilityDialogState extends State<RoomAvailabilityDialog> {
             status: _defaultStatus,
           ),
         );
+
+        // ตารางการใช้ห้อง 1 แถวต่อ 1 คืนของห้องนี้ ราคาเท่ากับราคาต่อคืนของประเภทห้อง
+        for (final night in nights) {
+          await widget.apiService.createSchedule(
+            Schedule(
+              roomID: roomId,
+              scheduleDate: night,
+              fromTime: _lodgingTime,
+              toTime: _lodgingTime,
+              price: price,
+              remark: '',
+            ),
+          );
+        }
       }
 
       if (!mounted) return;
       // ใช้ overlay ไม่ใช่ SnackBar ปกติ เพราะ dialog นี้บัง SnackBar จนอ่านไม่ออก
+      final scheduleNote = nights.isEmpty
+          ? ' — ไม่ได้บันทึกตารางการใช้ห้อง เพราะแถวนี้ไม่มีคืนที่พัก'
+          : ' พร้อมตารางการใช้ห้อง ${nights.length} คืนต่อห้อง';
       context.showOverlayMessage(
         'บันทึกกำหนดห้องพักแล้ว ${rooms.length} ห้อง '
-        '(ลำดับ $nextSequence-${nextSequence + rooms.length - 1})',
+        '(ลำดับ $nextSequence-${nextSequence + rooms.length - 1})'
+        '$scheduleNote',
         icon: Icons.check_circle_outline,
         background: const Color(0xFF43A047),
       );

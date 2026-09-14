@@ -1014,6 +1014,9 @@ class ApiService {
     String? name,
     String? type,
     String? status,
+
+    /// ส่งมาเมื่อต้องการประเภทห้องเดียว เช่นราคาต่อคืนตอนบันทึกกำหนดห้องพัก
+    int? roomTypeId,
   }) async {
     try {
       // Check if token is about to expire
@@ -1022,6 +1025,7 @@ class ApiService {
       if (name != null && name.isNotEmpty) queryParams['name'] = name;
       if (type != null && type.isNotEmpty) queryParams['type'] = type;
       if (status != null && status.isNotEmpty) queryParams['status'] = status;
+      if (roomTypeId != null) queryParams['roomTypeId'] = roomTypeId;
 
       final response = await dio.get(
         '/api/auth/roomtype',
