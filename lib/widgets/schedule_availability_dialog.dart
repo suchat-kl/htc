@@ -163,15 +163,21 @@ class _ScheduleAvailabilityDialogState
     return '${h.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')}';
   }
 
-  /// ช่วงเวลานี้ของวันนี้ถูกใช้งานอยู่ไหม — เทียบตรงกับ time/totime ในฐานข้อมูล
+  /// ช่วงเวลานี้ของวันนี้ถูกใช้งานอยู่ไหม — นับทั้งรายการที่ตรงกันและที่ทับกันบางส่วน
+  ///
+  /// สองช่วงทับกันเมื่อ เริ่มของอันหนึ่ง < สิ้นสุดของอีกอัน ทั้งสองทาง
+  /// เช่นจอง 08:00-16:00 ไว้ ช่วง 08:00-12:00 และ 12:00-16:00 ก็ไม่ว่างด้วย
+  /// ส่วนช่วงที่แค่ต่อกันพอดี (12:00-16:00 กับ 16:00-18:00) ไม่นับว่าทับ
   bool _isUsed(DateTime date, _Slot slot) {
     final key = DateFormat('yyyy-MM-dd').format(date);
-    return _schedules.any(
-      (s) =>
-          (s.scheduleDate ?? '').startsWith(key) &&
-          s.fromTime == slot.from &&
-          s.toTime == slot.to,
-    );
+    return _schedules.any((s) {
+      final from = s.fromTime;
+      final to = s.toTime;
+      if (from == null || to == null) return false;
+      return (s.scheduleDate ?? '').startsWith(key) &&
+          from < slot.to &&
+          slot.from < to;
+    });
   }
 
   /// คีย์ของช่องหนึ่งในตาราง — วันที่คู่กับช่วงเวลา
