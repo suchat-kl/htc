@@ -226,6 +226,30 @@ class _ScheduleAvailabilityDialogState
     return id;
   }
 
+  /// ราคาของประเภทห้องกิจกรรมนี้ จาก m_roomtype.price
+  Future<double> _roomTypePrice() async {
+    late final Map<String, dynamic> res;
+    try {
+      // name/type/status ไม่ส่ง ปล่อยให้เป็น null ตามที่กำหนด
+      res = await widget.apiService.getRoomtypes(
+        size: 100,
+        roomTypeId: widget.roomTypeId,
+      );
+    } catch (e) {
+      throw Exception(_describe(e, 'ดึงราคาประเภทห้อง (roomtype)'));
+    }
+
+    // คัดรหัสให้ตรงอีกชั้น backend ที่ยังไม่รองรับ roomTypeId จะคืนมาทุกประเภท
+    for (final j in (res['roomType'] as List? ?? const [])) {
+      final m = j as Map;
+      if (m['roomtypeID'] == widget.roomTypeId) {
+        final p = m['price'];
+        if (p is num) return p.toDouble();
+      }
+    }
+    throw Exception('ไม่พบราคาของประเภทห้อง ${widget.roomName}');
+  }
+
   /// บันทึกช่วงเวลาที่เลือกลง t_schedule ทีละช่วง
   ///
   /// คีย์ของตารางคือ roomID + scheduleDate + fromTime + toTime ซึ่งได้ครบจาก
@@ -236,7 +260,9 @@ class _ScheduleAvailabilityDialogState
 
     final slots = _selected.toList()..sort();
     try {
+      // หารหัสห้องและราคาก่อนเริ่มบันทึก ถ้าพลาดจะหยุดตั้งแต่ยังไม่มีอะไรถูกบันทึก
       final roomId = await _findRoomId();
+      final price = await _roomTypePrice();
 
       for (final key in slots) {
         final parts = key.split('|');
@@ -246,6 +272,8 @@ class _ScheduleAvailabilityDialogState
             scheduleDate: parts[0],
             fromTime: int.parse(parts[1]),
             toTime: int.parse(parts[2]),
+            // ราคาต่อช่วงเวลาเท่ากับราคาของประเภทห้องกิจกรรม
+            price: price,
           ),
         );
       }
