@@ -9,6 +9,7 @@ import '../utils/dialog.dart';
 import '../utils/logger.dart';
 import '../utils/snackbar_helper.dart';
 import '../utils/util.dart';
+import '../screens/room_schedule_screen.dart';
 import 'room_assignment_dialog.dart';
 
 /// ตาราง "ห้องพักที่กำหนดแล้ว" ของใบจองหนึ่ง
@@ -126,6 +127,34 @@ class _BookingRoomAssignmentSectionState
           '${detail.isEmpty ? '' : '\n$detail'}';
     }
     return '$what ไม่สำเร็จ\n${e.toString().replaceAll('Exception: ', '')}';
+  }
+
+  /// เปิดรายละเอียดการใช้ห้อง (t_schedule) ของห้องนี้ ตามคืนที่พักของรายการ
+  ///
+  /// ส่งหมายเลขห้อง (A) วันเริ่มต้น (B) วันสิ้นสุด (C) และ roomId ไปให้หน้าจอ
+  Future<void> _openSchedule(RoomAssignment r) async {
+    final roomId = r.roomId;
+    final start = r.startDate;
+    final stop = r.stopDate;
+    if (roomId == null || start == null || stop == null) {
+      context.showErrorSnackBar(
+        'รายการนี้ไม่มีรหัสห้องหรือช่วงวันที่ จึงดูรายละเอียดไม่ได้',
+      );
+      return;
+    }
+
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => RoomScheduleScreen(
+          apiService: widget.apiService,
+          roomId: roomId,
+          roomNo: r.roomNo ?? '-',
+          startDate: start,
+          stopDate: stop,
+        ),
+      ),
+    );
   }
 
   Future<void> _edit(RoomAssignment r) async {
@@ -382,6 +411,13 @@ class _BookingRoomAssignmentSectionState
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
+        _iconAction(
+          icon: Icons.event_note_outlined,
+          color: Colors.teal.shade700,
+          tooltip: 'รายละเอียดการใช้ห้อง',
+          onTap: () => _openSchedule(r),
+        ),
+        const SizedBox(width: 6),
         _iconAction(
           icon: Icons.edit_outlined,
           color: Colors.blue.shade700,

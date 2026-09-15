@@ -2848,6 +2848,31 @@ class ApiService {
         .toList();
   }
 
+  /// ตารางการใช้ห้องของห้องพักหนึ่งห้อง ตามคืนที่พักของรายการกำหนดห้อง
+  ///
+  /// ส่งวันเริ่มต้น (B) และวันสิ้นสุด (C) ของรายการมาตรงๆ backend ดึงถึงวันก่อน
+  /// วันสิ้นสุด (C - 1) เอง เพราะวันสุดท้ายไม่มีการนอน ได้ทุกฟิลด์ของ t_schedule
+  /// เพื่อส่งกลับไปตอน [updateSchedule] ได้ครบ
+  Future<List<Schedule>> getLodgingNights({
+    required int roomId,
+    required String startDate, // yyyy-MM-dd
+    required String stopDate, // yyyy-MM-dd
+  }) async {
+    await _ensureToken();
+    final r = await dio.get(
+      '/api/auth/schedules/lodging-nights',
+      queryParameters: {
+        'roomId': roomId,
+        'startDate': startDate,
+        'stopDate': stopDate,
+      },
+    );
+    final list = r.data['schedules'] as List? ?? const [];
+    return list
+        .map((j) => Schedule.fromJson(j as Map<String, dynamic>))
+        .toList();
+  }
+
   /// รายการทั้งหมดแบบแบ่งหน้า
   Future<Map<String, dynamic>> getSchedules({
     int page = 0,
