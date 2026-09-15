@@ -37,8 +37,13 @@ class ApiService {
   late final Dio dio; // Main Dio with auth interceptor
   late final Dio publicDio; // Public Dio WITHOUT auth interceptor
   late final FlutterSecureStorage storage;
-
-  static const String baseUrl = 'https://backupdoh.doh.go.th/htcapi';
+//production
+  // static const String baseUrl = 'https://backupdoh.doh.go.th/htcapi';
+  // development: nginx บน WSL ในเครื่องนักพัฒนา
+  // ต้องเพิ่ม "127.0.0.1 suchat-dev.doh.go.th" ใน hosts ของ Windows ก่อน
+  // ใช้ชื่อย่อยของ doh.go.th ให้ตรงใบรับรอง *.doh.go.th และห้ามใช้ชื่อเครื่อง Windows
+  // (suchat-doh) เพราะ WSL ส่งต่อให้เฉพาะ localhost
+  static const String baseUrl = 'https://suchat-dev.doh.go.th/htcapi';
   static const String empKey = "empID";
   static const String accessTokenKey = 'access_token';
   static const String refreshTokenKey = 'refresh_token';
