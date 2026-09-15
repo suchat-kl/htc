@@ -26,6 +26,8 @@ flutter build web --no-wasm-dry-run            # build production → build/web 
 flutter analyze
 ```
 
+ใน VS Code กด Run and Debug แล้วเลือก `HTC dev (WSL API)` ได้เลย (`.vscode/launch.json` ใส่ `API_BASE` ให้แล้ว) ส่วน `HTC dev (production API - ข้อมูลจริง)` ชี้ข้อมูลจริง
+
 ตอนติดปัญหา dependency: `flutter clean && flutter pub get` (บางเคสต้องลบ `pubspec.lock` ก่อน)
 
 **ห้าม** build ขึ้น production ด้วย `--debug` หรือ `--profile` — ต้องเป็น release เท่านั้น มิฉะนั้น log จะไม่ถูก tree-shake
