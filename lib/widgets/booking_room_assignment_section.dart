@@ -14,7 +14,8 @@ import 'room_assignment_dialog.dart';
 
 /// ตาราง "ห้องพักที่กำหนดแล้ว" ของใบจองหนึ่ง
 ///
-/// แสดง bookdetail เฉพาะประเภทห้องพัก เรียงตามลำดับ (sequence) ทุกค่าในตาราง
+/// แสดง bookdetail ของห้องพัก (เรียก room-assignments ด้วย type 'R')
+/// เรียงตามลำดับ (sequence) ทุกค่าในตาราง
 /// แสดงอย่างเดียว การแก้ไขทำผ่าน [RoomAssignmentDialog]
 ///
 /// API ส่งมาทุกแถวในครั้งเดียว (ใบจองหนึ่งมีห้องแค่หลักสิบ) จึงแบ่งหน้าฝั่งนี้เอง
@@ -94,7 +95,7 @@ class _BookingRoomAssignmentSectionState
       _error = null;
     });
     try {
-      final list = await widget.apiService.getRoomAssignments(widget.bookId);
+      final list = await widget.apiService.getRoomAssignments( bookId: widget.bookId, type: 'R');
       if (!mounted) return;
       setState(() {
         _all = list;

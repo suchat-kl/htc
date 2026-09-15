@@ -1,6 +1,6 @@
 // lib/models/room_assignment.dart
 
-/// หนึ่งแถวของรายการกำหนดห้องพักในใบจอง
+/// หนึ่งแถวของรายการกำหนดห้องในใบจอง — ห้องพัก (type 'R') หรือห้องกิจกรรม (type 'C')
 ///
 /// มาจาก GET /api/auth/bookdetails/room-assignments — ใช้แสดงผลอย่างเดียว
 /// status เป็นรหัสตัวเลข ส่วน statusName คือชื่อสถานะที่ backend แปลงมาให้แล้ว

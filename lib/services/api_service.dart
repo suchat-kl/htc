@@ -2797,15 +2797,19 @@ class ApiService {
     return (sequence?['nextSequence'] as int?) ?? 1;
   }
 
-  /// รายการกำหนดห้องพักของใบจอง เฉพาะประเภทห้องพัก เรียงตามลำดับ (sequence)
+  /// รายการกำหนดห้องของใบจอง ตาม [type] ของประเภทห้อง เรียงตามลำดับ (sequence)
+  ///
+  /// [type] = 'R' ห้องพัก (ตารางห้องพักที่กำหนดแล้ว), 'C' ห้องกิจกรรม
+  /// backend บังคับให้ส่ง ถ้าไม่ส่งจะได้ HTTP 400
   ///
   /// status เป็นรหัสตัวเลข backend แปลงเป็น statusName มาให้แล้ว แสดงผลได้เลย
-  Future<List<RoomAssignment>> getRoomAssignments(int bookId) async {
+  Future<List<RoomAssignment>> getRoomAssignments(
+   {required int bookId, required String type}) async {
     await _ensureToken();
 
     final response = await dio.get(
       '/api/auth/bookdetails/room-assignments',
-      queryParameters: {'bookId': bookId},
+      queryParameters: {'bookId': bookId, 'type': type},
     );
 
     final list = response.data['bookdetails'] as List? ?? const [];
