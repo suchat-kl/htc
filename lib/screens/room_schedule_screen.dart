@@ -72,10 +72,10 @@ class _RoomScheduleScreenState extends State<RoomScheduleScreen> {
     return c.difference(b).inDays;
   }
 
-  /// yyyy-MM-dd → 18/08/2569 ตามแบบหน้าจอเดิม
+  /// yyyy-MM-dd → 18 สิงหาคม 2569 ด้วย Util.formatThaiDate
   static String _date(String? s) {
     final d = s == null ? null : DateTime.tryParse(s);
-    return d == null ? '-' : Util.toBuddhistYearDisplay(d);
+    return d == null ? '-' : Util.formatThaiDate(d);
   }
 
   static String _orDash(String? v) =>

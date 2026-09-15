@@ -69,7 +69,7 @@ class _RoomScheduleDialogState extends State<RoomScheduleDialog> {
 
   String get _dateText {
     final d = DateTime.tryParse(widget.schedule.scheduleDate ?? '');
-    return d == null ? '-' : Util.toBuddhistYearDisplay(d);
+    return d == null ? '-' : Util.formatThaiDate(d);
   }
 
   static String _describe(Object e) {
