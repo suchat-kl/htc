@@ -1,6 +1,7 @@
 // สร้างไฟล์ room_assignment_tab.dart
 import 'package:flutter/material.dart';
 import 'package:highway_training/services/api_service.dart';
+import 'package:highway_training/widgets/booking_activity_assignment_section.dart';
 import 'package:highway_training/widgets/booking_room_assignment_section.dart';
 import 'package:highway_training/widgets/booking_room_list_section.dart';
 import 'package:highway_training/widgets/booking_summary_bar.dart';
@@ -35,12 +36,16 @@ class _RoomAssignmentTabState extends State<RoomAssignmentTab> {
   /// ฟังค่านี้อยู่ จึงโหลดใหม่ให้เห็นห้องที่เพิ่งบันทึกทันที
   final _assignmentsChanged = ValueNotifier<int>(0);
 
+  /// เหมือน [_assignmentsChanged] แต่ของห้องกิจกรรม — เพิ่มค่าเมื่อ dialog
+  /// กำหนดห้องกิจกรรมปิดลง ให้ตารางห้องกิจกรรมที่กำหนดแล้วโหลดใหม่
+  final _activityAssignmentsChanged = ValueNotifier<int>(0);
+
   @override
   void dispose() {
     _assignmentsChanged.dispose();
+    _activityAssignmentsChanged.dispose();
     super.dispose();
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -108,6 +113,7 @@ class _RoomAssignmentTabState extends State<RoomAssignmentTab> {
                 actionLabel: 'กำหนดห้องกิจกรรม',
                 showAddButton: false,
                 showRowActions: false,
+                onDialogClosed: () => _activityAssignmentsChanged.value++,
                 availabilityDialogBuilder: (ctx, d) =>
                     ScheduleAvailabilityDialog(
                       apiService: widget.apiService,
@@ -120,6 +126,13 @@ class _RoomAssignmentTabState extends State<RoomAssignmentTab> {
                       stopDate: d.stopDate,
                       selectionMode: true,
                     ),
+              ),
+              const SizedBox(height: 16),
+              // ห้องกิจกรรมที่กำหนดแล้ว — ตารางชุดเดียวกับห้องพักที่กำหนดแล้ว แต่ type 'C'
+              BookingActivityAssignmentSection(
+                apiService: widget.apiService,
+                bookId: widget.bookId,
+                refreshSignal: _activityAssignmentsChanged,
               ),
             ],
           ),

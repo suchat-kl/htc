@@ -26,11 +26,15 @@ class RoomAssignmentDialog extends StatefulWidget {
   /// แถวอื่นในใบจองเดียวกัน — ใช้เตือนเมื่อลำดับซ้ำ
   final List<RoomAssignment> others;
 
+  /// หัว dialog — ห้องกิจกรรมที่กำหนดแล้วใช้ dialog เดียวกันจึงส่งชื่อของตัวเองมา
+  final String title;
+
   const RoomAssignmentDialog({
     super.key,
     required this.apiService,
     required this.assignment,
     this.others = const [],
+    this.title = 'แก้ไขข้อมูลห้องพัก',
   });
 
   @override
@@ -383,10 +387,10 @@ class _RoomAssignmentDialogState extends State<RoomAssignmentDialog> {
         children: [
           const Icon(Icons.edit_outlined, color: Colors.white),
           const SizedBox(width: 10),
-          const Expanded(
+          Expanded(
             child: Text(
-              'แก้ไขข้อมูลห้องพัก',
-              style: TextStyle(
+              widget.title,
+              style: const TextStyle(
                 color: Colors.white,
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
