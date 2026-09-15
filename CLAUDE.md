@@ -13,13 +13,16 @@
 
 เวลาต้องแก้ API / entity / report ให้ทำที่โฟลเดอร์ backend และอ่าน `CLAUDE.md` ของฝั่งนั้นประกอบ
 
-API endpoint: `https://backupdoh.doh.go.th/htcapi` (กำหนดที่ `lib/services/api_service.dart`)
+API endpoint เลือกตอน run/build ด้วย `--dart-define=API_BASE=...` (ดู `ApiService.baseUrl` ใน `lib/services/api_service.dart`)
+- ไม่ส่งมา = production `https://backupdoh.doh.go.th/htcapi`
+- development = `https://suchat-dev.doh.go.th/htcapi` (nginx บน WSL ต้องมี `127.0.0.1 suchat-dev.doh.go.th` ใน hosts ของ Windows)
 
 ## คำสั่งที่ใช้ประจำ
 
 ```bash
-flutter run -d chrome                          # dev (debug mode, log แสดงครบ)
-flutter build web --no-wasm-dry-run            # build production → build/web
+flutter run -d chrome --dart-define=API_BASE=https://suchat-dev.doh.go.th/htcapi   # dev ชี้ WSL
+flutter run -d chrome                          # dev แต่ชี้ API production (ข้อมูลจริง)
+flutter build web --no-wasm-dry-run            # build production → build/web (ไม่ต้องใส่ API_BASE)
 flutter analyze
 ```
 
