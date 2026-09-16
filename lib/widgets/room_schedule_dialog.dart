@@ -21,11 +21,15 @@ class RoomScheduleDialog extends StatefulWidget {
   final String roomNo;
   final Schedule schedule;
 
+  /// หัว dialog — ห้องกิจกรรมใช้ dialog เดียวกันจึงส่งชื่อของตัวเองมา
+  final String title;
+
   const RoomScheduleDialog({
     super.key,
     required this.apiService,
     required this.roomNo,
     required this.schedule,
+    this.title = 'แก้ไขการใช้ห้องพัก',
   });
 
   @override
@@ -61,7 +65,9 @@ class _RoomScheduleDialogState extends State<RoomScheduleDialog> {
   /// 800.0 → "800", 800.5 → "800.50"
   static String _priceText(double? p) {
     if (p == null) return '';
-    return p == p.truncateToDouble() ? p.toInt().toString() : p.toStringAsFixed(2);
+    return p == p.truncateToDouble()
+        ? p.toInt().toString()
+        : p.toStringAsFixed(2);
   }
 
   static double? _parsePrice(String v) =>
@@ -223,10 +229,10 @@ class _RoomScheduleDialogState extends State<RoomScheduleDialog> {
         children: [
           const Icon(Icons.edit_calendar_outlined, color: Colors.white),
           const SizedBox(width: 10),
-          const Expanded(
+          Expanded(
             child: Text(
-              'แก้ไขการใช้ห้องพัก',
-              style: TextStyle(
+              widget.title,
+              style: const TextStyle(
                 color: Colors.white,
                 fontSize: 18,
                 fontWeight: FontWeight.bold,

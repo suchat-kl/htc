@@ -9,6 +9,7 @@ import '../utils/dialog.dart';
 import '../utils/logger.dart';
 import '../utils/snackbar_helper.dart';
 import '../utils/util.dart';
+import '../screens/activity_schedule_screen.dart';
 import 'room_assignment_dialog.dart';
 
 /// ตาราง "ห้องกิจกรรมที่กำหนดแล้ว" ของใบจองหนึ่ง
@@ -133,11 +134,33 @@ class _BookingActivityAssignmentSectionState
     return '$what ไม่สำเร็จ\n${e.toString().replaceAll('Exception: ', '')}';
   }
 
-  /// รายละเอียดการใช้ห้องกิจกรรม — เงื่อนไขการแสดงผลจะกำหนดภายหลัง
+  /// เปิดรายละเอียดการใช้ห้องกิจกรรม (t_schedule) ของห้องนี้
   ///
-  /// ห้องกิจกรรมจองเป็นช่วงเวลา ไม่ใช่รายคืน จึงใช้หน้ารายละเอียดของห้องพักไม่ได้
-  void _openSchedule(RoomAssignment r) {
-    context.showInfoSnackBar('รายละเอียดการใช้ห้องกิจกรรมยังไม่เปิดใช้งาน');
+  /// ส่งหมายเลขห้อง (A) วันเริ่มต้น (B) วันสิ้นสุด (C) และ roomId ไปให้หน้าจอ
+  /// ซึ่งดึงทุกวันในช่วง รวมวันสิ้นสุด ต่างจากห้องพักที่ตัดวันสุดท้ายออก
+  Future<void> _openSchedule(RoomAssignment r) async {
+    final roomId = r.roomId;
+    final start = r.startDate;
+    final stop = r.stopDate;
+    if (roomId == null || start == null || stop == null) {
+      context.showErrorSnackBar(
+        'รายการนี้ไม่มีรหัสห้องหรือช่วงวันที่ จึงดูรายละเอียดไม่ได้',
+      );
+      return;
+    }
+
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ActivityScheduleScreen(
+          apiService: widget.apiService,
+          roomId: roomId,
+          roomNo: r.roomNo ?? '-',
+          startDate: start,
+          stopDate: stop,
+        ),
+      ),
+    );
   }
 
   Future<void> _edit(RoomAssignment r) async {
