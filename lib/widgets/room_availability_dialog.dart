@@ -34,6 +34,7 @@ class RoomAvailabilityDialog extends StatefulWidget {
   /// bookdetail.bookroomid เป็น NOT NULL และไม่มีความสัมพันธ์ JPA ให้ Hibernate
   /// เติมให้ จึงต้องส่งค่านี้ไปเองตอนบันทึก ไม่มีค่านี้ = บันทึกไม่ได้
   final int? bookRoomId;
+
   /// ช่วงวันที่ของ "ใบจอง" — ใช้ตรวจสอบห้องว่างเท่านั้น
   ///
   /// ห้องว่างต้องดูจากช่วงของทั้งใบจองเสมอ ไม่ใช่ช่วงของแถวใดแถวหนึ่ง
@@ -131,7 +132,8 @@ class _RoomAvailabilityDialogState extends State<RoomAvailabilityDialog> {
     final ed = _isoDate(widget.stopDate);
     if (sd == null || ed == null) {
       setState(() {
-        _error = 'รายการนี้ไม่มีวันที่เริ่มต้นหรือวันที่สิ้นสุด '
+        _error =
+            'รายการนี้ไม่มีวันที่เริ่มต้นหรือวันที่สิ้นสุด '
             'จึงตรวจสอบห้องว่างไม่ได้\nกรุณาแก้ไขรายการให้มีช่วงวันที่ก่อน';
         _isLoading = false;
       });
@@ -235,8 +237,7 @@ class _RoomAvailabilityDialogState extends State<RoomAvailabilityDialog> {
     );
   }
 
-  int get _freeCount =>
-      _totalRoom.where((r) => !_useRoom.contains(r)).length;
+  int get _freeCount => _totalRoom.where((r) => !_useRoom.contains(r)).length;
 
   /// สลับสถานะเลือก/ไม่เลือกของห้องหนึ่ง
   ///
@@ -389,7 +390,11 @@ class _RoomAvailabilityDialogState extends State<RoomAvailabilityDialog> {
       spacing: 24,
       runSpacing: 8,
       children: [
-        _summaryItem('ห้องทั้งหมด', '${_totalRoom.length}', AppTheme.primaryColor),
+        _summaryItem(
+          'ห้องทั้งหมด',
+          '${_totalRoom.length}',
+          AppTheme.primaryColor,
+        ),
         _summaryItem('ห้องที่ใช้งาน', '${_useRoom.length}', _usedColor),
         _summaryItem('จำนวนห้องที่ว่าง', '$_freeCount', _freeColor),
         if (widget.selectionMode)
@@ -402,9 +407,14 @@ class _RoomAvailabilityDialogState extends State<RoomAvailabilityDialog> {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Container(width: 10, height: 10, decoration: BoxDecoration(
-          color: color, borderRadius: BorderRadius.circular(3),
-        )),
+        Container(
+          width: 10,
+          height: 10,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(3),
+          ),
+        ),
         const SizedBox(width: 8),
         Text(
           '$label ',
@@ -640,7 +650,7 @@ class _RoomAvailabilityDialogState extends State<RoomAvailabilityDialog> {
         final roomNo = rooms[i];
         final roomId = await _findRoomId(roomNo);
 
-        await widget.apiService.createBookDetail(
+        final created = await widget.apiService.createBookDetail(
           BookDetail(
             bookRoomId: bookRoomId,
             bookId: widget.bookId,
@@ -664,6 +674,8 @@ class _RoomAvailabilityDialogState extends State<RoomAvailabilityDialog> {
               toTime: _lodgingTime,
               price: price,
               remark: '',
+              // ผูกกับรายการกำหนดห้อง ใช้อ้างอิงตอนลบและตรวจสอบย้อนหลัง
+              bookIdDetail: created.bookIdDetail,
             ),
           );
         }
@@ -762,10 +774,7 @@ class _RoomAvailabilityDialogState extends State<RoomAvailabilityDialog> {
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFFE53935),
               foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(
-                horizontal: 26,
-                vertical: 14,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 14),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10),
               ),

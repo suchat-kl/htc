@@ -16,6 +16,12 @@ class Schedule {
   final int? toTime;
 
   final int? bookingReservationId;
+
+  /// bookiddetail ของรายการกำหนดห้องที่สร้างแถวนี้
+  ///
+  /// ใช้ให้ backend ลบตารางการใช้ห้องของรายการนั้นแบบเจาะจงตอนลบรายการ
+  /// แถวที่สร้างก่อนมีคอลัมน์นี้จะเป็น null
+  final int? bookIdDetail;
   final String? reservationStatus;
   final String? cleaningStatus;
   final int? roomIdChange;
@@ -29,6 +35,7 @@ class Schedule {
     this.fromTime,
     this.toTime,
     this.bookingReservationId,
+    this.bookIdDetail,
     this.reservationStatus,
     this.cleaningStatus,
     this.roomIdChange,
@@ -69,12 +76,11 @@ class Schedule {
       bookingReservationId: _int(
         _pick(json, ['bookingReservationId', 'bookingreservationid']),
       ),
+      bookIdDetail: _int(_pick(json, ['bookIdDetail', 'bookiddetail'])),
       reservationStatus: _str(
         _pick(json, ['reservationStatus', 'reservation_status']),
       ),
-      cleaningStatus: _str(
-        _pick(json, ['cleaningStatus', 'cleaning_status']),
-      ),
+      cleaningStatus: _str(_pick(json, ['cleaningStatus', 'cleaning_status'])),
       roomIdChange: _int(_pick(json, ['roomIdChange', 'roomidchange'])),
       remarkChange: _str(_pick(json, ['remarkChange', 'remarkchange'])),
       price: _double(_pick(json, ['price'])),
@@ -89,6 +95,7 @@ class Schedule {
       'fromTime': fromTime,
       'toTime': toTime,
       'bookingReservationId': bookingReservationId,
+      'bookIdDetail': bookIdDetail,
       'reservationStatus': reservationStatus,
       'cleaningStatus': cleaningStatus,
       'roomIdChange': roomIdChange,
@@ -104,6 +111,7 @@ class Schedule {
     int? fromTime,
     int? toTime,
     int? bookingReservationId,
+    int? bookIdDetail,
     String? reservationStatus,
     String? cleaningStatus,
     int? roomIdChange,
@@ -117,6 +125,7 @@ class Schedule {
       fromTime: fromTime ?? this.fromTime,
       toTime: toTime ?? this.toTime,
       bookingReservationId: bookingReservationId ?? this.bookingReservationId,
+      bookIdDetail: bookIdDetail ?? this.bookIdDetail,
       reservationStatus: reservationStatus ?? this.reservationStatus,
       cleaningStatus: cleaningStatus ?? this.cleaningStatus,
       roomIdChange: roomIdChange ?? this.roomIdChange,

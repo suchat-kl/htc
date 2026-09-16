@@ -310,7 +310,7 @@ class _ScheduleAvailabilityDialogState
       final firstDate = slots.first.split('|')[0];
       final lastDate = slots.last.split('|')[0];
 
-      await widget.apiService.createBookDetail(
+      final created = await widget.apiService.createBookDetail(
         BookDetail(
           bookRoomId: bookRoomId,
           bookId: widget.bookId,
@@ -335,6 +335,9 @@ class _ScheduleAvailabilityDialogState
             toTime: int.parse(parts[2]),
             // ราคาต่อช่วงเวลาเท่ากับราคาของประเภทห้องกิจกรรม
             price: price,
+            // ผูกกับรายการกำหนดห้อง เพื่อให้ลบรายการแล้วลบช่วงเวลาของรายการนี้
+            // ได้ตรงแถว ไม่ไปโดนใบจองอื่นที่ใช้ห้องเดียวกันคนละช่วงเวลา
+            bookIdDetail: created.bookIdDetail,
           ),
         );
       }
