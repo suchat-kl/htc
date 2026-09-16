@@ -1,5 +1,11 @@
 {
   "version": "0.2.0",
+  // --web-port คงที่ ทำให้ origin ไม่เปลี่ยนทุกครั้งที่รันใหม่
+  // flutter_secure_storage บนเว็บผูก token กับ origin จึงไม่ต้องล็อกอินใหม่
+  //
+  // ไม่ใช้ --user-data-dir เพราะ flutter คัดลอกโปรไฟล์ Chrome ทั้งก้อนไป-กลับ
+  // ทุกครั้งที่รัน โปรไฟล์โตหลักร้อย MB แล้วจะชนกับ antivirus จนรันไม่ขึ้น
+  // ("Cannot open file ... user-mapped section open")
   "configurations": [
     {
       "name": "HTC dev (WSL API)",
@@ -9,7 +15,6 @@
       "deviceId": "chrome",
       "toolArgs": [
         "--web-port=5555",
-        "--web-browser-flag=--user-data-dir=C:\\AI\\flutter\\htc\\.chrome-dev",
         "--dart-define=API_BASE=https://suchat-dev.doh.go.th/htcapi"
       ]
     },
@@ -19,10 +24,7 @@
       "request": "launch",
       "program": "lib/main.dart",
       "deviceId": "chrome",
-      "toolArgs": [
-        "--web-port=5556",
-        "--web-browser-flag=--user-data-dir=C:\\AI\\flutter\\htc\\.chrome-dev-prod"
-      ]
+      "toolArgs": ["--web-port=5556"]
     }
   ]
 }
