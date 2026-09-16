@@ -45,3 +45,7 @@ app.*.map.json
 /android/app/release
 # Widget Preview related
 .widget_preview/
+
+# โปรไฟล์ Chrome สำหรับรัน dev (ให้ล็อกอินค้างไว้ข้ามการรันใหม่)
+.chrome-dev/
+.chrome-dev-prod/

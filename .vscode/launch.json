@@ -8,17 +8,8 @@
       "program": "lib/main.dart",
       "deviceId": "chrome",
       "toolArgs": [
-        "--dart-define=API_BASE=https://suchat-dev.doh.go.th/htcapi"
-      ]
-    },
-    {
-      "name": "HTC dev (WSL API, แท็บเดิม พอร์ต 5555)",
-      "type": "dart",
-      "request": "launch",
-      "program": "lib/main.dart",
-      "deviceId": "web-server",
-      "toolArgs": [
         "--web-port=5555",
+        "--web-browser-flag=--user-data-dir=C:\\AI\\flutter\\htc\\.chrome-dev",
         "--dart-define=API_BASE=https://suchat-dev.doh.go.th/htcapi"
       ]
     },
@@ -27,7 +18,11 @@
       "type": "dart",
       "request": "launch",
       "program": "lib/main.dart",
-      "deviceId": "chrome"
+      "deviceId": "chrome",
+      "toolArgs": [
+        "--web-port=5556",
+        "--web-browser-flag=--user-data-dir=C:\\AI\\flutter\\htc\\.chrome-dev-prod"
+      ]
     }
   ]
 }
