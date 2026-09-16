@@ -26,11 +26,17 @@ class BookingRoomAssignmentSection extends StatefulWidget {
   /// แจ้งให้โหลดใหม่ — ใช้หลังบันทึกกำหนดห้องพักจาก dialog ตรวจสอบห้องว่าง
   final Listenable? refreshSignal;
 
+  /// โหมดแก้เฉพาะสถานะของแท็บ Check in
+  ///
+  /// ท้ายแถวเหลือแค่ปุ่มแก้ไข และ dialog แก้ได้เฉพาะสถานะ
+  final bool statusOnly;
+
   const BookingRoomAssignmentSection({
     super.key,
     required this.apiService,
     required this.bookId,
     this.refreshSignal,
+    this.statusOnly = false,
   });
 
   @override
@@ -95,7 +101,10 @@ class _BookingRoomAssignmentSectionState
       _error = null;
     });
     try {
-      final list = await widget.apiService.getRoomAssignments( bookId: widget.bookId, type: 'R');
+      final list = await widget.apiService.getRoomAssignments(
+        bookId: widget.bookId,
+        type: 'R',
+      );
       if (!mounted) return;
       setState(() {
         _all = list;
@@ -172,6 +181,7 @@ class _BookingRoomAssignmentSectionState
         assignment: r,
         // เทียบลำดับซ้ำกับทุกแถวของใบจอง ไม่ใช่แค่หน้าที่เปิดอยู่
         others: _all.where((x) => x.bookIdDetail != r.bookIdDetail).toList(),
+        statusOnly: widget.statusOnly,
       ),
     );
     if (ok != true || !mounted) return;
@@ -238,7 +248,11 @@ class _BookingRoomAssignmentSectionState
             )
           else if (_all.isEmpty)
             _empty()
-          else ...[_table(), const SizedBox(height: 12), _footerRow()],
+          else ...[
+            _table(),
+            const SizedBox(height: 12),
+            _footerRow(),
+          ],
         ],
       ),
     );
@@ -358,6 +372,7 @@ class _BookingRoomAssignmentSectionState
                   DataCell(_cellText(_orDash(r.contractTel))),
                   DataCell(_cellText(Util.formatThaiDateStr(r.startDate))),
                   DataCell(_cellText(Util.formatThaiDateStr(r.stopDate))),
+
                   DataCell(_cellText(r.statusName ?? '${r.status ?? '-'}')),
                   DataCell(_rowActions(r)),
                 ],
@@ -369,8 +384,7 @@ class _BookingRoomAssignmentSectionState
     );
   }
 
-  static String _orDash(String? v) =>
-      (v == null || v.trim().isEmpty) ? '-' : v;
+  static String _orDash(String? v) => (v == null || v.trim().isEmpty) ? '-' : v;
 
   Widget _cellText(String v) => Text(v, style: const TextStyle(fontSize: 14));
 
@@ -412,26 +426,30 @@ class _BookingRoomAssignmentSectionState
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        _iconAction(
-          icon: Icons.event_note_outlined,
-          color: Colors.teal.shade700,
-          tooltip: 'รายละเอียดการใช้ห้อง',
-          onTap: () => _openSchedule(r),
-        ),
-        const SizedBox(width: 6),
+        if (!widget.statusOnly) ...[
+          _iconAction(
+            icon: Icons.event_note_outlined,
+            color: Colors.teal.shade700,
+            tooltip: 'รายละเอียดการใช้ห้อง',
+            onTap: () => _openSchedule(r),
+          ),
+          const SizedBox(width: 6),
+        ],
         _iconAction(
           icon: Icons.edit_outlined,
           color: Colors.blue.shade700,
           tooltip: 'แก้ไขข้อมูล',
           onTap: () => _edit(r),
         ),
-        const SizedBox(width: 6),
-        _iconAction(
-          icon: Icons.delete_outline,
-          color: Colors.red.shade600,
-          tooltip: 'ลบข้อมูล',
-          onTap: () => _delete(r),
-        ),
+        if (!widget.statusOnly) ...[
+          const SizedBox(width: 6),
+          _iconAction(
+            icon: Icons.delete_outline,
+            color: Colors.red.shade600,
+            tooltip: 'ลบข้อมูล',
+            onTap: () => _delete(r),
+          ),
+        ],
       ],
     );
   }

@@ -30,12 +30,19 @@ class RoomAssignmentDialog extends StatefulWidget {
   /// หัว dialog — ห้องกิจกรรมที่กำหนดแล้วใช้ dialog เดียวกันจึงส่งชื่อของตัวเองมา
   final String title;
 
+  /// แก้ได้เฉพาะสถานะ — แท็บ Check in ใช้โหมดนี้
+  ///
+  /// ลำดับ ชื่อ-สกุล และเบอร์ติดต่อ กลายเป็นค่าที่แสดงอย่างเดียว
+  /// ตอนบันทึกยังส่งค่าเดิมกลับไปครบเหมือนเดิม
+  final bool statusOnly;
+
   const RoomAssignmentDialog({
     super.key,
     required this.apiService,
     required this.assignment,
     this.others = const [],
     this.title = 'แก้ไขข้อมูลห้องพัก',
+    this.statusOnly = false,
   });
 
   @override
@@ -88,6 +95,8 @@ class _RoomAssignmentDialogState extends State<RoomAssignmentDialog> {
     if (seq == null) return const [];
     return widget.others.where((o) => o.sequence == seq).toList();
   }
+
+  static String _orDash(String? v) => (v == null || v.trim().isEmpty) ? '-' : v;
 
   static String _roomsOf(List<RoomAssignment> list) =>
       list.map((r) => r.roomNo ?? '-').join(', ');
@@ -194,24 +203,26 @@ class _RoomAssignmentDialogState extends State<RoomAssignmentDialog> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Expanded(
-                            child: TextFormField(
-                              controller: _seqCtrl,
-                              enabled: !_saving,
-                              decoration: _input('ลำดับ'),
-                              keyboardType: TextInputType.number,
-                              inputFormatters: [
-                                FilteringTextInputFormatter.digitsOnly,
-                              ],
-                              // สร้างใหม่ทุกครั้งที่พิมพ์ เพื่ออัปเดตข้อความเตือนเลขซ้ำ
-                              onChanged: (_) => setState(() {}),
-                              validator: (v) {
-                                final n = int.tryParse((v ?? '').trim());
-                                if (n == null || n < 1) {
-                                  return 'กรอกเป็นตัวเลขตั้งแต่ 1 ขึ้นไป';
-                                }
-                                return null;
-                              },
-                            ),
+                            child: widget.statusOnly
+                                ? _readOnly('ลำดับ', '${a.sequence ?? '-'}')
+                                : TextFormField(
+                                    controller: _seqCtrl,
+                                    enabled: !_saving,
+                                    decoration: _input('ลำดับ'),
+                                    keyboardType: TextInputType.number,
+                                    inputFormatters: [
+                                      FilteringTextInputFormatter.digitsOnly,
+                                    ],
+                                    // สร้างใหม่ทุกครั้งที่พิมพ์ เพื่ออัปเดตข้อความเตือนเลขซ้ำ
+                                    onChanged: (_) => setState(() {}),
+                                    validator: (v) {
+                                      final n = int.tryParse((v ?? '').trim());
+                                      if (n == null || n < 1) {
+                                        return 'กรอกเป็นตัวเลขตั้งแต่ 1 ขึ้นไป';
+                                      }
+                                      return null;
+                                    },
+                                  ),
                           ),
                           const SizedBox(width: 14),
                           Expanded(
@@ -219,25 +230,29 @@ class _RoomAssignmentDialogState extends State<RoomAssignmentDialog> {
                           ),
                         ],
                       ),
-                      if (dups.isNotEmpty) ...[
+                      if (!widget.statusOnly && dups.isNotEmpty) ...[
                         const SizedBox(height: 8),
                         _dupWarning(dups),
                       ],
                       const SizedBox(height: 16),
-                      TextFormField(
-                        controller: _nameCtrl,
-                        enabled: !_saving,
-                        decoration: _input('ชื่อ-สกุล'),
-                        maxLength: 50,
-                      ),
+                      widget.statusOnly
+                          ? _readOnly('ชื่อ-สกุล', _orDash(a.contractName))
+                          : TextFormField(
+                              controller: _nameCtrl,
+                              enabled: !_saving,
+                              decoration: _input('ชื่อ-สกุล'),
+                              maxLength: 50,
+                            ),
                       const SizedBox(height: 16),
-                      TextFormField(
-                        controller: _telCtrl,
-                        enabled: !_saving,
-                        decoration: _input('เบอร์ติดต่อ'),
-                        keyboardType: TextInputType.phone,
-                        maxLength: 50,
-                      ),
+                      widget.statusOnly
+                          ? _readOnly('เบอร์ติดต่อ', _orDash(a.contractTel))
+                          : TextFormField(
+                              controller: _telCtrl,
+                              enabled: !_saving,
+                              decoration: _input('เบอร์ติดต่อ'),
+                              keyboardType: TextInputType.phone,
+                              maxLength: 50,
+                            ),
                       const SizedBox(height: 16),
                       Row(
                         children: [

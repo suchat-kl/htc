@@ -26,11 +26,17 @@ class BookingActivityAssignmentSection extends StatefulWidget {
   /// แจ้งให้โหลดใหม่ — ใช้หลังบันทึกกำหนดห้องกิจกรรมจาก dialog ตรวจสอบห้องว่าง
   final Listenable? refreshSignal;
 
+  /// โหมดแก้เฉพาะสถานะของแท็บ Check in
+  ///
+  /// ท้ายแถวเหลือแค่ปุ่มแก้ไข และ dialog แก้ได้เฉพาะสถานะ
+  final bool statusOnly;
+
   const BookingActivityAssignmentSection({
     super.key,
     required this.apiService,
     required this.bookId,
     this.refreshSignal,
+    this.statusOnly = false,
   });
 
   @override
@@ -177,6 +183,7 @@ class _BookingActivityAssignmentSectionState
         assignment: r,
         // เทียบลำดับซ้ำกับทุกแถวของใบจอง ไม่ใช่แค่หน้าที่เปิดอยู่
         others: _all.where((x) => x.bookIdDetail != r.bookIdDetail).toList(),
+        statusOnly: widget.statusOnly,
         title: 'แก้ไขข้อมูลห้องกิจกรรม',
       ),
     );
@@ -425,26 +432,30 @@ class _BookingActivityAssignmentSectionState
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        _iconAction(
-          icon: Icons.event_note_outlined,
-          color: Colors.teal.shade700,
-          tooltip: 'รายละเอียดการใช้ห้อง',
-          onTap: () => _openSchedule(r),
-        ),
-        const SizedBox(width: 6),
+        if (!widget.statusOnly) ...[
+          _iconAction(
+            icon: Icons.event_note_outlined,
+            color: Colors.teal.shade700,
+            tooltip: 'รายละเอียดการใช้ห้อง',
+            onTap: () => _openSchedule(r),
+          ),
+          const SizedBox(width: 6),
+        ],
         _iconAction(
           icon: Icons.edit_outlined,
           color: Colors.blue.shade700,
           tooltip: 'แก้ไขข้อมูล',
           onTap: () => _edit(r),
         ),
-        const SizedBox(width: 6),
-        _iconAction(
-          icon: Icons.delete_outline,
-          color: Colors.red.shade600,
-          tooltip: 'ลบข้อมูล',
-          onTap: () => _delete(r),
-        ),
+        if (!widget.statusOnly) ...[
+          const SizedBox(width: 6),
+          _iconAction(
+            icon: Icons.delete_outline,
+            color: Colors.red.shade600,
+            tooltip: 'ลบข้อมูล',
+            onTap: () => _delete(r),
+          ),
+        ],
       ],
     );
   }

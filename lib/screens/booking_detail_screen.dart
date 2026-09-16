@@ -34,7 +34,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen>
   late TabController _tabController;
   // ✅ ตัวแปรสำหรับเก็บข้อมูล
   Map<String, dynamic>? _bookingData;
-   
+
   bool _isLoading = true;
   String? _error;
 
@@ -68,7 +68,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen>
   //   try {
   //     final statuses = await widget.apiService.getDocumentStatusList();
   //     setState(() {
-       
+
   //       _isLoading = false;
   //     });
   //   } catch (e) {
@@ -118,48 +118,48 @@ class _BookingDetailScreenState extends State<BookingDetailScreen>
           padding: const EdgeInsets.symmetric(horizontal: 8),
         ),
       ),
-      body: 
-      _isLoading
+      body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           // : _error != null
           // ?
-          :
-      TabBarView(
-        controller: _tabController,
-        children: [
-          // BookingInfoTab(bookId: widget.bookId),
-          // const RoomAssignmentTab(),
-          // const CheckInTab(),
-          // Tab 1: ข้อมูลสำรองห้อง
-          // BookingInfoTab มี SingleChildScrollView ของตัวเองอยู่แล้ว
-          // ถ้าครอบซ้ำอีกชั้น viewport ชั้นในจะได้ความสูงแบบ unbounded แล้ว assert
-          BookingInfoTab(
-            apiService: widget.apiService,
-            bookId: widget.bookId,
-            bookingData: _bookingData,
-            onSaved: () => _dataChanged = true,
-          ),
-          // Tab 2: กำหนดห้อง
-          SingleChildScrollView(
-            child: RoomAssignmentTab(
-              apiService: widget.apiService,
-              bookId: widget.bookId,
-              bookingData: _bookingData,
-              onSaved: () => _dataChanged = true,
+          : TabBarView(
+              controller: _tabController,
+              children: [
+                // BookingInfoTab(bookId: widget.bookId),
+                // const RoomAssignmentTab(),
+                // const CheckInTab(),
+                // Tab 1: ข้อมูลสำรองห้อง
+                // BookingInfoTab มี SingleChildScrollView ของตัวเองอยู่แล้ว
+                // ถ้าครอบซ้ำอีกชั้น viewport ชั้นในจะได้ความสูงแบบ unbounded แล้ว assert
+                BookingInfoTab(
+                  apiService: widget.apiService,
+                  bookId: widget.bookId,
+                  bookingData: _bookingData,
+                  onSaved: () => _dataChanged = true,
+                ),
+                // Tab 2: กำหนดห้อง
+                SingleChildScrollView(
+                  child: RoomAssignmentTab(
+                    apiService: widget.apiService,
+                    bookId: widget.bookId,
+                    bookingData: _bookingData,
+                    onSaved: () => _dataChanged = true,
+                  ),
+                ),
+                // Tab 3: Check in
+                SingleChildScrollView(
+                  child: CheckInTab(
+                    apiService: widget.apiService,
+                    bookId: widget.bookId,
+                    bookingData: _bookingData,
+                    onSaved: () => _dataChanged = true,
+                  ),
+                ),
+              ],
             ),
-          ),
-          // Tab 3: Check in
-          SingleChildScrollView(
-            child: CheckInTab(
-              apiService: widget.apiService,
-              bookId: widget.bookId,
-               bookingData: _bookingData,
-            ),
-          ),
-        ],
-      ),
     );
   }
+
   /*
   Widget _buildBookingInfoTab() {
     return SingleChildScrollView(
@@ -341,5 +341,4 @@ class _BookingDetailScreenState extends State<BookingDetailScreen>
       }
     }
   }
-
 }
