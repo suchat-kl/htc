@@ -27,8 +27,8 @@ class AppPagination extends StatelessWidget {
   /// ข้อความสรุปที่แสดงต่อท้าย เช่น "ทั้งหมด 53 ห้อง" — ไม่ส่งมาก็ไม่แสดง
   final String? summary;
 
-  /// ตัวเลือกแถวต่อหน้า
-  static const List<int> pageSizeOptions = [5, 10, 15, 20];
+  /// ตัวเลือกแถวต่อหน้า — 50/100 ไว้ให้หน้าที่มีข้อมูลเยอะ เช่น ครุภัณฑ์
+  static const List<int> pageSizeOptions = [5, 10, 15, 20, 50, 100];
 
   /// จำนวนปุ่มเลขหน้าที่แสดงพร้อมกัน
   static const int _windowSize = 5;
