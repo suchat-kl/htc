@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../config/theme.dart';
+import '../models/bookdetail.dart';
 import '../models/schedule.dart';
 import '../services/api_service.dart';
 import '../utils/logger.dart';
@@ -36,6 +37,12 @@ class ScheduleAvailabilityDialog extends StatefulWidget {
   final String? startDate; // yyyy-MM-dd
   final String? stopDate; // yyyy-MM-dd
 
+  /// รหัสรายการขอจอง (bookroomdetail) ของแถวที่กดกำหนดห้องกิจกรรม
+  ///
+  /// ต้องมีตอนบันทึก เพราะ bookdetail ผูกกับ bookroomdetail และตาราง
+  /// ห้องกิจกรรมที่กำหนดแล้วหา type 'C' ผ่านความสัมพันธ์นี้
+  final int? bookRoomId;
+
   /// โหมดกำหนดห้องกิจกรรม — เปิดจากแท็บกำหนดห้องเท่านั้น
   ///
   /// เปิดอยู่: คลิกเลือกช่วงเวลาที่ว่างได้ มีตัวนับและปุ่มบันทึก
@@ -51,6 +58,7 @@ class ScheduleAvailabilityDialog extends StatefulWidget {
     required this.roomName,
     required this.startDate,
     required this.stopDate,
+    this.bookRoomId,
     this.selectionMode = false,
   });
 
@@ -89,6 +97,12 @@ class _ScheduleAvailabilityDialogState
   /// ช่วงเวลาที่เลือกไว้ — เก็บเป็น yyyy-MM-dd|from|to เลือกได้เฉพาะช่องที่ว่าง
   final Set<String> _selected = {};
 
+  /// สถานะเริ่มต้นของ bookdetail ที่สร้างจากการกำหนดห้อง — ตรงกับห้องพัก
+  ///
+  /// ต้องส่งไปกับ payload เอง ตั้ง default ที่ entity ฝั่ง Spring ไม่ได้ผล
+  /// เพราะ mapDtoToEntity เรียก setStatus(dto.getStatus()) ทับทุกครั้ง
+  static const int _defaultStatus = 2;
+
   /// กันกดบันทึกซ้ำระหว่างที่ยังยิง API ไม่ครบทุกช่วงเวลา
   bool _saving = false;
   bool _isLoading = true;
@@ -112,7 +126,8 @@ class _ScheduleAvailabilityDialogState
     final ed = _parse(widget.stopDate);
     if (sd == null || ed == null) {
       setState(() {
-        _error = 'รายการนี้ไม่มีวันที่เริ่มต้นหรือวันที่สิ้นสุด '
+        _error =
+            'รายการนี้ไม่มีวันที่เริ่มต้นหรือวันที่สิ้นสุด '
             'จึงตรวจสอบห้องว่างไม่ได้\nกรุณาแก้ไขรายการให้มีช่วงวันที่ก่อน';
         _isLoading = false;
       });
@@ -256,19 +271,59 @@ class _ScheduleAvailabilityDialogState
     throw Exception('ไม่พบราคาของประเภทห้อง ${widget.roomName}');
   }
 
-  /// บันทึกช่วงเวลาที่เลือกลง t_schedule ทีละช่วง
+  /// บันทึกการกำหนดห้องกิจกรรม — หนึ่งแถวใน bookdetail และช่วงเวลาใน t_schedule
   ///
-  /// คีย์ของตารางคือ roomID + scheduleDate + fromTime + toTime ซึ่งได้ครบจาก
-  /// ช่องที่เลือกกับ roomID ที่ค้นมา ฟิลด์อื่นปล่อยว่างไว้ก่อน
+  /// bookdetail หนึ่งแถวต่อการบันทึกหนึ่งครั้ง เก็บช่วงวันที่จากวันแรกถึงวันสุดท้าย
+  /// ที่เลือกไว้ แถวนี้คือสิ่งที่ตาราง "ห้องกิจกรรมที่กำหนดแล้ว" เอาไปแสดง
+  /// ส่วน t_schedule หนึ่งแถวต่อหนึ่งช่วงเวลา คีย์คือ
+  /// roomID + scheduleDate + fromTime + toTime ซึ่งได้ครบจากช่องที่เลือก
+  ///
+  /// สร้าง bookdetail ก่อน ถ้าพลาดจะยังไม่มี t_schedule ค้าง
   Future<void> _save() async {
     if (_saving) return;
+
+    final bookRoomId = widget.bookRoomId;
+    if (bookRoomId == null) {
+      context.showOverlayMessage(
+        'รายการนี้ไม่มีรหัสรายการขอจอง (bookRoomId) จึงบันทึกไม่ได้',
+        icon: Icons.error_outline,
+        background: Colors.red,
+        duration: const Duration(seconds: 5),
+      );
+      return;
+    }
+
     setState(() => _saving = true);
 
     final slots = _selected.toList()..sort();
     try {
-      // หารหัสห้องและราคาก่อนเริ่มบันทึก ถ้าพลาดจะหยุดตั้งแต่ยังไม่มีอะไรถูกบันทึก
+      // หารหัสห้อง ราคา และลำดับก่อนเริ่มบันทึก ถ้าพลาดจะหยุดตั้งแต่ยังไม่มี
+      // อะไรถูกบันทึก
       final roomId = await _findRoomId();
       final price = await _roomTypePrice();
+      final sequence = await widget.apiService.getNextRoomSequence(
+        bookId: widget.bookId,
+        roomTypeId: widget.roomTypeId,
+      );
+
+      // slots เรียงแล้ว และคีย์ขึ้นต้นด้วยวันที่ จึงเอาวันแรกกับวันสุดท้ายได้เลย
+      final firstDate = slots.first.split('|')[0];
+      final lastDate = slots.last.split('|')[0];
+
+      await widget.apiService.createBookDetail(
+        BookDetail(
+          bookRoomId: bookRoomId,
+          bookId: widget.bookId,
+          roomTypeId: widget.roomTypeId,
+          roomId: roomId,
+          // ห้องกิจกรรมใช้ชื่อห้องเป็นหมายเลขห้อง เช่น สัมนา 1
+          roomNo: widget.roomName,
+          sequence: sequence,
+          startDate: firstDate,
+          stopDate: lastDate,
+          status: _defaultStatus,
+        ),
+      );
 
       for (final key in slots) {
         final parts = key.split('|');
@@ -287,7 +342,7 @@ class _ScheduleAvailabilityDialogState
       if (!mounted) return;
       // ใช้ overlay เพราะ SnackBar ปกติจะถูก dialog นี้บัง
       context.showOverlayMessage(
-        'บันทึกกำหนดห้องกิจกรรมแล้ว ${slots.length} ช่วงเวลา',
+        'บันทึกกำหนดห้องกิจกรรมแล้ว ${slots.length} ช่วงเวลา (ลำดับ $sequence)',
         icon: Icons.check_circle_outline,
         background: const Color(0xFF43A047),
       );
@@ -341,7 +396,11 @@ class _ScheduleAvailabilityDialogState
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
-          children: [_header(), Flexible(child: _body()), _footer()],
+          children: [
+            _header(),
+            Flexible(child: _body()),
+            _footer(),
+          ],
         ),
       ),
     );
@@ -479,11 +538,7 @@ class _ScheduleAvailabilityDialogState
           ],
         ),
         for (final slot in _slots)
-          Row(
-            children: [
-              for (final d in _dates) _cell(d, slot),
-            ],
-          ),
+          Row(children: [for (final d in _dates) _cell(d, slot)]),
       ],
     );
   }

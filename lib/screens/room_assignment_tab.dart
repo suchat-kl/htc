@@ -120,6 +120,7 @@ class _RoomAssignmentTabState extends State<RoomAssignmentTab> {
                       bookId: widget.bookId,
                       roomTypeId: d.roomTypeId!,
                       roomName: d.name ?? '',
+                      bookRoomId: d.bookRoomId,
                       // ห้องกิจกรรมใช้ช่วงวันที่ของแถวนั้น ต่างจาก
                       // ห้องพักที่ดูทั้งช่วงของใบจอง
                       startDate: d.startDate,
