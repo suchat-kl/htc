@@ -24,12 +24,19 @@ class RoomScheduleDialog extends StatefulWidget {
   /// หัว dialog — ห้องกิจกรรมใช้ dialog เดียวกันจึงส่งชื่อของตัวเองมา
   final String title;
 
+  /// แสดงช่วงเวลา (เริ่มเวลา/ถึงเวลา) ด้วยหรือไม่
+  ///
+  /// ห้องกิจกรรมจองเป็นช่วงเวลาจริงจึงต้องเห็น ส่วนห้องพักเก็บเวลาเป็น 0
+  /// ทั้งคู่เพราะจองเป็นคืน การแสดง 00:00 - 00:00 มีแต่จะทำให้สับสน
+  final bool showTime;
+
   const RoomScheduleDialog({
     super.key,
     required this.apiService,
     required this.roomNo,
     required this.schedule,
     this.title = 'แก้ไขการใช้ห้องพัก',
+    this.showTime = false,
   });
 
   @override
@@ -76,6 +83,14 @@ class _RoomScheduleDialogState extends State<RoomScheduleDialog> {
   String get _dateText {
     final d = DateTime.tryParse(widget.schedule.scheduleDate ?? '');
     return d == null ? '-' : Util.formatThaiDate(d);
+  }
+
+  /// เวลาเก็บเป็นตัวเลขในฐานข้อมูล 800 → 08:00 และ 1600 → 16:00
+  static String _time(int? t) {
+    if (t == null) return '-';
+    final h = (t ~/ 100).toString().padLeft(2, '0');
+    final m = (t % 100).toString().padLeft(2, '0');
+    return '$h:$m';
   }
 
   static String _describe(Object e) {
@@ -162,6 +177,26 @@ class _RoomScheduleDialogState extends State<RoomScheduleDialog> {
                           Expanded(child: _readOnly('วันที่', _dateText)),
                         ],
                       ),
+                      if (widget.showTime) ...[
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _readOnly(
+                                'เริ่มเวลา',
+                                _time(widget.schedule.fromTime),
+                              ),
+                            ),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: _readOnly(
+                                'ถึงเวลา',
+                                _time(widget.schedule.toTime),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                       const SizedBox(height: 16),
                       TextFormField(
                         controller: _priceCtrl,

@@ -147,6 +147,7 @@ class _ActivityScheduleScreenState extends State<ActivityScheduleScreen> {
         roomNo: widget.roomNo,
         schedule: s,
         title: 'แก้ไขการใช้ห้องกิจกรรม',
+        showTime: true,
       ),
     );
     if (ok != true || !mounted) return;
