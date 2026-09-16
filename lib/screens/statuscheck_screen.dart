@@ -6,6 +6,7 @@ import '../config/theme.dart';
 import '../models/statuscheck.dart';
 import '../services/api_service.dart';
 import '../utils/snackbar_helper.dart';
+import '../widgets/app_pagination.dart';
 
 class StatusCheckScreen extends StatefulWidget {
   final ApiService apiService;
@@ -540,102 +541,22 @@ class _StatusCheckScreenState extends State<StatusCheckScreen> {
                                 top: BorderSide(color: Colors.grey.shade300),
                               ),
                             ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                // Page Size
-                                Row(
-                                  children: [
-                                    const Text('แสดง '),
-                                    DropdownButton<int>(
-                                      value: _pageSize,
-                                      underline: Container(),
-                                      items: const [
-                                        DropdownMenuItem(
-                                          value: 5,
-                                          child: Text('5'),
-                                        ),
-                                        DropdownMenuItem(
-                                          value: 10,
-                                          child: Text('10'),
-                                        ),
-                                        DropdownMenuItem(
-                                          value: 15,
-                                          child: Text('15'),
-                                        ),
-                                        DropdownMenuItem(
-                                          value: 20,
-                                          child: Text('20'),
-                                        ),
-                                      ],
-                                      onChanged: (value) {
-                                        if (value != null) {
-                                          setState(() {
-                                            _pageSize = value;
-                                            _currentPage = 0;
-                                          });
-                                          _loadData();
-                                        }
-                                      },
-                                    ),
-                                    const Text(' รายการ'),
-                                  ],
-                                ),
-
-                                // Page Info
-                                Text(
-                                  '${_currentPage * _pageSize + 1} - '
-                                  '${((_currentPage + 1) * _pageSize).clamp(0, _totalItems)} '
-                                  'จาก $_totalItems รายการ',
-                                  style: const TextStyle(fontSize: 14),
-                                ),
-
-                                // Page Controls
-                                Row(
-                                  children: [
-                                    IconButton(
-                                      onPressed: _currentPage > 0
-                                          ? () {
-                                              setState(() => _currentPage = 0);
-                                              _loadData();
-                                            }
-                                          : null,
-                                      icon: const Icon(Icons.first_page),
-                                    ),
-                                    IconButton(
-                                      onPressed: _currentPage > 0
-                                          ? () {
-                                              setState(() => _currentPage--);
-                                              _loadData();
-                                            }
-                                          : null,
-                                      icon: const Icon(Icons.chevron_left),
-                                    ),
-                                    Text(
-                                      '${_currentPage + 1} / $_totalPages',
-                                      style: const TextStyle(fontSize: 14),
-                                    ),
-                                    IconButton(
-                                      onPressed: _currentPage < _totalPages - 1
-                                          ? () {
-                                              setState(() => _currentPage++);
-                                              _loadData();
-                                            }
-                                          : null,
-                                      icon: const Icon(Icons.chevron_right),
-                                    ),
-                                    IconButton(
-                                      onPressed: _currentPage < _totalPages - 1
-                                          ? () {
-                                              setState(() => _currentPage = _totalPages - 1);
-                                              _loadData();
-                                            }
-                                          : null,
-                                      icon: const Icon(Icons.last_page),
-                                    ),
-                                  ],
-                                ),
-                              ],
+                            child: AppPagination(
+                              currentPage: _currentPage,
+                              totalPages: _totalPages,
+                              pageSize: _pageSize,
+                              summary: 'ทั้งหมด $_totalItems รายการ',
+                              onPageChanged: (page) {
+                                setState(() => _currentPage = page);
+                                _loadData();
+                              },
+                              onPageSizeChanged: (size) {
+                                setState(() {
+                                  _pageSize = size;
+                                  _currentPage = 0;
+                                });
+                                _loadData();
+                              },
                             ),
                           ),
                         ],

@@ -4,6 +4,7 @@ import '../models/commodity.dart';
 import '../models/roomtype_commodity.dart';
 import '../services/api_service.dart';
 import '../utils/snackbar_helper.dart';
+import '../widgets/app_pagination.dart';
 import 'package:highway_training/utils/logger.dart';
 
 class RoomtypeCommodityScreen extends StatefulWidget {
@@ -45,7 +46,7 @@ class _RoomtypeCommodityScreenState extends State<RoomtypeCommodityScreen> {
       // final commodities = await widget.apiService.getCommoditiesList();
       final commoditiesAdd = await widget.apiService.getCommoditiesList(
         roomTypeID: widget.roomTypeID,
-        mode: "add"
+        mode: "add",
       );
       final commoditiesEdit = await widget.apiService.getCommoditiesList(
         roomTypeID: widget.roomTypeID,
@@ -59,12 +60,11 @@ class _RoomtypeCommodityScreenState extends State<RoomtypeCommodityScreen> {
         //     uniqueMap.putIfAbsent(c.commodityId!, () => c);
         //   }
         // }
-        setState(() { 
+        setState(() {
           // _commodityList = uniqueMap.values.toList()
           _commodityListAdd = commoditiesAdd;
           _commodityListEdit = commoditiesEdit;
-          
-          });
+        });
       }
     } catch (e) {
       if (AppLogger.on) AppLogger.d('Error loading commodity list: $e');
@@ -96,19 +96,19 @@ class _RoomtypeCommodityScreenState extends State<RoomtypeCommodityScreen> {
     }
   }
 
-  String _getCommodityName(int commodityID,String mode) {
-    final Commodity c ;
-    if (mode=="edit") {
-    c= _commodityListEdit.firstWhere(
-      (c) => c.commodityId == commodityID,
-      orElse: () => Commodity(commodityId: commodityID, name: 'ไม่พบข้อมูล'),
-    );
-    return c.name;
+  String _getCommodityName(int commodityID, String mode) {
+    final Commodity c;
+    if (mode == "edit") {
+      c = _commodityListEdit.firstWhere(
+        (c) => c.commodityId == commodityID,
+        orElse: () => Commodity(commodityId: commodityID, name: 'ไม่พบข้อมูล'),
+      );
+      return c.name;
     }
     return " ";
   }
 
-  void _showAddEditDialog({RoomtypeCommodity? commodity,String? mode}) {
+  void _showAddEditDialog({RoomtypeCommodity? commodity, String? mode}) {
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -116,7 +116,7 @@ class _RoomtypeCommodityScreenState extends State<RoomtypeCommodityScreen> {
         commodity: commodity,
         roomTypeID: widget.roomTypeID,
         apiService: widget.apiService,
-        commodityList: mode=="edit"?_commodityListEdit:_commodityListAdd,
+        commodityList: mode == "edit" ? _commodityListEdit : _commodityListAdd,
       ),
     ).then((result) {
       if (result == true) _loadData();
@@ -132,7 +132,7 @@ class _RoomtypeCommodityScreenState extends State<RoomtypeCommodityScreen> {
           style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
         ),
         content: Text(
-          'ต้องการลบ "${_getCommodityName(commodity.commodityID,"edit")}" ใช่หรือไม่?',
+          'ต้องการลบ "${_getCommodityName(commodity.commodityID, "edit")}" ใช่หรือไม่?',
           style: const TextStyle(fontSize: 16),
         ),
         actions: [
@@ -163,8 +163,6 @@ class _RoomtypeCommodityScreenState extends State<RoomtypeCommodityScreen> {
         if (mounted) {
           context.showSuccessSnackBar('ลบข้อมูลสำเร็จ');
           _loadData();
-
-          
         }
       } catch (e) {
         if (mounted) context.showErrorSnackBar('ลบไม่สำเร็จ');
@@ -225,65 +223,7 @@ class _RoomtypeCommodityScreenState extends State<RoomtypeCommodityScreen> {
       ),
       body: Column(
         children: [
-          // Page size selector
-          Container(
-            padding: EdgeInsets.symmetric(
-              horizontal: isDesktop ? 20 : 12,
-              vertical: 8,
-            ),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.grey.withValues(alpha: 0.1),
-                  blurRadius: 4,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text('แสดง', style: TextStyle(fontSize: bodyFontSize)),
-                const SizedBox(width: 8),
-                SizedBox(
-                  width: isDesktop ? 120 : 100,
-                  child: DropdownButtonFormField<int>(
-                    initialValue: _pageSize,
-                    style: TextStyle(fontSize: bodyFontSize),
-                    decoration: InputDecoration(
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      filled: true,
-                      fillColor: Colors.grey.shade50,
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
-                      ),
-                      isDense: true,
-                    ),
-                    items: [5, 10, 20, 50]
-                        .map(
-                          (s) => DropdownMenuItem<int>(
-                            value: s,
-                            child: Text(
-                              '$s แถว',
-                              style: TextStyle(fontSize: bodyFontSize),
-                            ),
-                          ),
-                        )
-                        .toList(),
-                    onChanged: (v) {
-                      _pageSize = v!;
-                      _currentPage = 0;
-                      _loadData();
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ),
+          // ตัวเลือกแถวต่อหน้าย้ายไปอยู่ในแถบแบ่งหน้าด้านล่างแล้ว
           // Table - FIXED
           Expanded(
             child: _isLoading
@@ -441,7 +381,8 @@ class _RoomtypeCommodityScreenState extends State<RoomtypeCommodityScreen> {
                                           message: 'แก้ไข',
                                           child: InkWell(
                                             onTap: () => _showAddEditDialog(
-                                              commodity: c,mode: "edit"
+                                              commodity: c,
+                                              mode: "edit",
                                             ),
                                             borderRadius: BorderRadius.circular(
                                               8,
@@ -500,8 +441,8 @@ class _RoomtypeCommodityScreenState extends State<RoomtypeCommodityScreen> {
                     ),
                   ),
           ),
-          // Pagination
-          if (_totalPages > 1)
+          // แถบแบ่งหน้ามาตรฐาน — แสดงเมื่อมีข้อมูล เพราะมีตัวเลือกแถวต่อหน้าอยู่ด้วย
+          if (!_isLoading && _commodities.isNotEmpty)
             Container(
               padding: EdgeInsets.symmetric(
                 horizontal: isDesktop ? 24 : 16,
@@ -517,96 +458,20 @@ class _RoomtypeCommodityScreenState extends State<RoomtypeCommodityScreen> {
                   ),
                 ],
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  IconButton(
-                    onPressed: _currentPage > 0
-                        ? () {
-                            _currentPage = 0;
-                            _loadData();
-                          }
-                        : null,
-                    icon: Icon(Icons.first_page, size: iconSize),
-                  ),
-                  IconButton(
-                    onPressed: _currentPage > 0
-                        ? () {
-                            _currentPage--;
-                            _loadData();
-                          }
-                        : null,
-                    icon: Icon(Icons.chevron_left, size: iconSize),
-                  ),
-                  ...List.generate(_totalPages.clamp(0, 5), (i) {
-                    int pageNum = _totalPages <= 5
-                        ? i
-                        : (_currentPage < 3
-                              ? i
-                              : (_currentPage > _totalPages - 3
-                                    ? _totalPages - 5 + i
-                                    : _currentPage - 2 + i));
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 2),
-                      child: InkWell(
-                        onTap: () {
-                          _currentPage = pageNum;
-                          _loadData();
-                        },
-                        borderRadius: BorderRadius.circular(8),
-                        child: Container(
-                          width: isDesktop ? 44 : 38,
-                          height: isDesktop ? 44 : 38,
-                          decoration: BoxDecoration(
-                            color: _currentPage == pageNum
-                                ? AppTheme.primaryColor
-                                : Colors.grey.shade100,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Center(
-                            child: Text(
-                              '${pageNum + 1}',
-                              style: TextStyle(
-                                fontSize: bodyFontSize,
-                                fontWeight: FontWeight.bold,
-                                color: _currentPage == pageNum
-                                    ? Colors.white
-                                    : AppTheme.textPrimary,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    );
-                  }),
-                  IconButton(
-                    onPressed: _currentPage < _totalPages - 1
-                        ? () {
-                            _currentPage++;
-                            _loadData();
-                          }
-                        : null,
-                    icon: Icon(Icons.chevron_right, size: iconSize),
-                  ),
-                  IconButton(
-                    onPressed: _currentPage < _totalPages - 1
-                        ? () {
-                            _currentPage = _totalPages - 1;
-                            _loadData();
-                          }
-                        : null,
-                    icon: Icon(Icons.last_page, size: iconSize),
-                  ),
-                  const SizedBox(width: 16),
-                  Text(
-                    'หน้า ${_currentPage + 1} จาก $_totalPages',
-                    style: TextStyle(
-                      fontSize: bodyFontSize,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.grey.shade600,
-                    ),
-                  ),
-                ],
+              child: AppPagination(
+                currentPage: _currentPage,
+                totalPages: _totalPages == 0 ? 1 : _totalPages,
+                pageSize: _pageSize,
+                // ดึงข้อมูลทีละหน้าจาก API จึงต้องโหลดใหม่ทุกครั้งที่เปลี่ยน
+                onPageChanged: (p) {
+                  _currentPage = p;
+                  _loadData();
+                },
+                onPageSizeChanged: (s) {
+                  _pageSize = s;
+                  _currentPage = 0;
+                  _loadData();
+                },
               ),
             ),
         ],
@@ -711,7 +576,6 @@ class _RoomtypeCommodityFormDialogState
         context.showSuccessSnackBar(
           isEdit ? 'อัปเดตข้อมูลสำเร็จ' : 'บันทึกข้อมูลสำเร็จ',
         );
-        
       }
     } catch (e) {
       setState(() {
@@ -720,7 +584,8 @@ class _RoomtypeCommodityFormDialogState
       });
     }
   }
-// Delete by commodityID
+
+  // Delete by commodityID
   // void deleteCommodityById(int commodityID) {
   //   widget.commodityList.removeWhere((item) => item.commodityId == commodityID);
   // }

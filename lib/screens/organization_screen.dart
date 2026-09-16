@@ -3,6 +3,7 @@ import '../config/theme.dart';
 import '../models/organization.dart';
 import '../services/api_service.dart';
 import '../utils/snackbar_helper.dart';
+import '../widgets/app_pagination.dart';
 import 'package:highway_training/utils/logger.dart';
 
 class OrganizationScreen extends StatefulWidget {
@@ -251,15 +252,13 @@ class _OrganizationScreenState extends State<OrganizationScreen> {
                         _loadData();
                       },
                     ),
-
                   ),
-                  
+
                   SizedBox(
                     width: isLargeScreen
                         ? 150
                         : (isDesktop ? 130 : (screenWidth - 56) / 2 - 6),
-                    child: 
-                    TextField(
+                    child: TextField(
                       style: TextStyle(fontSize: bodyFontSize),
                       decoration: InputDecoration(
                         hintText: 'ค้นหาระดับ...',
@@ -279,47 +278,9 @@ class _OrganizationScreenState extends State<OrganizationScreen> {
                         _loadData();
                       },
                     ),
-                    
-                   
                   ),
-                  
-                  SizedBox(
-                    width: isLargeScreen ? 130 : (isDesktop ? 120 : 110),
-                    child: DropdownButtonFormField<int>(
-                      initialValue: _pageSize,
-                      isExpanded: true, // ✅ Add this
-                      isDense: true, // ✅ Add this
-                      style: TextStyle(fontSize: bodyFontSize),
-                      decoration: InputDecoration(
-                        hintText: 'แสดง',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        filled: true,
-                        fillColor: Colors.grey.shade50,
-                         contentPadding: EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: isDesktop ? 12 : 8,
-                        ), // ✅ Reduce padding
-                      ),
-                      items: [5, 10, 15, 20]
-                          .map(
-                            (s) => DropdownMenuItem<int>(
-                              value: s,
-                              child: Text(
-                                '$s แถว',
-                                style: TextStyle(fontSize: bodyFontSize),
-                              ),
-                            ),
-                          )
-                          .toList(),
-                      onChanged: (v) {
-                        _pageSize = v!;
-                        _currentPage = 0;
-                        _loadData();
-                      },
-                    ),
-                  ),
+
+                  // ตัวเลือกแถวต่อหน้าย้ายไปอยู่ในแถบแบ่งหน้า AppPagination ด้านล่างแล้ว
                 ],
               ),
             ),
@@ -550,65 +511,36 @@ class _OrganizationScreenState extends State<OrganizationScreen> {
                     ),
                   ),
           ),
-          if (_totalPages > 1)
-            Container(
-              padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.grey.withValues(alpha: 0.1),
-                    blurRadius: 4,
-                    offset: const Offset(0, -2),
-                  ),
-                ],
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  IconButton(
-                    onPressed: _currentPage > 0
-                        ? () {
-                            _currentPage = 0;
-                            _loadData();
-                          }
-                        : null,
-                    icon: Icon(Icons.first_page, size: iconSize),
-                  ),
-                  IconButton(
-                    onPressed: _currentPage > 0
-                        ? () {
-                            _currentPage--;
-                            _loadData();
-                          }
-                        : null,
-                    icon: Icon(Icons.chevron_left, size: iconSize),
-                  ),
-                  Text(
-                    'หน้า ${_currentPage + 1} จาก $_totalPages',
-                    style: TextStyle(fontSize: bodyFontSize),
-                  ),
-                  IconButton(
-                    onPressed: _currentPage < _totalPages - 1
-                        ? () {
-                            _currentPage++;
-                            _loadData();
-                          }
-                        : null,
-                    icon: Icon(Icons.chevron_right, size: iconSize),
-                  ),
-                  IconButton(
-                    onPressed: _currentPage < _totalPages - 1
-                        ? () {
-                            _currentPage = _totalPages - 1;
-                            _loadData();
-                          }
-                        : null,
-                    icon: Icon(Icons.last_page, size: iconSize),
-                  ),
-                ],
-              ),
+          // แถบแบ่งหน้ามาตรฐาน — แสดงตลอดเพราะมีตัวเลือกแถวต่อหน้าอยู่ด้วย
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey.withValues(alpha: 0.1),
+                  blurRadius: 4,
+                  offset: const Offset(0, -2),
+                ),
+              ],
             ),
+            child: AppPagination(
+              currentPage: _currentPage,
+              totalPages: _totalPages,
+              pageSize: _pageSize,
+              onPageChanged: (page) {
+                setState(() => _currentPage = page);
+                _loadData();
+              },
+              onPageSizeChanged: (size) {
+                setState(() {
+                  _pageSize = size;
+                  _currentPage = 0;
+                });
+                _loadData();
+              },
+            ),
+          ),
         ],
       ),
       floatingActionButton: isDesktop
@@ -788,23 +720,18 @@ class _OrganizationDialogState extends State<_OrganizationDialog> {
                         isDesktop,
                       ),
                       const SizedBox(height: 14),
-                      _buildDropdown(
-                        'ต้นสังกัด',
-                        _selectedParentID,
-                        [
-                          // DropdownMenuItem<int?>(
-                          //   value: null,
-                          //   child: const Text('ไม่มี'),
-                          // ),
-                          ...widget.allOrgs.map(
-                            (o) => DropdownMenuItem<int?>(
-                              value: o.orgID,
-                              child: Text(o.orgName ?? ''),
-                            ),
+                      _buildDropdown('ต้นสังกัด', _selectedParentID, [
+                        // DropdownMenuItem<int?>(
+                        //   value: null,
+                        //   child: const Text('ไม่มี'),
+                        // ),
+                        ...widget.allOrgs.map(
+                          (o) => DropdownMenuItem<int?>(
+                            value: o.orgID,
+                            child: Text(o.orgName ?? ''),
                           ),
-                        ],
-                        (v) => setState(() => _selectedParentID = v),
-                      ),
+                        ),
+                      ], (v) => setState(() => _selectedParentID = v)),
                       const SizedBox(height: 14),
                       _buildField('ระดับ', _orgLevelController, isDesktop),
                       const SizedBox(height: 14),

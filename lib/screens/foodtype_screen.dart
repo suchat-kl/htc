@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../config/theme.dart';
 import '../models/foodtype.dart';
 import '../services/api_service.dart';
+import '../widgets/app_pagination.dart';
 import '../widgets/foodtype_dialog.dart';
 import '../utils/snackbar_helper.dart';
 
@@ -55,10 +56,11 @@ class _FoodtypeScreenState extends State<FoodtypeScreen> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (c) =>
-          FoodtypeDialog( foodtype: foodtype,
-            // ✅ ส่งค่าถูกต้อง 
-            apiService: widget.apiService),
+      builder: (c) => FoodtypeDialog(
+        foodtype: foodtype,
+        // ✅ ส่งค่าถูกต้อง
+        apiService: widget.apiService,
+      ),
     ).then((_) => _load());
   }
 
@@ -229,43 +231,7 @@ class _FoodtypeScreenState extends State<FoodtypeScreen> {
                       },
                     ),
                   ),
-                  SizedBox(
-                    width: isL ? 90 : (isD ? 80 : 70),
-                    child: DropdownButtonFormField<int>(
-                      initialValue: _ps,
-                      isExpanded: true,
-                      style: TextStyle(fontSize: bf - 1),
-                      decoration: InputDecoration(
-                        hintText: 'แสดง',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        filled: true,
-                        fillColor: Colors.grey.shade50,
-                        isDense: true,
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 8,
-                        ),
-                      ),
-                      items: [5, 10, 15, 20]
-                          .map(
-                            (s) => DropdownMenuItem<int>(
-                              value: s,
-                              child: Text(
-                                '$s',
-                                style: TextStyle(fontSize: bf - 1),
-                              ),
-                            ),
-                          )
-                          .toList(),
-                      onChanged: (v) {
-                        _ps = v!;
-                        _cp = 0;
-                        _load();
-                      },
-                    ),
-                  ),
+                  // ตัวเลือกแถวต่อหน้าย้ายไปอยู่ในแถบแบ่งหน้า (AppPagination) แล้ว
                 ],
               ),
             ),
@@ -317,7 +283,9 @@ class _FoodtypeScreenState extends State<FoodtypeScreen> {
                                   (f) => DataRow(
                                     cells: [
                                       DataCell(_cell('${f.id}', 35, bf)),
-                                      DataCell(_cellWrap(f.foodgroupName, 150, bf)),
+                                      DataCell(
+                                        _cellWrap(f.foodgroupName, 150, bf),
+                                      ),
                                       DataCell(
                                         _cellWrap(f.name ?? '-', 150, bf),
                                       ),
@@ -334,8 +302,7 @@ class _FoodtypeScreenState extends State<FoodtypeScreen> {
                                           children: [
                                             InkWell(
                                               onTap: () => _dialog(
-                                                 foodtype: f,
-                                               
+                                                foodtype: f,
                                               ), // ✅ ใช้ foodtype ไม่ใช่ transaction
                                               borderRadius:
                                                   BorderRadius.circular(4),
@@ -394,65 +361,34 @@ class _FoodtypeScreenState extends State<FoodtypeScreen> {
                   ),
           ),
 
-          if (_tp > 1)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.grey.withValues(alpha: 0.1),
-                    blurRadius: 4,
-                    offset: const Offset(0, -2),
-                  ),
-                ],
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  IconButton(
-                    onPressed: _cp > 0
-                        ? () {
-                            _cp = 0;
-                            _load();
-                          }
-                        : null,
-                    icon: Icon(Icons.first_page, size: ic),
-                  ),
-                  IconButton(
-                    onPressed: _cp > 0
-                        ? () {
-                            _cp--;
-                            _load();
-                          }
-                        : null,
-                    icon: Icon(Icons.chevron_left, size: ic),
-                  ),
-                  Text(
-                    'หน้า ${_cp + 1} จาก $_tp',
-                    style: TextStyle(fontSize: bf),
-                  ),
-                  IconButton(
-                    onPressed: _cp < _tp - 1
-                        ? () {
-                            _cp++;
-                            _load();
-                          }
-                        : null,
-                    icon: Icon(Icons.chevron_right, size: ic),
-                  ),
-                  IconButton(
-                    onPressed: _cp < _tp - 1
-                        ? () {
-                            _cp = _tp - 1;
-                            _load();
-                          }
-                        : null,
-                    icon: Icon(Icons.last_page, size: ic),
-                  ),
-                ],
-              ),
+          // แถบแบ่งหน้ามาตรฐาน (มีตัวเลือกแถวต่อหน้าในตัว)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey.withValues(alpha: 0.1),
+                  blurRadius: 4,
+                  offset: const Offset(0, -2),
+                ),
+              ],
             ),
+            child: AppPagination(
+              currentPage: _cp,
+              totalPages: _tp,
+              pageSize: _ps,
+              onPageChanged: (page) {
+                _cp = page;
+                _load();
+              },
+              onPageSizeChanged: (size) {
+                _ps = size;
+                _cp = 0;
+                _load();
+              },
+            ),
+          ),
         ],
       ),
     );

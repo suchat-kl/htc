@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../config/theme.dart';
 import '../models/part.dart';
 import '../services/api_service.dart';
+import '../widgets/app_pagination.dart';
 import '../widgets/part_dialog.dart';
 import '../utils/snackbar_helper.dart';
 
@@ -240,7 +241,8 @@ class _PartScreenState extends State<PartScreen> {
                         : (isDesktop ? 140 : (screenWidth - 56) / 2 - 6),
                     height: isDesktop ? 48 : 44, // ✅ Same fixed height
                     child: DropdownButtonFormField<String?>(
-                      initialValue: _filterType, // ✅ Use value, not initialValue
+                      initialValue:
+                          _filterType, // ✅ Use value, not initialValue
                       isExpanded: true,
                       style: TextStyle(fontSize: bodyFontSize),
                       decoration: InputDecoration(
@@ -329,44 +331,7 @@ class _PartScreenState extends State<PartScreen> {
                     ),
                   ),
 
-                  // ✅ Page size dropdown
-                  SizedBox(
-                    width: isLargeScreen ? 120 : (isDesktop ? 100 : 100),
-                    height: isDesktop ? 48 : 44,
-                    child: DropdownButtonFormField<int>(
-                      initialValue: _pageSize,
-                      isExpanded: true,
-                      style: TextStyle(fontSize: bodyFontSize),
-                      decoration: InputDecoration(
-                        hintText: 'แสดง',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        filled: true,
-                        fillColor: Colors.grey.shade50,
-                        contentPadding: EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: isDesktop ? 14 : 12,
-                        ),
-                      ),
-                      items: [5, 10, 15, 20]
-                          .map(
-                            (s) => DropdownMenuItem<int>(
-                              value: s,
-                              child: Text(
-                                '$s แถว',
-                                style: TextStyle(fontSize: bodyFontSize),
-                              ),
-                            ),
-                          )
-                          .toList(),
-                      onChanged: (v) {
-                        _pageSize = v!;
-                        _currentPage = 0;
-                        _loadData();
-                      },
-                    ),
-                  ),
+                  // ตัวเลือกแถวต่อหน้าย้ายไปอยู่ในแถบแบ่งหน้า AppPagination ด้านล่างแล้ว
                 ],
               ),
             ),
@@ -623,111 +588,36 @@ class _PartScreenState extends State<PartScreen> {
                     ),
                   ),
           ),
-          // Pagination
-          if (_totalPages > 1)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.grey.withValues(alpha: 0.1),
-                    blurRadius: 4,
-                    offset: const Offset(0, -2),
-                  ),
-                ],
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  IconButton(
-                    onPressed: _currentPage > 0
-                        ? () {
-                            _currentPage = 0;
-                            _loadData();
-                          }
-                        : null,
-                    icon: Icon(Icons.first_page, size: iconSize),
-                  ),
-                  IconButton(
-                    onPressed: _currentPage > 0
-                        ? () {
-                            _currentPage--;
-                            _loadData();
-                          }
-                        : null,
-                    icon: Icon(Icons.chevron_left, size: iconSize),
-                  ),
-                  ...List.generate(_totalPages.clamp(0, 5), (i) {
-                    int p = _totalPages <= 5
-                        ? i
-                        : (_currentPage < 3
-                              ? i
-                              : (_currentPage > _totalPages - 3
-                                    ? _totalPages - 5 + i
-                                    : _currentPage - 2 + i));
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 2),
-                      child: InkWell(
-                        onTap: () {
-                          _currentPage = p;
-                          _loadData();
-                        },
-                        borderRadius: BorderRadius.circular(8),
-                        child: Container(
-                          width: 40,
-                          height: 40,
-                          decoration: BoxDecoration(
-                            color: _currentPage == p
-                                ? AppTheme.primaryColor
-                                : Colors.grey.shade100,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Center(
-                            child: Text(
-                              '${p + 1}',
-                              style: TextStyle(
-                                fontSize: bodyFontSize,
-                                fontWeight: FontWeight.bold,
-                                color: _currentPage == p
-                                    ? Colors.white
-                                    : AppTheme.textPrimary,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    );
-                  }),
-                  IconButton(
-                    onPressed: _currentPage < _totalPages - 1
-                        ? () {
-                            _currentPage++;
-                            _loadData();
-                          }
-                        : null,
-                    icon: Icon(Icons.chevron_right, size: iconSize),
-                  ),
-                  IconButton(
-                    onPressed: _currentPage < _totalPages - 1
-                        ? () {
-                            _currentPage = _totalPages - 1;
-                            _loadData();
-                          }
-                        : null,
-                    icon: Icon(Icons.last_page, size: iconSize),
-                  ),
-                  const SizedBox(width: 16),
-                  Text(
-                    'หน้า ${_currentPage + 1} จาก $_totalPages',
-                    style: TextStyle(
-                      fontSize: bodyFontSize,
-                      color: Colors.grey.shade600,
-                    ),
-                  ),
-                ],
-              ),
+          // แถบแบ่งหน้ามาตรฐาน — แสดงตลอดเพราะมีตัวเลือกแถวต่อหน้าอยู่ด้วย
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey.withValues(alpha: 0.1),
+                  blurRadius: 4,
+                  offset: const Offset(0, -2),
+                ),
+              ],
             ),
+            child: AppPagination(
+              currentPage: _currentPage,
+              totalPages: _totalPages,
+              pageSize: _pageSize,
+              onPageChanged: (page) {
+                setState(() => _currentPage = page);
+                _loadData();
+              },
+              onPageSizeChanged: (size) {
+                setState(() {
+                  _pageSize = size;
+                  _currentPage = 0;
+                });
+                _loadData();
+              },
+            ),
+          ),
         ],
       ),
       floatingActionButton: isDesktop

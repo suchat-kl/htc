@@ -10,6 +10,7 @@ import '../utils/dialog.dart';
 import '../utils/logger.dart';
 import '../utils/snackbar_helper.dart';
 import '../utils/util.dart';
+import 'app_pagination.dart';
 import 'equipment_dialog.dart';
 
 /// ตาราง "ขอใช้โสตทัศนูปกรณ์นอกเหนือพื้นที่กิจกรรม" ของใบจองหนึ่ง
@@ -37,7 +38,9 @@ class _BookingEquipmentSectionState extends State<BookingEquipmentSection> {
   List<Map<String, dynamic>> _booktitles = [];
 
   int _page = 0;
-  final int _size = 5; // ค่าเริ่มต้น row/page = 5
+
+  /// แถวต่อหน้า ค่าเริ่มต้น 5 เปลี่ยนได้จากตัวเลือกในแถบแบ่งหน้า
+  int _size = 5;
   int _totalItems = 0;
   int _totalPages = 0;
   bool _loading = false;
@@ -241,7 +244,11 @@ class _BookingEquipmentSectionState extends State<BookingEquipmentSection> {
             )
           else if (_items.isEmpty)
             _empty()
-          else ...[_table(), const SizedBox(height: 12), _pagination()],
+          else ...[
+            _table(),
+            const SizedBox(height: 12),
+            _pagination(),
+          ],
         ],
       ),
     );
@@ -418,68 +425,24 @@ class _BookingEquipmentSectionState extends State<BookingEquipmentSection> {
     );
   }
 
+  /// แถบแบ่งหน้ามาตรฐาน — ข้อมูลดึงทีละหน้าจาก API จึงต้องโหลดใหม่ทุกครั้ง
   Widget _pagination() {
-    final totalPages = _totalPages == 0 ? 1 : _totalPages;
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.end,
-      children: [
-        Text(
-          'ทั้งหมด $_totalItems รายการ',
-          style: const TextStyle(fontSize: 13, color: AppTheme.textSecondary),
-        ),
-        const SizedBox(width: 16),
-        IconButton(
-          onPressed: _page > 0
-              ? () {
-                  setState(() => _page = 0);
-                  _load();
-                }
-              : null,
-          icon: const Icon(Icons.first_page),
-          padding: EdgeInsets.zero,
-          constraints: const BoxConstraints(),
-        ),
-        IconButton(
-          onPressed: _page > 0
-              ? () {
-                  setState(() => _page--);
-                  _load();
-                }
-              : null,
-          icon: const Icon(Icons.chevron_left),
-          padding: EdgeInsets.zero,
-          constraints: const BoxConstraints(),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          child: Text(
-            '${_page + 1} / $totalPages',
-            style: const TextStyle(fontSize: 13),
-          ),
-        ),
-        IconButton(
-          onPressed: _page < totalPages - 1
-              ? () {
-                  setState(() => _page++);
-                  _load();
-                }
-              : null,
-          icon: const Icon(Icons.chevron_right),
-          padding: EdgeInsets.zero,
-          constraints: const BoxConstraints(),
-        ),
-        IconButton(
-          onPressed: _page < totalPages - 1
-              ? () {
-                  setState(() => _page = totalPages - 1);
-                  _load();
-                }
-              : null,
-          icon: const Icon(Icons.last_page),
-          padding: EdgeInsets.zero,
-          constraints: const BoxConstraints(),
-        ),
-      ],
+    return AppPagination(
+      currentPage: _page,
+      totalPages: _totalPages == 0 ? 1 : _totalPages,
+      pageSize: _size,
+      summary: 'ทั้งหมด $_totalItems รายการ',
+      onPageChanged: (p) {
+        setState(() => _page = p);
+        _load();
+      },
+      onPageSizeChanged: (s) {
+        setState(() {
+          _size = s;
+          _page = 0;
+        });
+        _load();
+      },
     );
   }
 }

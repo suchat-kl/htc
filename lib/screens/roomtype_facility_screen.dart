@@ -4,6 +4,7 @@ import '../models/facility.dart';
 import '../models/roomtype_facility.dart';
 import '../services/api_service.dart';
 import '../utils/snackbar_helper.dart';
+import '../widgets/app_pagination.dart';
 import 'package:highway_training/utils/logger.dart';
 
 class RoomtypeFacilityScreen extends StatefulWidget {
@@ -19,8 +20,7 @@ class RoomtypeFacilityScreen extends StatefulWidget {
   });
 
   @override
-  State<RoomtypeFacilityScreen> createState() =>
-      _RoomtypeFacilityScreenState();
+  State<RoomtypeFacilityScreen> createState() => _RoomtypeFacilityScreenState();
 }
 
 class _RoomtypeFacilityScreenState extends State<RoomtypeFacilityScreen> {
@@ -49,18 +49,26 @@ class _RoomtypeFacilityScreenState extends State<RoomtypeFacilityScreen> {
         roomTypeID: widget.roomTypeID,
         mode: "add",
       );
-      if (AppLogger.on) AppLogger.d('facilitiesAdd count: ${facilitiesAdd.length}');
+      if (AppLogger.on) {
+        AppLogger.d('facilitiesAdd count: ${facilitiesAdd.length}');
+      }
       for (var f in facilitiesAdd) {
-        if (AppLogger.on) AppLogger.d('  ADD - facilityID: ${f.facilityID}, name: ${f.name}');
+        if (AppLogger.on) {
+          AppLogger.d('  ADD - facilityID: ${f.facilityID}, name: ${f.name}');
+        }
       }
 
       final facilitiesEdit = await widget.apiService.getFacilitiesList(
         roomTypeID: widget.roomTypeID,
         mode: "edit",
       );
-      if (AppLogger.on) AppLogger.d('facilitiesEdit count: ${facilitiesEdit.length}');
+      if (AppLogger.on) {
+        AppLogger.d('facilitiesEdit count: ${facilitiesEdit.length}');
+      }
       for (var f in facilitiesEdit) {
-        if (AppLogger.on) AppLogger.d('  EDIT - facilityID: ${f.facilityID}, name: ${f.name}');
+        if (AppLogger.on) {
+          AppLogger.d('  EDIT - facilityID: ${f.facilityID}, name: ${f.name}');
+        }
       }
 
       if (mounted) {
@@ -130,12 +138,20 @@ class _RoomtypeFacilityScreenState extends State<RoomtypeFacilityScreen> {
         );
       }
       for (var f in _facilityListEdit) {
-        if (AppLogger.on) AppLogger.d('  facilityID: ${f.facilityID}, name: ${f.name}');
+        if (AppLogger.on) {
+          AppLogger.d('  facilityID: ${f.facilityID}, name: ${f.name}');
+        }
       }
     } else {
-      if (AppLogger.on) AppLogger.d('Using _facilityListAdd (count: ${_facilityListAdd.length})');
+      if (AppLogger.on) {
+        AppLogger.d(
+          'Using _facilityListAdd (count: ${_facilityListAdd.length})',
+        );
+      }
       for (var f in _facilityListAdd) {
-        if (AppLogger.on) AppLogger.d('  facilityID: ${f.facilityID}, name: ${f.name}');
+        if (AppLogger.on) {
+          AppLogger.d('  facilityID: ${f.facilityID}, name: ${f.name}');
+        }
       }
     }
 
@@ -253,65 +269,7 @@ class _RoomtypeFacilityScreenState extends State<RoomtypeFacilityScreen> {
       ),
       body: Column(
         children: [
-          // Page size selector
-          Container(
-            padding: EdgeInsets.symmetric(
-              horizontal: isDesktop ? 20 : 12,
-              vertical: 8,
-            ),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.grey.withValues(alpha: 0.1),
-                  blurRadius: 4,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text('แสดง', style: TextStyle(fontSize: bodyFontSize)),
-                const SizedBox(width: 8),
-                SizedBox(
-                  width: isDesktop ? 120 : 100,
-                  child: DropdownButtonFormField<int>(
-                    initialValue: _pageSize,
-                    style: TextStyle(fontSize: bodyFontSize),
-                    decoration: InputDecoration(
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      filled: true,
-                      fillColor: Colors.grey.shade50,
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
-                      ),
-                      isDense: true,
-                    ),
-                    items: [5, 10, 20, 50]
-                        .map(
-                          (s) => DropdownMenuItem<int>(
-                            value: s,
-                            child: Text(
-                              '$s แถว',
-                              style: TextStyle(fontSize: bodyFontSize),
-                            ),
-                          ),
-                        )
-                        .toList(),
-                    onChanged: (v) {
-                      _pageSize = v!;
-                      _currentPage = 0;
-                      _loadData();
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ),
+          // ตัวเลือกแถวต่อหน้าย้ายไปอยู่ในแถบแบ่งหน้าด้านล่างแล้ว
           // Table - FIXED
           Expanded(
             child: _isLoading
@@ -529,8 +487,8 @@ class _RoomtypeFacilityScreenState extends State<RoomtypeFacilityScreen> {
                     ),
                   ),
           ),
-          // Pagination
-          if (_totalPages > 1)
+          // แถบแบ่งหน้ามาตรฐาน — แสดงเมื่อมีข้อมูล เพราะมีตัวเลือกแถวต่อหน้าอยู่ด้วย
+          if (!_isLoading && _facilities.isNotEmpty)
             Container(
               padding: EdgeInsets.symmetric(
                 horizontal: isDesktop ? 24 : 16,
@@ -546,96 +504,20 @@ class _RoomtypeFacilityScreenState extends State<RoomtypeFacilityScreen> {
                   ),
                 ],
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  IconButton(
-                    onPressed: _currentPage > 0
-                        ? () {
-                            _currentPage = 0;
-                            _loadData();
-                          }
-                        : null,
-                    icon: Icon(Icons.first_page, size: iconSize),
-                  ),
-                  IconButton(
-                    onPressed: _currentPage > 0
-                        ? () {
-                            _currentPage--;
-                            _loadData();
-                          }
-                        : null,
-                    icon: Icon(Icons.chevron_left, size: iconSize),
-                  ),
-                  ...List.generate(_totalPages.clamp(0, 5), (i) {
-                    int pageNum = _totalPages <= 5
-                        ? i
-                        : (_currentPage < 3
-                              ? i
-                              : (_currentPage > _totalPages - 3
-                                    ? _totalPages - 5 + i
-                                    : _currentPage - 2 + i));
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 2),
-                      child: InkWell(
-                        onTap: () {
-                          _currentPage = pageNum;
-                          _loadData();
-                        },
-                        borderRadius: BorderRadius.circular(8),
-                        child: Container(
-                          width: isDesktop ? 44 : 38,
-                          height: isDesktop ? 44 : 38,
-                          decoration: BoxDecoration(
-                            color: _currentPage == pageNum
-                                ? AppTheme.primaryColor
-                                : Colors.grey.shade100,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Center(
-                            child: Text(
-                              '${pageNum + 1}',
-                              style: TextStyle(
-                                fontSize: bodyFontSize,
-                                fontWeight: FontWeight.bold,
-                                color: _currentPage == pageNum
-                                    ? Colors.white
-                                    : AppTheme.textPrimary,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    );
-                  }),
-                  IconButton(
-                    onPressed: _currentPage < _totalPages - 1
-                        ? () {
-                            _currentPage++;
-                            _loadData();
-                          }
-                        : null,
-                    icon: Icon(Icons.chevron_right, size: iconSize),
-                  ),
-                  IconButton(
-                    onPressed: _currentPage < _totalPages - 1
-                        ? () {
-                            _currentPage = _totalPages - 1;
-                            _loadData();
-                          }
-                        : null,
-                    icon: Icon(Icons.last_page, size: iconSize),
-                  ),
-                  const SizedBox(width: 16),
-                  Text(
-                    'หน้า ${_currentPage + 1} จาก $_totalPages',
-                    style: TextStyle(
-                      fontSize: bodyFontSize,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.grey.shade600,
-                    ),
-                  ),
-                ],
+              child: AppPagination(
+                currentPage: _currentPage,
+                totalPages: _totalPages == 0 ? 1 : _totalPages,
+                pageSize: _pageSize,
+                // ดึงข้อมูลทีละหน้าจาก API จึงต้องโหลดใหม่ทุกครั้งที่เปลี่ยน
+                onPageChanged: (p) {
+                  _currentPage = p;
+                  _loadData();
+                },
+                onPageSizeChanged: (s) {
+                  _pageSize = s;
+                  _currentPage = 0;
+                  _loadData();
+                },
               ),
             ),
         ],
@@ -770,16 +652,22 @@ class _RoomtypeFacilityFormDialogState
     // ✅ DEBUG PRINTS
     if (AppLogger.on) AppLogger.d('=== Facility Dropdown Debug ===');
     if (AppLogger.on) AppLogger.d('Mode: ${isEdit ? "EDIT" : "ADD"}');
-    if (AppLogger.on) AppLogger.d('widget.facilityList length: ${widget.facilityList.length}');
+    if (AppLogger.on) {
+      AppLogger.d('widget.facilityList length: ${widget.facilityList.length}');
+    }
     if (AppLogger.on) AppLogger.d('uniqueList length: ${uniqueList.length}');
     if (AppLogger.on) AppLogger.d('_selectedFacilityID: $_selectedFacilityID');
     if (AppLogger.on) AppLogger.d('FacilityList items:');
     for (var f in widget.facilityList) {
-      if (AppLogger.on) AppLogger.d('  facilityID: ${f.facilityID}, name: ${f.name}');
+      if (AppLogger.on) {
+        AppLogger.d('  facilityID: ${f.facilityID}, name: ${f.name}');
+      }
     }
     if (AppLogger.on) AppLogger.d('UniqueList items:');
     for (var f in uniqueList) {
-      if (AppLogger.on) AppLogger.d('  facilityID: ${f.facilityID}, name: ${f.name}');
+      if (AppLogger.on) {
+        AppLogger.d('  facilityID: ${f.facilityID}, name: ${f.name}');
+      }
     }
     if (AppLogger.on) AppLogger.d('===================================');
 
@@ -788,21 +676,30 @@ class _RoomtypeFacilityFormDialogState
       final exists = uniqueList.any((c) => c.facilityID == _selectedFacilityID);
       if (!exists) {
         // Reset to first item if not found
-        if (AppLogger.on) AppLogger.w('⚠️ Selected value not found! Resetting to first item...');
+        if (AppLogger.on) {
+          AppLogger.w(
+            '⚠️ Selected value not found! Resetting to first item...',
+          );
+        }
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted) {
             setState(() {
               _selectedFacilityID = uniqueList.first.facilityID;
-              if (AppLogger.on) AppLogger.d('Reset _selectedFacilityID to: $_selectedFacilityID');
+              if (AppLogger.on) {
+                AppLogger.d(
+                  'Reset _selectedFacilityID to: $_selectedFacilityID',
+                );
+              }
             });
           }
         });
       }
     } else if (uniqueList.isNotEmpty && _selectedFacilityID == null) {
       _selectedFacilityID = uniqueList.first.facilityID;
-       if (AppLogger.on) AppLogger.d('Set default _selectedFacilityID to: $_selectedFacilityID');
-    }
-    else if (uniqueList.isEmpty) {
+      if (AppLogger.on) {
+        AppLogger.d('Set default _selectedFacilityID to: $_selectedFacilityID');
+      }
+    } else if (uniqueList.isEmpty) {
       if (AppLogger.on) AppLogger.w('⚠️ uniqueList is EMPTY!');
     }
 
@@ -941,7 +838,8 @@ class _RoomtypeFacilityFormDialogState
                       const SizedBox(height: 8),
                       // ✅ Fixed: Use value instead of initialValue
                       DropdownButtonFormField<int>(
-                        initialValue: _selectedFacilityID, // ✅ value, not initialValue
+                        initialValue:
+                            _selectedFacilityID, // ✅ value, not initialValue
                         decoration: InputDecoration(
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),

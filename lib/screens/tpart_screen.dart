@@ -7,6 +7,7 @@ import '../models/employee.dart';
 import '../models/maintenance.dart';
 import '../providers/auth_provider.dart';
 import '../services/api_service.dart';
+import '../widgets/app_pagination.dart';
 import '../widgets/tpart_dialog.dart';
 import '../utils/snackbar_helper.dart';
 import '../utils/util.dart';
@@ -106,28 +107,27 @@ class _TpartScreenState extends State<TpartScreen> {
   String _mtInfo(int? id) => id == null
       ? '-'
       : _maintenances
-                .firstWhere(
-                  (m) => m.maintenanceID == id,
-                  orElse: () => Maintenance(maintenanceID: id, place: ''),
-                )
-                .maintenanceInfo;
+            .firstWhere(
+              (m) => m.maintenanceID == id,
+              orElse: () => Maintenance(maintenanceID: id, place: ''),
+            )
+            .maintenanceInfo;
 
   // ❌ Wrong
-// void _dialog({Tpart? t, required Tpart transaction}) {
+  // void _dialog({Tpart? t, required Tpart transaction}) {
 
-// ✅ Fix - remove required and make t optional
-void dialog({Tpart? transaction}) {
+  // ✅ Fix - remove required and make t optional
+  void dialog({Tpart? transaction}) {
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (c) => TpartDialog(
-        transaction: transaction,  // Can be null for new, Tpart for edit
+        transaction: transaction, // Can be null for new, Tpart for edit
         apiService: widget.apiService,
         parts: _parts,
         employees: _employees,
         maintenances: _maintenances,
         authProvider: widget.authProvider,
-        
       ),
     ).then((_) => _load());
   }
@@ -233,11 +233,11 @@ void dialog({Tpart? transaction}) {
                 alignment: WrapAlignment.center,
                 children: [
                   SizedBox(
-                    width: isL ? 250 : (isD ? 200 : double.infinity),//200  170
+                    width: isL ? 250 : (isD ? 200 : double.infinity), //200  170
                     child: DropdownButtonFormField<int?>(
                       initialValue: _fPartid,
                       isExpanded: true,
-                      
+
                       style: TextStyle(fontSize: bf - 1),
                       decoration: InputDecoration(
                         hintText: 'รายการ',
@@ -268,7 +268,6 @@ void dialog({Tpart? transaction}) {
                               style: TextStyle(fontSize: bf - 1),
                               overflow: TextOverflow.ellipsis,
                               maxLines: 6,
-                              
                             ),
                           ),
                         ),
@@ -317,43 +316,7 @@ void dialog({Tpart? transaction}) {
                       },
                     ),
                   ),
-                  SizedBox(
-                    width: isL ? 90 : (isD ? 80 : 70),
-                    child: DropdownButtonFormField<int>(
-                      initialValue: _ps,
-                      isExpanded: true,
-                      style: TextStyle(fontSize: bf - 1),
-                      decoration: InputDecoration(
-                        hintText: 'แสดง',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        filled: true,
-                        fillColor: Colors.grey.shade50,
-                        isDense: true,
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 8,
-                        ),
-                      ),
-                      items: [5, 10, 15, 20]
-                          .map(
-                            (s) => DropdownMenuItem<int>(
-                              value: s,
-                              child: Text(
-                                '$s',
-                                style: TextStyle(fontSize: bf - 1),
-                              ),
-                            ),
-                          )
-                          .toList(),
-                      onChanged: (v) {
-                        _ps = v!;
-                        _cp = 0;
-                        _load();
-                      },
-                    ),
-                  ),
+                  // ตัวเลือกแถวต่อหน้าย้ายไปอยู่ในแถบแบ่งหน้า AppPagination ด้านล่างแล้ว
                 ],
               ),
             ),
@@ -392,14 +355,14 @@ void dialog({Tpart? transaction}) {
                             columnSpacing: isL ? 10 : (isD ? 8 : 4),
                             columns: [
                               // DataColumn(label: _hdr('ID', 35, bf)),
-                              DataColumn(label: _hdr('รายการ', 150, bf)),//100
+                              DataColumn(label: _hdr('รายการ', 150, bf)), //100
                               DataColumn(label: _hdr('รับ/จ่าย', 50, bf)),
                               DataColumn(label: _hdr('จำนวน', 50, bf)),
                               DataColumn(label: _hdr('คงเหลือ', 50, bf)),
-                              DataColumn(label: _hdr('วันที่', 100, bf)),//70
-                              DataColumn(label: _hdr('พื้นที่', 130, bf)),//60
-                              DataColumn(label: _hdr('ผู้เบิก', 120, bf)),//70
-                              DataColumn(label: _hdr('PO', 100, bf)),//60
+                              DataColumn(label: _hdr('วันที่', 100, bf)), //70
+                              DataColumn(label: _hdr('พื้นที่', 130, bf)), //60
+                              DataColumn(label: _hdr('ผู้เบิก', 120, bf)), //70
+                              DataColumn(label: _hdr('PO', 100, bf)), //60
                               DataColumn(label: _hdr('ราคา', 50, bf)),
                               DataColumn(label: _hdr('ใบแจ้งซ่อม', 90, bf)),
                               // DataColumn(label: _hdr('บันทึกเมื่อ', 70, bf)),
@@ -459,7 +422,9 @@ void dialog({Tpart? transaction}) {
                                           bf,
                                         ),
                                       ),
-                                      DataCell(_cellWrap(t.place ?? '-', 130, bf)),
+                                      DataCell(
+                                        _cellWrap(t.place ?? '-', 130, bf),
+                                      ),
                                       DataCell(
                                         _cellWrap(
                                           t.employeeName ??
@@ -545,72 +510,42 @@ void dialog({Tpart? transaction}) {
                                   ),
                                 )
                                 .toList(), // ✅ .toList() here!
-                          
+                          ),
                         ),
                       ),
                     ),
                   ),
           ),
-          ),
-          if (_tp > 1)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.grey.withValues(alpha: 0.1),
-                    blurRadius: 4,
-                    offset: const Offset(0, -2),
-                  ),
-                ],
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  IconButton(
-                    onPressed: _cp > 0
-                        ? () {
-                            _cp = 0;
-                            _load();
-                          }
-                        : null,
-                    icon: Icon(Icons.first_page, size: ic),
-                  ),
-                  IconButton(
-                    onPressed: _cp > 0
-                        ? () {
-                            _cp--;
-                            _load();
-                          }
-                        : null,
-                    icon: Icon(Icons.chevron_left, size: ic),
-                  ),
-                  Text(
-                    'หน้า ${_cp + 1} จาก $_tp',
-                    style: TextStyle(fontSize: bf),
-                  ),
-                  IconButton(
-                    onPressed: _cp < _tp - 1
-                        ? () {
-                            _cp++;
-                            _load();
-                          }
-                        : null,
-                    icon: Icon(Icons.chevron_right, size: ic),
-                  ),
-                  IconButton(
-                    onPressed: _cp < _tp - 1
-                        ? () {
-                            _cp = _tp - 1;
-                            _load();
-                          }
-                        : null,
-                    icon: Icon(Icons.last_page, size: ic),
-                  ),
-                ],
-              ),
+          // แถบแบ่งหน้ามาตรฐาน — แสดงตลอดเพราะมีตัวเลือกแถวต่อหน้าอยู่ด้วย
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey.withValues(alpha: 0.1),
+                  blurRadius: 4,
+                  offset: const Offset(0, -2),
+                ),
+              ],
             ),
+            child: AppPagination(
+              currentPage: _cp,
+              totalPages: _tp,
+              pageSize: _ps,
+              onPageChanged: (page) {
+                setState(() => _cp = page);
+                _load();
+              },
+              onPageSizeChanged: (size) {
+                setState(() {
+                  _ps = size;
+                  _cp = 0;
+                });
+                _load();
+              },
+            ),
+          ),
         ],
       ),
     );
@@ -628,7 +563,7 @@ void dialog({Tpart? transaction}) {
       overflow: TextOverflow.ellipsis,
     ),
   );
- // ✅ For columns that need wrapping (like รายการ, ใบแจ้งซ่อม)
+  // ✅ For columns that need wrapping (like รายการ, ใบแจ้งซ่อม)
   Widget _cellWrap(String t, double w, double fs) => Container(
     width: w,
     padding: const EdgeInsets.symmetric(vertical: 2),

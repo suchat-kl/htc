@@ -10,6 +10,7 @@ import '../models/documentstatus.dart';
 import '../services/api_service.dart';
 import '../utils/snackbar_helper.dart';
 import '../utils/util.dart';
+import '../widgets/app_pagination.dart';
 import 'package:highway_training/utils/logger.dart';
 
 class BookingListScreen extends StatefulWidget {
@@ -523,7 +524,7 @@ class _BookingListScreenState extends State<BookingListScreen> {
                         children: [
                           _buildCell('${item.bookID}', flex: 1),
                           _buildMultiLineCell(item.booktitle ?? '-', flex: 3),
-                          SizedBox(width: 10,),
+                          SizedBox(width: 10),
                           _buildMultiLineCell(
                             item.departmentname ?? '-',
                             flex: 3,
@@ -656,106 +657,35 @@ class _BookingListScreenState extends State<BookingListScreen> {
     );
   }
 
+  /// แถบแบ่งหน้ามาตรฐาน — ดึงข้อมูลทีละหน้าจาก API จึงต้องค้นหาใหม่ทุกครั้ง
   Widget _buildPagination() {
     if (_totalItems == 0) return const SizedBox();
+
+    // ช่วงลำดับรายการที่แสดงอยู่ในหน้านี้ เช่น 6 - 10 จาก 53 รายการ
+    final from = _currentPage * _pageSize + 1;
+    final to = ((_currentPage + 1) * _pageSize).clamp(0, _totalItems);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
         border: Border(top: BorderSide(color: Colors.grey.shade300)),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          // Page Size
-          Row(
-            children: [
-              const Text('แสดง '),
-              DropdownButton<int>(
-                value: _pageSize,
-                underline: Container(),
-                items: const [
-                  DropdownMenuItem(value: 5, child: Text('5')),
-                  DropdownMenuItem(value: 10, child: Text('10')),
-                  DropdownMenuItem(value: 15, child: Text('15')),
-                  DropdownMenuItem(value: 20, child: Text('20')),
-                ],
-                onChanged: (value) {
-                  if (value != null) {
-                    setState(() {
-                      _pageSize = value;
-                      _currentPage = 0;
-                    });
-                    _searchBookings();
-                  }
-                },
-              ),
-              const Text(' รายการ'),
-            ],
-          ),
-
-          // Page Info
-          Text(
-            '${_currentPage * _pageSize + 1} - '
-            '${((_currentPage + 1) * _pageSize).clamp(0, _totalItems)} '
-            'จาก $_totalItems รายการ',
-            style: const TextStyle(fontSize: 13),
-          ),
-
-          // Page Controls
-          Row(
-            children: [
-              IconButton(
-                onPressed: _currentPage > 0
-                    ? () {
-                        setState(() => _currentPage = 0);
-                        _searchBookings();
-                      }
-                    : null,
-                icon: const Icon(Icons.first_page),
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
-              ),
-              IconButton(
-                onPressed: _currentPage > 0
-                    ? () {
-                        setState(() => _currentPage--);
-                        _searchBookings();
-                      }
-                    : null,
-                icon: const Icon(Icons.chevron_left),
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
-              ),
-              Text(
-                '${_currentPage + 1} / ${_totalPages == 0 ? 1 : _totalPages}',
-                style: const TextStyle(fontSize: 13),
-              ),
-              IconButton(
-                onPressed: _currentPage < _totalPages - 1
-                    ? () {
-                        setState(() => _currentPage++);
-                        _searchBookings();
-                      }
-                    : null,
-                icon: const Icon(Icons.chevron_right),
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
-              ),
-              IconButton(
-                onPressed: _currentPage < _totalPages - 1
-                    ? () {
-                        setState(() => _currentPage = _totalPages - 1);
-                        _searchBookings();
-                      }
-                    : null,
-                icon: const Icon(Icons.last_page),
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
-              ),
-            ],
-          ),
-        ],
+      child: AppPagination(
+        currentPage: _currentPage,
+        totalPages: _totalPages == 0 ? 1 : _totalPages,
+        pageSize: _pageSize,
+        summary: '$from - $to จาก $_totalItems รายการ',
+        onPageChanged: (p) {
+          setState(() => _currentPage = p);
+          _searchBookings();
+        },
+        onPageSizeChanged: (s) {
+          setState(() {
+            _pageSize = s;
+            _currentPage = 0;
+          });
+          _searchBookings();
+        },
       ),
     );
   }

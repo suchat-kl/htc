@@ -11,6 +11,7 @@ import '../utils/dialog.dart';
 import '../utils/logger.dart';
 import '../utils/snackbar_helper.dart';
 import '../utils/util.dart';
+import 'app_pagination.dart';
 import 'tfood_dialog.dart';
 
 /// ตาราง "รายการอาหาร" ของใบจองหนึ่ง (ตาราง tfood)
@@ -43,7 +44,9 @@ class _BookingTfoodSectionState extends State<BookingTfoodSection> {
   List<Foodtype> _foodtypes = [];
 
   int _page = 0;
-  final int _size = 5; // ค่าเริ่มต้น row/page = 5
+
+  /// แถวต่อหน้า ค่าเริ่มต้น 5 เปลี่ยนได้จากตัวเลือกในแถบแบ่งหน้า
+  int _size = 5;
   int _totalItems = 0;
   int _totalPages = 0;
   bool _loading = false;
@@ -275,7 +278,11 @@ class _BookingTfoodSectionState extends State<BookingTfoodSection> {
             )
           else if (_items.isEmpty)
             _empty()
-          else ...[_table(), const SizedBox(height: 12), _footerRow()],
+          else ...[
+            _table(),
+            const SizedBox(height: 12),
+            _footerRow(),
+          ],
         ],
       ),
     );
@@ -464,86 +471,42 @@ class _BookingTfoodSectionState extends State<BookingTfoodSection> {
     );
   }
 
-  /// รวมยอดของหน้านี้ + ตัวแบ่งหน้า
+  /// รวมยอดของหน้านี้ + แถบแบ่งหน้ามาตรฐาน
+  ///
+  /// ข้อมูลดึงทีละหน้าจาก API จึงต้องโหลดใหม่ทุกครั้งที่เปลี่ยนหน้า/แถวต่อหน้า
   Widget _footerRow() {
-    final totalPages = _totalPages == 0 ? 1 : _totalPages;
-    return Wrap(
-      alignment: WrapAlignment.end,
-      crossAxisAlignment: WrapCrossAlignment.center,
-      spacing: 16,
-      runSpacing: 8,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(
-          'รวมหน้านี้ ${_money.format(_grandTotal)} บาท',
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.bold,
-            color: AppTheme.primaryColor,
+        // ยอดรวมของหน้านี้ วางชิดขวาเหนือแถบแบ่งหน้า
+        Align(
+          alignment: Alignment.centerRight,
+          child: Text(
+            'รวมหน้านี้ ${_money.format(_grandTotal)} บาท',
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: AppTheme.primaryColor,
+            ),
           ),
         ),
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'ทั้งหมด $_totalItems รายการ',
-              style: const TextStyle(
-                fontSize: 13,
-                color: AppTheme.textSecondary,
-              ),
-            ),
-            const SizedBox(width: 16),
-            IconButton(
-              onPressed: _page > 0
-                  ? () {
-                      setState(() => _page = 0);
-                      _load();
-                    }
-                  : null,
-              icon: const Icon(Icons.first_page),
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(),
-            ),
-            IconButton(
-              onPressed: _page > 0
-                  ? () {
-                      setState(() => _page--);
-                      _load();
-                    }
-                  : null,
-              icon: const Icon(Icons.chevron_left),
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: Text(
-                '${_page + 1} / $totalPages',
-                style: const TextStyle(fontSize: 13),
-              ),
-            ),
-            IconButton(
-              onPressed: _page < totalPages - 1
-                  ? () {
-                      setState(() => _page++);
-                      _load();
-                    }
-                  : null,
-              icon: const Icon(Icons.chevron_right),
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(),
-            ),
-            IconButton(
-              onPressed: _page < totalPages - 1
-                  ? () {
-                      setState(() => _page = totalPages - 1);
-                      _load();
-                    }
-                  : null,
-              icon: const Icon(Icons.last_page),
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(),
-            ),
-          ],
+        const SizedBox(height: 8),
+        AppPagination(
+          currentPage: _page,
+          totalPages: _totalPages == 0 ? 1 : _totalPages,
+          pageSize: _size,
+          summary: 'ทั้งหมด $_totalItems รายการ',
+          onPageChanged: (p) {
+            setState(() => _page = p);
+            _load();
+          },
+          onPageSizeChanged: (s) {
+            setState(() {
+              _size = s;
+              _page = 0;
+            });
+            _load();
+          },
         ),
       ],
     );

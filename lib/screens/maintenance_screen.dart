@@ -7,6 +7,7 @@ import '../providers/auth_provider.dart';
 import '../screens/maintenance_edit_screen.dart';
 import '../utils/snackbar_helper.dart';
 import '../utils/util.dart';
+import '../widgets/app_pagination.dart';
 import 'package:highway_training/utils/logger.dart';
 
 class MaintenanceScreen extends StatefulWidget {
@@ -45,18 +46,24 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
         workstatus: _fWorkstatus,
       );
 
-      if (AppLogger.on) AppLogger.d('Maintenance response keys: ${r.keys}'); // ✅ Debug
+      if (AppLogger.on) {
+        AppLogger.d('Maintenance response keys: ${r.keys}'); // ✅ Debug
+      }
 
       if (mounted) {
         // ✅ Try both possible keys
         final l = (r['maintenance'] ?? r['maintenances']) as List?;
 
-        if (AppLogger.on) AppLogger.d('Maintenance list length: ${l?.length}'); // ✅ Debug
+        if (AppLogger.on) {
+          AppLogger.d('Maintenance list length: ${l?.length}'); // ✅ Debug
+        }
 
         setState(() {
           _list =
               l?.map((j) {
-                if (AppLogger.on) AppLogger.d('Parsing: $j'); // ✅ Debug each item
+                if (AppLogger.on) {
+                  AppLogger.d('Parsing: $j'); // ✅ Debug each item
+                }
                 return Maintenance.fromJson(j as Map<String, dynamic>);
               }).toList() ??
               [];
@@ -65,15 +72,19 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
               r['totalPages'] as int? ?? 0; // ✅ Must be > 1 to show pagination
           _isLoading = false;
         });
-// ✅ Debug
+        // ✅ Debug
         if (AppLogger.on) AppLogger.d('Total pages: $_tp');
         if (AppLogger.on) AppLogger.d('Current page: $_cp');
         if (AppLogger.on) AppLogger.d('Page size: $_ps');
         if (AppLogger.on) AppLogger.d('List length: ${_list.length}');
-        if (AppLogger.on) AppLogger.d('Parsed ${_list.length} items'); // ✅ Debug
+        if (AppLogger.on) {
+          AppLogger.d('Parsed ${_list.length} items'); // ✅ Debug
+        }
       }
     } catch (e) {
-      if (AppLogger.on) AppLogger.d('Error loading maintenance: $e'); // ✅ Debug error
+      if (AppLogger.on) {
+        AppLogger.d('Error loading maintenance: $e'); // ✅ Debug error
+      }
       if (mounted) {
         setState(() => _isLoading = false);
         context.showErrorSnackBar('ไม่สามารถโหลดข้อมูลได้: $e');
@@ -281,43 +292,7 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
                       },
                     ),
                   ),
-                  SizedBox(
-                    width: isL ? 90 : (isD ? 80 : 70),
-                    child: DropdownButtonFormField<int>(
-                      initialValue: _ps,
-                      isExpanded: true,
-                      style: TextStyle(fontSize: bf - 1),
-                      decoration: InputDecoration(
-                        hintText: 'แสดง',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        filled: true,
-                        fillColor: Colors.grey.shade50,
-                        isDense: true,
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 8,
-                        ),
-                      ),
-                      items: [5, 10, 15, 20]
-                          .map(
-                            (s) => DropdownMenuItem<int>(
-                              value: s,
-                              child: Text(
-                                '$s',
-                                style: TextStyle(fontSize: bf - 1),
-                              ),
-                            ),
-                          )
-                          .toList(),
-                      onChanged: (v) {
-                        _ps = v!;
-                        _cp = 0;
-                        _load();
-                      },
-                    ),
-                  ),
+                  // ตัวเลือกแถวต่อหน้าย้ายไปอยู่ในแถบแบ่งหน้า (AppPagination) แล้ว
                 ],
               ),
             ),
@@ -470,65 +445,36 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
                     ),
                   ),
           ),
-// ✅ Pagination - OUTSIDE Expanded, inside Column
-    if (_tp > 1)
-      Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          boxShadow: [
-            BoxShadow(color: Colors.grey.withValues(alpha: 0.1), blurRadius: 4, offset: const Offset(0, -2)),
-          ],
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            IconButton(
-              onPressed: _cp > 0 ? () { _cp = 0; _load(); } : null,
-              icon: Icon(Icons.first_page, size: ic),
-            ),
-            IconButton(
-              onPressed: _cp > 0 ? () { _cp--; _load(); } : null,
-              icon: Icon(Icons.chevron_left, size: ic),
-            ),
-            ...List.generate(_tp.clamp(0, 5), (i) {
-              int p = _tp <= 5 ? i : (_cp < 3 ? i : (_cp > _tp - 3 ? _tp - 5 + i : _cp - 2 + i));
-              return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 2),
-                child: InkWell(
-                  onTap: () { _cp = p; _load(); },
-                  borderRadius: BorderRadius.circular(8),
-                  child: Container(
-                    width: 36, height: 36,
-                    decoration: BoxDecoration(
-                      color: _cp == p ? AppTheme.primaryColor : Colors.grey.shade100,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Center(
-                      child: Text('${p + 1}', style: TextStyle(fontSize: bf, fontWeight: FontWeight.bold, color: _cp == p ? Colors.white : AppTheme.textPrimary)),
-                    ),
-                  ),
+          // แถบแบ่งหน้ามาตรฐาน (มีตัวเลือกแถวต่อหน้าในตัว) — อยู่นอก Expanded แต่ในคอลัมน์
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey.withValues(alpha: 0.1),
+                  blurRadius: 4,
+                  offset: const Offset(0, -2),
                 ),
-              );
-            }),
-            IconButton(
-              onPressed: _cp < _tp - 1 ? () { _cp++; _load(); } : null,
-              icon: Icon(Icons.chevron_right, size: ic),
+              ],
             ),
-            IconButton(
-              onPressed: _cp < _tp - 1 ? () { _cp = _tp - 1; _load(); } : null,
-              icon: Icon(Icons.last_page, size: ic),
+            child: AppPagination(
+              currentPage: _cp,
+              totalPages: _tp,
+              pageSize: _ps,
+              onPageChanged: (page) {
+                _cp = page;
+                _load();
+              },
+              onPageSizeChanged: (size) {
+                _ps = size;
+                _cp = 0;
+                _load();
+              },
             ),
-            const SizedBox(width: 12),
-            Text('หน้า ${_cp + 1} จาก $_tp', style: TextStyle(fontSize: bf, color: Colors.grey.shade600)),
-          ],
-        ),
-      ),
-  ],  // ✅ Closes Column children
-),  // ✅ Closes Column
-
-
-      
+          ),
+        ], // ✅ Closes Column children
+      ), // ✅ Closes Column
     );
   }
 
