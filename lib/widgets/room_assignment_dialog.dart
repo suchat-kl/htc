@@ -2,10 +2,11 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:highway_training/models/statuscheck.dart';
 
 import '../config/theme.dart';
 import '../models/bookdetail.dart';
-import '../models/documentstatus.dart';
+// import '../models/documentstatus.dart';
 import '../models/room_assignment.dart';
 import '../services/api_service.dart';
 import '../utils/dialog.dart';
@@ -47,7 +48,7 @@ class _RoomAssignmentDialogState extends State<RoomAssignmentDialog> {
   late final TextEditingController _nameCtrl;
   late final TextEditingController _telCtrl;
 
-  List<DocumentStatus> _statuses = [];
+  List<StatusCheck> _statuses = [];
   bool _loadingStatuses = true;
   int? _statusId;
   bool _saving = false;
@@ -72,8 +73,8 @@ class _RoomAssignmentDialogState extends State<RoomAssignmentDialog> {
   }
 
   Future<void> _loadStatuses() async {
-    // page/size ใช้ค่าเริ่มต้นของเมธอด และไม่ส่ง keyword
-    final list = await widget.apiService.getDocumentStatusList();
+    // ดึงทีเดียว 100 รายการ ไม่ส่ง keyword — สถานะมีไม่กี่ค่า จึงไม่ต้องแบ่งหน้า
+    final list = await widget.apiService.getStatusCheckList(size: 100);
     if (!mounted) return;
     setState(() {
       _statuses = list;
@@ -323,7 +324,7 @@ class _RoomAssignmentDialogState extends State<RoomAssignmentDialog> {
       );
     }
 
-    // getDocumentStatusList คืนรายการว่างเมื่อเรียก API ไม่สำเร็จ แทนที่จะโยน
+    // getStatusCheckList คืนรายการว่างเมื่อเรียก API ไม่สำเร็จ แทนที่จะโยน
     // error จึงต้องบอกผู้ใช้เอง ไม่งั้นจะเห็นแค่ช่องเลือกที่ว่างเปล่า
     if (_statuses.isEmpty) {
       return Container(
@@ -357,7 +358,7 @@ class _RoomAssignmentDialogState extends State<RoomAssignmentDialog> {
     }
 
     // ค่าเดิมต้องมีอยู่ในรายการ ไม่งั้น DropdownButton จะ assert
-    final current = _statuses.any((s) => s.statusId == _statusId)
+    final current = _statuses.any((s) => s.status == _statusId)
         ? _statusId
         : null;
 
@@ -366,11 +367,8 @@ class _RoomAssignmentDialogState extends State<RoomAssignmentDialog> {
       decoration: _input('สถานะ'),
       items: [
         for (final s in _statuses)
-          if (s.statusId != null)
-            DropdownMenuItem(
-              value: s.statusId,
-              child: Text(s.statusName ?? '-'),
-            ),
+          if (s.status != null)
+            DropdownMenuItem(value: s.status, child: Text(s.name ?? '-')),
       ],
       onChanged: _saving ? null : (v) => setState(() => _statusId = v),
     );

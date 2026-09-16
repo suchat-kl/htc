@@ -37,6 +37,7 @@ class ApiService {
   late final Dio dio; // Main Dio with auth interceptor
   late final Dio publicDio; // Public Dio WITHOUT auth interceptor
   late final FlutterSecureStorage storage;
+
   /// URL ของ API — เลือกตอน run/build ด้วย `--dart-define=API_BASE=...`
   ///
   /// ไม่ส่งมาจะเป็น production เสมอ ลืมใส่ตอน build ขึ้นเซิร์ฟเวอร์จึงไม่พัง
@@ -2402,10 +2403,7 @@ class ApiService {
   /// เปิด /api/auth/tfoods/** ไว้เป็น permitAll
   Future<Tfood> updateTfood(int id, Tfood d) async {
     try {
-      final r = await publicDio.put(
-        '/api/auth/tfoods/$id',
-        data: d.toJson(),
-      );
+      final r = await publicDio.put('/api/auth/tfoods/$id', data: d.toJson());
       if (r.statusCode == 200 && r.data['success'] == true) {
         return Tfood.fromJson(r.data['tfood']);
       }
@@ -2524,6 +2522,30 @@ class ApiService {
     );
 
     return response.data;
+  }
+
+  /// รายการสถานะทั้งหมดของ m_statuscheck สำหรับช่องเลือกสถานะ
+  ///
+  /// ต่างจาก [getStatusChecks] ที่คืน response ทั้งก้อนให้หน้าจอแบบแบ่งหน้า
+  /// เมธอดนี้คืนเฉพาะรายการที่แปลงเป็นโมเดลแล้ว และคืนรายการว่างเมื่อเรียกไม่สำเร็จ
+  /// ผู้เรียกจึงปิดสถานะกำลังโหลดได้เสมอ ไม่ค้างอยู่ที่ข้อความกำลังโหลด
+  Future<List<StatusCheck>> getStatusCheckList({
+    int page = 0,
+    int size = 100,
+    String? keyword,
+  }) async {
+    try {
+      final data = await getStatusChecks(
+        page: page,
+        size: size,
+        keyword: keyword,
+      );
+      final List list = data['statuschecks'] ?? [];
+      return list.map((j) => StatusCheck.fromJson(j)).toList();
+    } catch (e) {
+      if (AppLogger.on) AppLogger.d('Error loading status check list: $e');
+      return [];
+    }
   }
 
   Future<StatusCheck> createStatusCheck(StatusCheck statusCheck) async {
@@ -2664,7 +2686,9 @@ class ApiService {
       'items': content
           .map((j) => BookRoomDetail.fromJson(j as Map<String, dynamic>))
           .toList(),
-      'totalItems': raw is Map ? (raw['totalElements'] ?? content.length) : content.length,
+      'totalItems': raw is Map
+          ? (raw['totalElements'] ?? content.length)
+          : content.length,
       'totalPages': raw is Map ? (raw['totalPages'] ?? 1) : 1,
       'currentPage': raw is Map ? (raw['number'] ?? page) : page,
     };
@@ -2803,8 +2827,10 @@ class ApiService {
   /// backend บังคับให้ส่ง ถ้าไม่ส่งจะได้ HTTP 400
   ///
   /// status เป็นรหัสตัวเลข backend แปลงเป็น statusName มาให้แล้ว แสดงผลได้เลย
-  Future<List<RoomAssignment>> getRoomAssignments(
-   {required int bookId, required String type}) async {
+  Future<List<RoomAssignment>> getRoomAssignments({
+    required int bookId,
+    required String type,
+  }) async {
     await _ensureToken();
 
     final response = await dio.get(
