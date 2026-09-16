@@ -3,7 +3,9 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 
 import '../config/theme.dart';
+import '../models/bookdetail.dart';
 import '../models/room_assignment.dart';
+import '../models/statuscheck.dart';
 import '../services/api_service.dart';
 import '../utils/dialog.dart';
 import '../utils/logger.dart';
@@ -49,6 +51,14 @@ class _BookingRoomAssignmentSectionState
   static const int _size = 5; // ค่าเริ่มต้น row/page = 5
 
   List<RoomAssignment> _all = [];
+
+  /// รายการสถานะสำหรับ dropdown ที่หัวคอลัมน์ — โหลดเฉพาะโหมดแก้เฉพาะสถานะ
+  List<StatusCheck> _statuses = [];
+
+  /// สถานะที่เลือกไว้ที่หัวคอลัมน์ ยังไม่บันทึกจนกว่าจะกดปุ่มบันทึก
+  int? _bulkStatus;
+
+  bool _savingBulk = false;
   int _page = 0;
   bool _loading = false;
   String? _error;
@@ -58,6 +68,7 @@ class _BookingRoomAssignmentSectionState
     super.initState();
     widget.refreshSignal?.addListener(_onRefresh);
     _load();
+    if (widget.statusOnly) _loadStatuses();
   }
 
   @override
@@ -93,6 +104,65 @@ class _BookingRoomAssignmentSectionState
       if (s != null && !seen.add(s)) dup.add(s);
     }
     return dup;
+  }
+
+  Future<void> _loadStatuses() async {
+    final list = await widget.apiService.getStatusCheckList(size: 100);
+    if (!mounted) return;
+    setState(() => _statuses = list);
+  }
+
+  /// บันทึกสถานะที่เลือกไว้ให้ทุกแถวในหน้านี้
+  ///
+  /// ยิงทีละแถวเพราะ backend ไม่มี endpoint อัปเดตหลายรายการ ข้ามแถวที่สถานะ
+  /// ตรงอยู่แล้วเพื่อไม่ยิงเปล่า ส่งทุกฟิลด์เดิมกลับไปครบเหมือนตอนแก้ทีละแถว
+  Future<void> _saveBulkStatus() async {
+    final status = _bulkStatus;
+    if (status == null || _savingBulk) return;
+
+    final rows = _pageItems.where((r) => r.bookIdDetail != null).toList();
+    setState(() => _savingBulk = true);
+    var saved = 0;
+    try {
+      for (final r in rows) {
+        if (r.status == status) continue;
+        await widget.apiService.updateBookDetail(
+          r.bookIdDetail!,
+          BookDetail(
+            bookIdDetail: r.bookIdDetail,
+            bookRoomId: r.bookRoomId,
+            bookId: r.bookId,
+            roomId: r.roomId,
+            roomNo: r.roomNo,
+            startDate: r.startDate,
+            stopDate: r.stopDate,
+            sequence: r.sequence,
+            contractName: r.contractName,
+            contractTel: r.contractTel,
+            status: status,
+          ),
+        );
+        saved++;
+      }
+      if (!mounted) return;
+      setState(() {
+        _savingBulk = false;
+        _bulkStatus = null;
+      });
+      context.showSuccessSnackBar(
+        saved == 0
+            ? 'ทุกแถวในหน้านี้เป็นสถานะนี้อยู่แล้ว'
+            : 'บันทึกสถานะ $saved รายการเรียบร้อยแล้ว',
+      );
+      await _load();
+    } catch (e) {
+      if (AppLogger.on) AppLogger.d('Error saving bulk status: $e');
+      if (!mounted) return;
+      setState(() => _savingBulk = false);
+      context.showErrorSnackBar(_describeApiError(e, 'บันทึกสถานะ'));
+      // อาจบันทึกสำเร็จไปแล้วบางแถวก่อนจะพัง จึงโหลดใหม่ให้ตรงของจริง
+      await _load();
+    }
   }
 
   Future<void> _load() async {
@@ -348,20 +418,28 @@ class _BookingRoomAssignmentSectionState
             headingRowColor: WidgetStateProperty.all(
               AppTheme.primaryColor.withValues(alpha: 0.05),
             ),
-            headingRowHeight: 52,
+            headingRowHeight: widget.statusOnly ? 64 : 52,
             dataRowMinHeight: 48,
             dataRowMaxHeight: 60,
             columnSpacing: 22,
             horizontalMargin: 18,
-            columns: const [
-              DataColumn(label: _ColHead('ลำดับ'), numeric: true),
-              DataColumn(label: _ColHead('หมายเลขห้อง')),
-              DataColumn(label: _ColHead('ชื่อ-สกุล')),
-              DataColumn(label: _ColHead('เบอร์ติดต่อ')),
-              DataColumn(label: _ColHead('วันที่เริ่มต้น')),
-              DataColumn(label: _ColHead('วันที่สิ้นสุด')),
-              DataColumn(label: _ColHead('สถานะ')),
-              DataColumn(label: _ColHead('')),
+            columns: [
+              const DataColumn(label: _ColHead('ลำดับ'), numeric: true),
+              const DataColumn(label: _ColHead('หมายเลขห้อง')),
+              const DataColumn(label: _ColHead('ชื่อ-สกุล')),
+              const DataColumn(label: _ColHead('เบอร์ติดต่อ')),
+              const DataColumn(label: _ColHead('วันที่เริ่มต้น')),
+              const DataColumn(label: _ColHead('วันที่สิ้นสุด')),
+              DataColumn(
+                label: widget.statusOnly
+                    ? _statusHeader()
+                    : const _ColHead('สถานะ'),
+              ),
+              DataColumn(
+                label: widget.statusOnly
+                    ? _bulkSaveButton()
+                    : const _ColHead(''),
+              ),
             ],
             rows: _pageItems.map((r) {
               return DataRow(
@@ -373,7 +451,7 @@ class _BookingRoomAssignmentSectionState
                   DataCell(_cellText(Util.formatThaiDateStr(r.startDate))),
                   DataCell(_cellText(Util.formatThaiDateStr(r.stopDate))),
 
-                  DataCell(_cellText(r.statusName ?? '${r.status ?? '-'}')),
+                  DataCell(_statusCell(r)),
                   DataCell(_rowActions(r)),
                 ],
               );
@@ -385,6 +463,86 @@ class _BookingRoomAssignmentSectionState
   }
 
   static String _orDash(String? v) => (v == null || v.trim().isEmpty) ? '-' : v;
+
+  /// หัวคอลัมน์สถานะในโหมดแก้เฉพาะสถานะ — เลือกแล้วเปลี่ยนทุกแถวในหน้านี้
+  ///
+  /// ยังไม่บันทึกทันที รอกดปุ่มบันทึกที่หัวตาราง แถวที่รอบันทึกจะขึ้นเป็นสีส้ม
+  Widget _statusHeader() {
+    if (_statuses.isEmpty) return const _ColHead('สถานะ');
+    return SizedBox(
+      width: 190,
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<int>(
+          isExpanded: true,
+          isDense: true,
+          value: _bulkStatus,
+          hint: const _ColHead('สถานะ'),
+          items: [
+            for (final s in _statuses)
+              if (s.status != null)
+                DropdownMenuItem(
+                  value: s.status,
+                  child: Text(
+                    s.name ?? '-',
+                    style: const TextStyle(fontSize: 14),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+          ],
+          onChanged: _savingBulk
+              ? null
+              : (v) => setState(() => _bulkStatus = v),
+        ),
+      ),
+    );
+  }
+
+  /// ปุ่มบันทึกที่หัวตาราง — ใช้ได้เมื่อเลือกสถานะที่หัวคอลัมน์แล้ว
+  Widget _bulkSaveButton() {
+    final enabled = _bulkStatus != null && !_savingBulk;
+    return ElevatedButton.icon(
+      onPressed: enabled ? _saveBulkStatus : null,
+      icon: _savingBulk
+          ? const SizedBox(
+              width: 14,
+              height: 14,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Colors.white,
+              ),
+            )
+          : const Icon(Icons.save_outlined, size: 16),
+      label: Text(_savingBulk ? 'กำลังบันทึก...' : 'บันทึก'),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: const Color(0xFF43A047),
+        foregroundColor: Colors.white,
+        disabledBackgroundColor: Colors.grey.shade300,
+        disabledForegroundColor: Colors.grey.shade600,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      ),
+    );
+  }
+
+  /// สถานะของแถว — ค่าที่เลือกไว้ที่หัวคอลัมน์แต่ยังไม่บันทึกจะขึ้นสีส้ม
+  Widget _statusCell(RoomAssignment r) {
+    final pending = _bulkStatus;
+    if (!widget.statusOnly || pending == null) {
+      return _cellText(r.statusName ?? '${r.status ?? '-'}');
+    }
+    final name = _statuses
+        .where((s) => s.status == pending)
+        .map((s) => s.name)
+        .firstOrNull;
+    return Text(
+      name ?? '$pending',
+      style: TextStyle(
+        fontSize: 14,
+        color: Colors.orange.shade800,
+        fontWeight: FontWeight.bold,
+      ),
+    );
+  }
 
   Widget _cellText(String v) => Text(v, style: const TextStyle(fontSize: 14));
 
