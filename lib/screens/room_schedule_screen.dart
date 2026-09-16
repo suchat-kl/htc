@@ -10,6 +10,7 @@ import '../utils/dialog.dart';
 import '../utils/logger.dart';
 import '../utils/snackbar_helper.dart';
 import '../utils/util.dart';
+import '../widgets/app_pagination.dart';
 import '../widgets/room_schedule_dialog.dart';
 
 /// รายละเอียดการใช้ห้องพักหนึ่งห้อง — ตาราง t_schedule คืนละแถว
@@ -45,7 +46,8 @@ class RoomScheduleScreen extends StatefulWidget {
 }
 
 class _RoomScheduleScreenState extends State<RoomScheduleScreen> {
-  static const int _size = 5; // ค่าเริ่มต้น row/page = 5
+  /// แถวต่อหน้า เปลี่ยนได้จากตัวเลือกในแถบแบ่งหน้า
+  int _size = 5;
   static final _money = NumberFormat('#,##0.00');
 
   List<Schedule> _all = [];
@@ -78,8 +80,7 @@ class _RoomScheduleScreenState extends State<RoomScheduleScreen> {
     return d == null ? '-' : Util.formatThaiDate(d);
   }
 
-  static String _orDash(String? v) =>
-      (v == null || v.trim().isEmpty) ? '-' : v;
+  static String _orDash(String? v) => (v == null || v.trim().isEmpty) ? '-' : v;
 
   /// คีย์ทั้งสี่ของ t_schedule ต้องครบก่อนแก้ไขหรือลบ
   static bool _hasKey(Schedule s) =>
@@ -458,52 +459,18 @@ class _RoomScheduleScreenState extends State<RoomScheduleScreen> {
     );
   }
 
-  /// จำนวนทั้งหมด + ตัวแบ่งหน้า (แบ่งฝั่ง Flutter จึงแค่เปลี่ยนหน้า ไม่ต้องยิง API)
+  /// แถบแบ่งหน้ามาตรฐาน — เลือกแถวต่อหน้าและกดเลขหน้าได้
   Widget _footerRow() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.end,
-      children: [
-        Text(
-          'ทั้งหมด ${_all.length} คืน',
-          style: const TextStyle(fontSize: 13, color: AppTheme.textSecondary),
-        ),
-        const SizedBox(width: 16),
-        IconButton(
-          onPressed: _page > 0 ? () => setState(() => _page = 0) : null,
-          icon: const Icon(Icons.first_page),
-          padding: EdgeInsets.zero,
-          constraints: const BoxConstraints(),
-        ),
-        IconButton(
-          onPressed: _page > 0 ? () => setState(() => _page--) : null,
-          icon: const Icon(Icons.chevron_left),
-          padding: EdgeInsets.zero,
-          constraints: const BoxConstraints(),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          child: Text(
-            '${_page + 1} / $_totalPages',
-            style: const TextStyle(fontSize: 13),
-          ),
-        ),
-        IconButton(
-          onPressed: _page < _totalPages - 1
-              ? () => setState(() => _page++)
-              : null,
-          icon: const Icon(Icons.chevron_right),
-          padding: EdgeInsets.zero,
-          constraints: const BoxConstraints(),
-        ),
-        IconButton(
-          onPressed: _page < _totalPages - 1
-              ? () => setState(() => _page = _totalPages - 1)
-              : null,
-          icon: const Icon(Icons.last_page),
-          padding: EdgeInsets.zero,
-          constraints: const BoxConstraints(),
-        ),
-      ],
+    return AppPagination(
+      currentPage: _page,
+      totalPages: _totalPages,
+      pageSize: _size,
+      summary: 'ทั้งหมด ${_all.length} คืน',
+      onPageChanged: (p) => setState(() => _page = p),
+      onPageSizeChanged: (s) => setState(() {
+        _size = s;
+        _page = 0;
+      }),
     );
   }
 }

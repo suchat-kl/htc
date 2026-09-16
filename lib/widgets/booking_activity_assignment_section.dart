@@ -11,6 +11,7 @@ import '../utils/dialog.dart';
 import '../utils/logger.dart';
 import '../utils/snackbar_helper.dart';
 import '../utils/util.dart';
+import 'app_pagination.dart';
 import '../screens/activity_schedule_screen.dart';
 import 'room_assignment_dialog.dart';
 
@@ -48,7 +49,8 @@ class BookingActivityAssignmentSection extends StatefulWidget {
 
 class _BookingActivityAssignmentSectionState
     extends State<BookingActivityAssignmentSection> {
-  static const int _size = 5; // ค่าเริ่มต้น row/page = 5
+  /// แถวต่อหน้า เปลี่ยนได้จากตัวเลือกในแถบแบ่งหน้า
+  int _size = 5;
 
   /// รายการห้องกิจกรรมที่กำหนดแล้วทั้งหมดของใบจอง (type 'C')
   List<RoomAssignment> _all = [];
@@ -641,52 +643,18 @@ class _BookingActivityAssignmentSectionState
     );
   }
 
-  /// จำนวนทั้งหมด + ตัวแบ่งหน้า (แบ่งฝั่ง Flutter จึงแค่เปลี่ยนหน้า ไม่ต้องยิง API)
+  /// แถบแบ่งหน้ามาตรฐาน — เลือกแถวต่อหน้าและกดเลขหน้าได้
   Widget _footerRow() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.end,
-      children: [
-        Text(
-          'ทั้งหมด ${_all.length} ห้อง',
-          style: const TextStyle(fontSize: 13, color: AppTheme.textSecondary),
-        ),
-        const SizedBox(width: 16),
-        IconButton(
-          onPressed: _page > 0 ? () => setState(() => _page = 0) : null,
-          icon: const Icon(Icons.first_page),
-          padding: EdgeInsets.zero,
-          constraints: const BoxConstraints(),
-        ),
-        IconButton(
-          onPressed: _page > 0 ? () => setState(() => _page--) : null,
-          icon: const Icon(Icons.chevron_left),
-          padding: EdgeInsets.zero,
-          constraints: const BoxConstraints(),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          child: Text(
-            '${_page + 1} / $_totalPages',
-            style: const TextStyle(fontSize: 13),
-          ),
-        ),
-        IconButton(
-          onPressed: _page < _totalPages - 1
-              ? () => setState(() => _page++)
-              : null,
-          icon: const Icon(Icons.chevron_right),
-          padding: EdgeInsets.zero,
-          constraints: const BoxConstraints(),
-        ),
-        IconButton(
-          onPressed: _page < _totalPages - 1
-              ? () => setState(() => _page = _totalPages - 1)
-              : null,
-          icon: const Icon(Icons.last_page),
-          padding: EdgeInsets.zero,
-          constraints: const BoxConstraints(),
-        ),
-      ],
+    return AppPagination(
+      currentPage: _page,
+      totalPages: _totalPages,
+      pageSize: _size,
+      summary: 'ทั้งหมด ${_all.length} ห้อง',
+      onPageChanged: (p) => setState(() => _page = p),
+      onPageSizeChanged: (s) => setState(() {
+        _size = s;
+        _page = 0;
+      }),
     );
   }
 }
