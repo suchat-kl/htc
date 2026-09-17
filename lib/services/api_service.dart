@@ -23,6 +23,7 @@ import 'package:highway_training/models/roomtype.dart';
 import 'package:highway_training/models/roomtype_commodity.dart';
 import 'package:highway_training/models/roomtype_facility.dart';
 import 'package:highway_training/models/section.dart';
+import 'package:highway_training/models/room_search_result.dart';
 import 'package:highway_training/models/statuscheck.dart';
 import 'package:highway_training/models/tfood.dart';
 import 'package:highway_training/models/ticker_message.dart';
@@ -2926,6 +2927,64 @@ class ApiService {
     return list
         .map((j) => Schedule.fromJson(j as Map<String, dynamic>))
         .toList();
+  }
+
+  /// หมายเลขห้องที่เคยกำหนดในใบจอง ไม่ซ้ำกัน — ใช้ในช่อง autocomplete
+  ///
+  /// [type] คือ m_roomtype.type: 'C' ห้องกิจกรรม, 'R' ห้องพัก
+  Future<List<String>> getSearchRoomNos({String type = 'C'}) async {
+    await _ensureToken();
+    final r = await dio.get(
+      '/api/auth/room-search/room-nos',
+      queryParameters: {'type': type},
+    );
+    final list = r.data['roomNos'] as List? ?? const [];
+    return list.map((e) => e.toString()).toList();
+  }
+
+  /// ค้นหาห้องที่กำหนดแล้วแบบแบ่งหน้า ทุกเงื่อนไขไม่บังคับ
+  ///
+  /// ช่องข้อความ backend เทียบแบบมีคำนั้นอยู่ (LIKE %x%) ส่วนวันที่และสถานะ
+  /// เทียบตรงตัว ช่องที่เป็น null หรือว่างจะไม่ถูกส่งไป คืน Map ที่มี
+  /// `results` (`List<RoomSearchResult>`), `totalItems`, `totalPages`, `currentPage`
+  Future<Map<String, dynamic>> searchRooms({
+    String type = 'C',
+    String? roomNo,
+    String? departmentName,
+    String? bookTitle,
+    String? contractName,
+    String? startDate, // yyyy-MM-dd
+    String? stopDate, // yyyy-MM-dd
+    int? status,
+    int page = 0,
+    int size = 5,
+  }) async {
+    await _ensureToken();
+    bool has(String? v) => v != null && v.trim().isNotEmpty;
+    final r = await dio.get(
+      '/api/auth/room-search',
+      queryParameters: {
+        'type': type,
+        if (has(roomNo)) 'roomNo': roomNo!.trim(),
+        if (has(departmentName)) 'departmentName': departmentName!.trim(),
+        if (has(bookTitle)) 'bookTitle': bookTitle!.trim(),
+        if (has(contractName)) 'contractName': contractName!.trim(),
+        if (has(startDate)) 'startDate': startDate,
+        if (has(stopDate)) 'stopDate': stopDate,
+        'status': ?status,
+        'page': page,
+        'size': size,
+      },
+    );
+    final list = r.data['results'] as List? ?? const [];
+    return {
+      'results': list
+          .map((j) => RoomSearchResult.fromJson(j as Map<String, dynamic>))
+          .toList(),
+      'totalItems': r.data['totalItems'] ?? 0,
+      'totalPages': r.data['totalPages'] ?? 0,
+      'currentPage': r.data['currentPage'] ?? 0,
+    };
   }
 
   /// รายการทั้งหมดแบบแบ่งหน้า

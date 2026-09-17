@@ -2,6 +2,7 @@
 // ignore: deprecated_member_use
 // import 'dart:js' as js;
 import 'package:flutter/material.dart';
+import 'package:highway_training/screens/activity_room_search_screen.dart';
 import 'package:highway_training/screens/booking_edit_screen.dart';
 import 'package:highway_training/screens/booking_list_screen.dart';
 import 'package:highway_training/screens/commodity_report_screen.dart';
@@ -376,6 +377,27 @@ class _SidebarMenuState extends State<SidebarMenu> {
                     _SubMenuItemData(Icons.campaign, 'ข้อความวิ่ง', () {
                       Navigator.pop(context);
                       _showTickerMessageDialog(context);
+                    }),
+                  ],
+                ),
+                const Divider(indent: 16, endIndent: 16),
+                _buildExpandableMenuItem(
+                  context,
+                  icon: Icons.meeting_room,
+                  title: 'ห้องพัก/ห้องกิจกรรม',
+                  menuKey: 'room_search',
+                  children: [
+                    _SubMenuItemData(Icons.search, 'ค้นหาห้องกิจกรรม', () {
+                      Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => ActivityRoomSearchScreen(
+                            apiService: ApiService(),
+                            authProvider: widget.authProvider,
+                          ),
+                        ),
+                      );
                     }),
                   ],
                 ),
