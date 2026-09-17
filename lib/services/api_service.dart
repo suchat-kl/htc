@@ -3004,8 +3004,8 @@ class ApiService {
 
   /// ค้นหาห้องพักที่กำหนดแล้วแบบแบ่งหน้า ทุกเงื่อนไขไม่บังคับ
   ///
-  /// backend เทียบ [departmentName] [bookTitle] [contractNumber] แบบมีคำนั้นอยู่
-  /// (LIKE %x%) ส่วน [roomNo] [roomTypeId] [contractName] [status] เทียบตรงตัว
+  /// backend เทียบ [contractName] [departmentName] [bookTitle] [contractNumber]
+  /// แบบมีคำนั้นอยู่ (LIKE %x%) ส่วน [roomNo] [roomTypeId] [status] เทียบตรงตัว
   /// วันที่เป็นช่วง (วันเริ่มต้นตั้งแต่ [startDate] วันสิ้นสุดไม่เกิน [stopDate])
   /// คืน Map รูปแบบเดียวกับ [searchRooms]
   Future<Map<String, dynamic>> searchLodgingRooms({

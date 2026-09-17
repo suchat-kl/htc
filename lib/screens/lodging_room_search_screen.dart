@@ -23,7 +23,7 @@ import 'no_auth_booking_detail_screen.dart';
 /// เปิดหน้ารายละเอียดการจองด้วย bookId แบบเดียวกับหน้ารายการการจอง
 ///
 /// ต่างจากหน้าค้นหาห้องกิจกรรมตรงที่มีประเภทห้องพักและเบอร์โทรศัพท์
-/// และ backend ใส่ % เฉพาะชื่อหน่วยงาน ชื่อหลักสูตร และโทรศัพท์
+/// และ backend ใส่ % ที่ชื่อผู้เข้าพัก ชื่อหน่วยงาน ชื่อหลักสูตร และโทรศัพท์
 class LodgingRoomSearchScreen extends StatefulWidget {
   final ApiService apiService;
   final AuthProvider authProvider;
