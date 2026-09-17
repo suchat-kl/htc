@@ -24,6 +24,7 @@ import 'package:highway_training/models/roomtype_commodity.dart';
 import 'package:highway_training/models/roomtype_facility.dart';
 import 'package:highway_training/models/section.dart';
 import 'package:highway_training/models/room_search_result.dart';
+import 'package:highway_training/models/room_type_option.dart';
 import 'package:highway_training/models/statuscheck.dart';
 import 'package:highway_training/models/tfood.dart';
 import 'package:highway_training/models/ticker_message.dart';
@@ -2970,6 +2971,69 @@ class ApiService {
         if (has(departmentName)) 'departmentName': departmentName!.trim(),
         if (has(bookTitle)) 'bookTitle': bookTitle!.trim(),
         if (has(contractName)) 'contractName': contractName!.trim(),
+        if (has(startDate)) 'startDate': startDate,
+        if (has(stopDate)) 'stopDate': stopDate,
+        'status': ?status,
+        'page': page,
+        'size': size,
+      },
+    );
+    final list = r.data['results'] as List? ?? const [];
+    return {
+      'results': list
+          .map((j) => RoomSearchResult.fromJson(j as Map<String, dynamic>))
+          .toList(),
+      'totalItems': r.data['totalItems'] ?? 0,
+      'totalPages': r.data['totalPages'] ?? 0,
+      'currentPage': r.data['currentPage'] ?? 0,
+    };
+  }
+
+  /// ตัวเลือกประเภทห้องของ [type] เรียงตามรหัส — ใช้ในช่อง autocomplete
+  Future<List<RoomTypeOption>> getSearchRoomTypes({String type = 'R'}) async {
+    await _ensureToken();
+    final r = await dio.get(
+      '/api/auth/room-search/room-types',
+      queryParameters: {'type': type},
+    );
+    final list = r.data['roomTypes'] as List? ?? const [];
+    return list
+        .map((j) => RoomTypeOption.fromJson(j as Map<String, dynamic>))
+        .toList();
+  }
+
+  /// ค้นหาห้องพักที่กำหนดแล้วแบบแบ่งหน้า ทุกเงื่อนไขไม่บังคับ
+  ///
+  /// backend เทียบ [departmentName] [bookTitle] [contractNumber] แบบมีคำนั้นอยู่
+  /// (LIKE %x%) ส่วน [roomNo] [roomTypeId] [contractName] [status] เทียบตรงตัว
+  /// วันที่เป็นช่วง (วันเริ่มต้นตั้งแต่ [startDate] วันสิ้นสุดไม่เกิน [stopDate])
+  /// คืน Map รูปแบบเดียวกับ [searchRooms]
+  Future<Map<String, dynamic>> searchLodgingRooms({
+    String type = 'R',
+    String? roomNo,
+    int? roomTypeId,
+    String? contractName,
+    String? departmentName,
+    String? bookTitle,
+    String? contractNumber,
+    String? startDate, // yyyy-MM-dd
+    String? stopDate, // yyyy-MM-dd
+    int? status,
+    int page = 0,
+    int size = 5,
+  }) async {
+    await _ensureToken();
+    bool has(String? v) => v != null && v.trim().isNotEmpty;
+    final r = await dio.get(
+      '/api/auth/room-search/lodging',
+      queryParameters: {
+        'type': type,
+        if (has(roomNo)) 'roomNo': roomNo!.trim(),
+        'roomTypeId': ?roomTypeId,
+        if (has(contractName)) 'contractName': contractName!.trim(),
+        if (has(departmentName)) 'departmentName': departmentName!.trim(),
+        if (has(bookTitle)) 'bookTitle': bookTitle!.trim(),
+        if (has(contractNumber)) 'contractNumber': contractNumber!.trim(),
         if (has(startDate)) 'startDate': startDate,
         if (has(stopDate)) 'stopDate': stopDate,
         'status': ?status,

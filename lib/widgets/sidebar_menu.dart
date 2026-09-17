@@ -4,6 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:highway_training/screens/activity_room_search_screen.dart';
 import 'package:highway_training/screens/booking_edit_screen.dart';
+import 'package:highway_training/screens/lodging_room_search_screen.dart';
 import 'package:highway_training/screens/booking_list_screen.dart';
 import 'package:highway_training/screens/commodity_report_screen.dart';
 import 'package:highway_training/screens/commodity_screen.dart';
@@ -393,6 +394,18 @@ class _SidebarMenuState extends State<SidebarMenu> {
                         context,
                         MaterialPageRoute(
                           builder: (_) => ActivityRoomSearchScreen(
+                            apiService: ApiService(),
+                            authProvider: widget.authProvider,
+                          ),
+                        ),
+                      );
+                    }),
+                    _SubMenuItemData(Icons.hotel, 'ค้นหาห้องพัก', () {
+                      Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => LodgingRoomSearchScreen(
                             apiService: ApiService(),
                             authProvider: widget.authProvider,
                           ),

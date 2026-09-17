@@ -9,12 +9,18 @@ import 'package:flutter/material.dart';
 /// พิมพ์ค่าที่ไม่มีในรายการก็ได้ ผู้เรียกอ่านค่าจาก [controller] ตรงๆ
 /// เหมาะกับช่องค้นหาที่ส่งต่อไปทำ LIKE %x% ฝั่ง backend
 ///
+/// ตัวเลือกเป็นชนิดใดก็ได้ ([T]) ส่ง [displayStringForOption] เพื่อบอกว่าจะแสดงข้อความอะไร
+/// เช่นประเภทห้องที่ค่าเป็นรหัสแต่แสดงเป็นชื่อ ถ้าเป็น String ไม่ต้องส่ง
+///
 /// [options] โหลดมาทั้งหมดครั้งเดียวแล้วกรองในเครื่อง เหมาะกับรายการหลักร้อย
 /// ถ้าข้อมูลเยอะกว่านั้นควรทำเวอร์ชันที่ยิง API ตามคำที่พิมพ์พร้อม debounce
-class AppAutocompleteField extends StatefulWidget {
+class AppAutocompleteField<T extends Object> extends StatefulWidget {
   final String label;
   final TextEditingController controller;
-  final List<String> options;
+  final List<T> options;
+
+  /// ข้อความที่แสดงของตัวเลือก ค่าเริ่มต้นคือ toString()
+  final String Function(T option)? displayStringForOption;
 
   /// กำลังโหลด [options] อยู่ — แสดงตัวหมุนท้ายช่องแทนไอคอนค้นหา
   final bool loading;
@@ -24,7 +30,7 @@ class AppAutocompleteField extends StatefulWidget {
   /// จำนวนรายการแนะนำสูงสุดที่แสดง กันรายการยาวเกินจอ
   final int maxOptions;
 
-  final ValueChanged<String>? onSelected;
+  final ValueChanged<T>? onSelected;
 
   const AppAutocompleteField({
     super.key,
@@ -35,13 +41,16 @@ class AppAutocompleteField extends StatefulWidget {
     this.width = 220,
     this.maxOptions = 30,
     this.onSelected,
+    this.displayStringForOption,
   });
 
   @override
-  State<AppAutocompleteField> createState() => _AppAutocompleteFieldState();
+  State<AppAutocompleteField<T>> createState() =>
+      _AppAutocompleteFieldState<T>();
 }
 
-class _AppAutocompleteFieldState extends State<AppAutocompleteField> {
+class _AppAutocompleteFieldState<T extends Object>
+    extends State<AppAutocompleteField<T>> {
   final _focusNode = FocusNode();
 
   @override
@@ -50,11 +59,14 @@ class _AppAutocompleteFieldState extends State<AppAutocompleteField> {
     super.dispose();
   }
 
-  Iterable<String> _filter(TextEditingValue value) {
+  String _label(T option) =>
+      widget.displayStringForOption?.call(option) ?? option.toString();
+
+  Iterable<T> _filter(TextEditingValue value) {
     final q = value.text.trim().toLowerCase();
     final matches = q.isEmpty
         ? widget.options
-        : widget.options.where((o) => o.toLowerCase().contains(q));
+        : widget.options.where((o) => _label(o).toLowerCase().contains(q));
     return matches.take(widget.maxOptions);
   }
 
@@ -62,10 +74,11 @@ class _AppAutocompleteFieldState extends State<AppAutocompleteField> {
   Widget build(BuildContext context) {
     return SizedBox(
       width: widget.width,
-      child: RawAutocomplete<String>(
+      child: RawAutocomplete<T>(
         textEditingController: widget.controller,
         focusNode: _focusNode,
         optionsBuilder: _filter,
+        displayStringForOption: _label,
         onSelected: widget.onSelected,
         fieldViewBuilder: (context, controller, focusNode, onSubmitted) {
           return TextField(
@@ -124,7 +137,7 @@ class _AppAutocompleteFieldState extends State<AppAutocompleteField> {
                           vertical: 10,
                         ),
                         child: Text(
-                          option,
+                          _label(option),
                           style: const TextStyle(fontSize: 14),
                         ),
                       ),
