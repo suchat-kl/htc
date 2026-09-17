@@ -179,17 +179,14 @@ class _ActivityRoomSearchScreenState extends State<ActivityRoomSearchScreen> {
     return '$what ไม่สำเร็จ\n${e.toString().replaceAll('Exception: ', '')}';
   }
 
+  /// เลือกวันที่ด้วยปฏิทินกลางของระบบ
+  ///
+  /// ใช้ [Util.dateFieldPickerNullable] เพราะช่องค้นหาว่างได้ — กดยกเลิกแล้ว
+  /// ต้องไม่กลายเป็นกรองวันนี้โดยไม่ตั้งใจ ซึ่งจะเกิดถ้าใช้ dateFieldPicker ตรงๆ
   Future<void> _pickDate(bool isStart) async {
     final current = isStart ? _startDate : _stopDate;
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: current ?? DateTime.now(),
-      // ข้อมูลเก่ามีถึงปี 2560 (2017) จึงเปิดช่วงให้กว้าง
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2100),
-      locale: const Locale('th', 'TH'),
-    );
-    if (picked == null) return;
+    final picked = await Util.dateFieldPickerNullable(context, current);
+    if (picked == null || !mounted) return;
     setState(() {
       if (isStart) {
         _startDate = picked;

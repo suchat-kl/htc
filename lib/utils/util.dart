@@ -1,27 +1,43 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+
 // import 'package:flutter_localizations/flutter_localizations.dart';
 
 class Util {
   Util();
 
-  // ✅ Add BuildContext as parameter
+  /// เลือกวันที่ด้วยปฏิทินภาษาไทย (พ.ศ.) — คืนค่าเดิมเมื่อกดยกเลิก
+  ///
+  /// เหมาะกับช่องที่ต้องมีวันที่เสมอ ช่องที่ว่างได้ (เช่นช่องค้นหา) ให้ใช้
+  /// [dateFieldPickerNullable] แทน ไม่งั้นกดยกเลิกแล้วจะได้วันที่เริ่มต้นกลับมา
   static Future<DateTime> dateFieldPicker(
-    BuildContext context, // ✅ Add this
-  //  String txt,
+    BuildContext context,
     DateTime iniDate,
   ) async {
-    // Convert Christian year to Buddhist year for display
-    int y = iniDate.year;// + 543
-    int m = iniDate.month;
-    int d = iniDate.day;
-    DateTime selectedDate = DateTime(y, m, d);
+    final picked = await dateFieldPickerNullable(context, iniDate);
+    return picked ?? iniDate;
+  }
+
+  /// ปฏิทินเดียวกับ [dateFieldPicker] แต่คืน null เมื่อกดยกเลิก
+  ///
+  /// [iniDate] เป็น null ได้ ปฏิทินจะเปิดที่วันนี้ ใช้กับช่องที่ยังไม่ได้เลือก
+  /// ทำให้แยกได้ว่าผู้ใช้ยกเลิก หรือตั้งใจเลือกวันเดียวกับวันเริ่มต้น
+  static Future<DateTime?> dateFieldPickerNullable(
+    BuildContext context,
+    DateTime? iniDate,
+  ) async {
+    final first = DateTime(2017, 1, 1); // พ.ศ. 2560
+    final last = DateTime(2037, 12, 31); // พ.ศ. 2580
+    var initial = iniDate ?? DateTime.now();
+    // initialDate ต้องอยู่ในช่วง first-last ไม่งั้น showDatePicker จะ assert
+    if (initial.isBefore(first)) initial = first;
+    if (initial.isAfter(last)) initial = last;
 
     final DateTime? picked = await showDatePicker(
-      context: context, // ✅ Now context is available
-      initialDate: selectedDate,
-      firstDate: DateTime(2017, 1, 1), // Buddhist year 2560 = 2017
-      lastDate: DateTime(2037, 12, 31), // Buddhist year 2580 = 2037
+      context: context,
+      initialDate: DateTime(initial.year, initial.month, initial.day),
+      firstDate: first,
+      lastDate: last,
       helpText: 'เลือกวันที่',
       cancelText: 'ยกเลิก',
       confirmText: 'ตกลง',
@@ -29,8 +45,7 @@ class Util {
       fieldHintText: 'วัน/เดือน/ปี',
       errorFormatText: 'รูปแบบวันที่ไม่ถูกต้อง',
       errorInvalidText: 'วันที่ไม่ถูกต้อง',
-      // locale: const Locale('th'),
-      locale: const Locale('th', 'TH'), // Forces Buddhist Year display
+      locale: const Locale('th', 'TH'), // แสดงปีเป็น พ.ศ.
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
@@ -50,19 +65,14 @@ class Util {
       },
     );
 
-    if (picked != null) {
-      // Convert Buddhist year back to Christian year
-     // int christianYear = picked.year ;//- 543;
-      return DateTime(picked.year, picked.month, picked.day);
-    }
-    return iniDate; // Return original if not picked
+    if (picked == null) return null;
+    return DateTime(picked.year, picked.month, picked.day);
   }
 
   // ✅ Thai date display
   static String formatThaiDate(DateTime date) {
-
     // Format using Thai locale - automatically displays year as 2569
-   // return DateFormat.yMMMd('th').format(date);
+    // return DateFormat.yMMMd('th').format(date);
     // Example output: "30 ก.ค. 2569"
     final thaiYear = date.year + 543;
     final thaiMonths = [
@@ -80,7 +90,6 @@ class Util {
       'ธันวาคม',
     ];
     return '${date.day} ${thaiMonths[date.month - 1]} $thaiYear';
-    
   }
 
   static String formatThaiDateStr(String? dateStr) {
@@ -96,7 +105,8 @@ class Util {
   static String formatChristianDate(DateTime date) {
     return DateFormat('yyyy-MM-dd').format(date);
   }
- static  String toBuddhistYearDisplay(DateTime date) {
+
+  static String toBuddhistYearDisplay(DateTime date) {
     final int buddhistYear = date.year + 543;
     return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/$buddhistYear';
   }
