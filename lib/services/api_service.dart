@@ -2944,8 +2944,8 @@ class ApiService {
 
   /// ค้นหาห้องที่กำหนดแล้วแบบแบ่งหน้า ทุกเงื่อนไขไม่บังคับ
   ///
-  /// ช่องข้อความ backend เทียบแบบมีคำนั้นอยู่ (LIKE %x%) ส่วนวันที่และสถานะ
-  /// เทียบตรงตัว ช่องที่เป็น null หรือว่างจะไม่ถูกส่งไป คืน Map ที่มี
+  /// ช่องข้อความ backend เทียบแบบมีคำนั้นอยู่ (LIKE %x%) วันที่เป็นช่วง
+  /// (วันเริ่มต้นตั้งแต่ [startDate] วันสิ้นสุดไม่เกิน [stopDate]) สถานะเทียบตรงตัว ช่องที่เป็น null หรือว่างจะไม่ถูกส่งไป คืน Map ที่มี
   /// `results` (`List<RoomSearchResult>`), `totalItems`, `totalPages`, `currentPage`
   Future<Map<String, dynamic>> searchRooms({
     String type = 'C',
