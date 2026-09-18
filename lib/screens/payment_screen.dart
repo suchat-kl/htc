@@ -147,23 +147,38 @@ class _PaymentScreenState extends State<PaymentScreen> {
       final booking = Bookroom.fromJson(list.first as Map<String, dynamic>);
       final statuses = await widget.apiService.getDocumentStatusList();
 
-      // ช่อง รายการ และ ห้อง: จำนวนห้องแยกตามประเภทห้อง แบ่งกลุ่มด้วย type
+      // ห้องพัก: ครบทุกช่อง รายการ ห้อง คืน/วัน/ชั่วโมง เงิน จากคิวรี่ค่าห้องพัก
+      final lodging = await widget.apiService.getPaymentLodging(
+        bookId: widget.bookId,
+      );
+
+      // ห้องกิจกรรม: ตอนนี้มีแค่ รายการ และ ห้อง จากสรุปจำนวนห้อง
+      // คืน/วัน/ชั่วโมง และเงิน รอสเปก
       final rooms = await widget.apiService.getPaymentRoomSummary(
         bookId: widget.bookId,
       );
       PaymentLine toLine(PaymentRoomSummary r) =>
           PaymentLine(name: r.roomTypeName ?? '-', rooms: r.rooms);
 
-      // TODO: คืน/วัน/ชั่วโมง และเงินของแต่ละประเภทห้อง ค่าอาหาร ค่าบริการอื่นๆ
+      // TODO: คืน/วัน/ชั่วโมง และเงินของห้องกิจกรรม ค่าอาหาร ค่าบริการอื่นๆ
       // และชื่อผู้บันทึก รอสเปกว่าดึงจากตารางไหน แล้วเติม units/amount ของ
-      // PaymentLine, _foodAmount, _otherServices, _recorderName ตรงนี้
+      // _activityLines, _foodAmount, _otherServices, _recorderName ตรงนี้
 
       if (!mounted) return;
       setState(() {
         _booking = booking;
         _statuses = statuses;
         _statusId = booking.statusId;
-        _lodgingLines = rooms.where((r) => r.type == 'R').map(toLine).toList();
+        _lodgingLines = lodging
+            .map(
+              (l) => PaymentLine(
+                name: l.name ?? '-',
+                rooms: l.rooms,
+                units: l.nights,
+                amount: l.baht,
+              ),
+            )
+            .toList();
         _activityLines = rooms.where((r) => r.type == 'C').map(toLine).toList();
         _foodAmount = 0;
         _otherServices = const [];

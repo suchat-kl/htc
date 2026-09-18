@@ -23,6 +23,7 @@ import 'package:highway_training/models/roomtype.dart';
 import 'package:highway_training/models/roomtype_commodity.dart';
 import 'package:highway_training/models/roomtype_facility.dart';
 import 'package:highway_training/models/section.dart';
+import 'package:highway_training/models/payment_lodging.dart';
 import 'package:highway_training/models/payment_room_summary.dart';
 import 'package:highway_training/models/room_search_result.dart';
 import 'package:highway_training/models/room_type_option.dart';
@@ -3067,6 +3068,21 @@ class ApiService {
     final list = r.data['rooms'] as List? ?? const [];
     return list
         .map((j) => PaymentRoomSummary.fromJson(j as Map<String, dynamic>))
+        .toList();
+  }
+
+  /// ค่าห้องพักของใบจอง แยกตามประเภทห้อง — กลุ่มห้องพักของสรุปค่าบริการ
+  ///
+  /// ส่งเฉพาะ [bookId] ได้ ชื่อประเภทห้อง จำนวนห้อง คืนรวม และเงิน
+  Future<List<PaymentLodging>> getPaymentLodging({required int bookId}) async {
+    await _ensureToken();
+    final r = await dio.get(
+      '/api/auth/payment/lodging',
+      queryParameters: {'bookId': bookId},
+    );
+    final list = r.data['lodging'] as List? ?? const [];
+    return list
+        .map((j) => PaymentLodging.fromJson(j as Map<String, dynamic>))
         .toList();
   }
 
