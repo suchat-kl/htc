@@ -131,10 +131,10 @@ class _PaymentScreenState extends State<PaymentScreen> {
       _error = null;
     });
     try {
+      // ส่งเฉพาะ bookID — ได้ใบจองเดียว ใช้ contractname1, departmentname,
+      // startdate, stopdate ทำส่วนหัวของสรุปค่าบริการ
       final res = await widget.apiService.searchBookings(
         bookID: widget.bookId,
-        page: 0,
-        size: 1,
       );
       final list = res['bookings'] as List? ?? const [];
       if (list.isEmpty) {
