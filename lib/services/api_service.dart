@@ -23,6 +23,7 @@ import 'package:highway_training/models/roomtype.dart';
 import 'package:highway_training/models/roomtype_commodity.dart';
 import 'package:highway_training/models/roomtype_facility.dart';
 import 'package:highway_training/models/section.dart';
+import 'package:highway_training/models/payment_room_summary.dart';
 import 'package:highway_training/models/room_search_result.dart';
 import 'package:highway_training/models/room_type_option.dart';
 import 'package:highway_training/models/statuscheck.dart';
@@ -3050,6 +3051,23 @@ class ApiService {
       'totalPages': r.data['totalPages'] ?? 0,
       'currentPage': r.data['currentPage'] ?? 0,
     };
+  }
+
+  /// จำนวนห้องของใบจอง แยกตามประเภทห้อง — ตารางสรุปค่าบริการ (รับชำระเงิน)
+  ///
+  /// ห้องพัก (type 'R') มาก่อนห้องกิจกรรม (type 'C') เรียงตามรหัสประเภทห้อง
+  Future<List<PaymentRoomSummary>> getPaymentRoomSummary({
+    required int bookId,
+  }) async {
+    await _ensureToken();
+    final r = await dio.get(
+      '/api/auth/payment/room-summary',
+      queryParameters: {'bookId': bookId},
+    );
+    final list = r.data['rooms'] as List? ?? const [];
+    return list
+        .map((j) => PaymentRoomSummary.fromJson(j as Map<String, dynamic>))
+        .toList();
   }
 
   /// รายการทั้งหมดแบบแบ่งหน้า

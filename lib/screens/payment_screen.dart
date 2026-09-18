@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../config/theme.dart';
 import '../models/bookroom.dart';
 import '../models/documentstatus.dart';
+import '../models/payment_room_summary.dart';
 import '../services/api_service.dart';
 import '../utils/logger.dart';
 import '../utils/snackbar_helper.dart';
@@ -18,17 +19,17 @@ class PaymentLine {
   /// จำนวนห้อง
   final int rooms;
 
-  /// จำนวน คืน/วัน/ชั่วโมง
-  final int units;
+  /// จำนวน คืน/วัน/ชั่วโมง — null = ยังไม่มีข้อมูล แสดงเป็นช่องว่าง
+  final int? units;
 
-  /// จำนวนเงิน (บาท)
-  final double amount;
+  /// จำนวนเงิน (บาท) — null = ยังไม่มีข้อมูล แสดงเป็นช่องว่าง ไม่นับในยอดรวม
+  final double? amount;
 
   const PaymentLine({
     required this.name,
     required this.rooms,
-    required this.units,
-    required this.amount,
+    this.units,
+    this.amount,
   });
 }
 
@@ -120,8 +121,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
       _otherServices.fold<double>(0, (sum, s) => sum + s.amount);
 
   double get _total =>
-      _lodgingLines.fold<double>(0, (sum, l) => sum + l.amount) +
-      _activityLines.fold<double>(0, (sum, l) => sum + l.amount) +
+      _lodgingLines.fold<double>(0, (sum, l) => sum + (l.amount ?? 0)) +
+      _activityLines.fold<double>(0, (sum, l) => sum + (l.amount ?? 0)) +
       _foodAmount +
       _otherAmount;
 
@@ -133,9 +134,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
     try {
       // ส่งเฉพาะ bookID — ได้ใบจองเดียว ใช้ contractname1, departmentname,
       // startdate, stopdate ทำส่วนหัวของสรุปค่าบริการ
-      final res = await widget.apiService.searchBookings(
-        bookID: widget.bookId,
-      );
+      final res = await widget.apiService.searchBookings(bookID: widget.bookId);
       final list = res['bookings'] as List? ?? const [];
       if (list.isEmpty) {
         if (!mounted) return;
@@ -148,17 +147,24 @@ class _PaymentScreenState extends State<PaymentScreen> {
       final booking = Bookroom.fromJson(list.first as Map<String, dynamic>);
       final statuses = await widget.apiService.getDocumentStatusList();
 
-      // TODO: ค่าห้องพัก ห้องกิจกรรม ค่าอาหาร ค่าบริการอื่นๆ และชื่อผู้บันทึก
-      // รอสเปกว่าดึงจากตารางไหน แล้วเติม _lodgingLines, _activityLines,
-      // _foodAmount, _otherServices, _recorderName ตรงนี้
+      // ช่อง รายการ และ ห้อง: จำนวนห้องแยกตามประเภทห้อง แบ่งกลุ่มด้วย type
+      final rooms = await widget.apiService.getPaymentRoomSummary(
+        bookId: widget.bookId,
+      );
+      PaymentLine toLine(PaymentRoomSummary r) =>
+          PaymentLine(name: r.roomTypeName ?? '-', rooms: r.rooms);
+
+      // TODO: คืน/วัน/ชั่วโมง และเงินของแต่ละประเภทห้อง ค่าอาหาร ค่าบริการอื่นๆ
+      // และชื่อผู้บันทึก รอสเปกว่าดึงจากตารางไหน แล้วเติม units/amount ของ
+      // PaymentLine, _foodAmount, _otherServices, _recorderName ตรงนี้
 
       if (!mounted) return;
       setState(() {
         _booking = booking;
         _statuses = statuses;
         _statusId = booking.statusId;
-        _lodgingLines = const [];
-        _activityLines = const [];
+        _lodgingLines = rooms.where((r) => r.type == 'R').map(toLine).toList();
+        _activityLines = rooms.where((r) => r.type == 'C').map(toLine).toList();
         _foodAmount = 0;
         _otherServices = const [];
         _loading = false;
@@ -403,8 +409,16 @@ class _PaymentScreenState extends State<PaymentScreen> {
         _row([
           _cell(1, _text(l.name)),
           _cell(1, _text('${l.rooms}'), align: Alignment.centerRight),
-          _cell(1, _text('${l.units}'), align: Alignment.centerRight),
-          _cell(1, _amount(l.amount), align: Alignment.centerRight),
+          _cell(
+            1,
+            _text(l.units == null ? '' : '${l.units}'),
+            align: Alignment.centerRight,
+          ),
+          _cell(
+            1,
+            l.amount == null ? const SizedBox() : _amount(l.amount!),
+            align: Alignment.centerRight,
+          ),
         ]),
     ];
   }
