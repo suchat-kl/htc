@@ -5,7 +5,6 @@ import 'package:intl/intl.dart';
 import '../config/theme.dart';
 import '../models/bookroom.dart';
 import '../models/documentstatus.dart';
-import '../models/payment_room_summary.dart';
 import '../services/api_service.dart';
 import '../utils/logger.dart';
 import '../utils/snackbar_helper.dart';
@@ -20,7 +19,8 @@ class PaymentLine {
   final int rooms;
 
   /// จำนวน คืน/วัน/ชั่วโมง — null = ยังไม่มีข้อมูล แสดงเป็นช่องว่าง
-  final int? units;
+  /// เป็นทศนิยมได้ ห้องกิจกรรมนับช่วงเวลาครึ่งวันเป็น 0.5
+  final num? units;
 
   /// จำนวนเงิน (บาท) — null = ยังไม่มีข้อมูล แสดงเป็นช่องว่าง ไม่นับในยอดรวม
   final double? amount;
@@ -52,9 +52,10 @@ class OtherServiceLine {
 /// ของระบบเดิม
 ///
 /// ข้อมูลที่ต่อแล้ว: ชื่อผู้ใช้บริการ ช่วงวันที่ และสถานะการจอง (จากใบจอง)
-/// ข้อมูลที่รอสเปก: ค่าห้องพัก/ห้องกิจกรรม ค่าอาหาร ค่าบริการอื่นๆ ชื่อผู้บันทึก
-/// และการพิมพ์/บันทึก — โครงสร้างข้อมูลเตรียมไว้แล้วใน [PaymentLine],
-/// [OtherServiceLine] เมื่อได้ที่มาของข้อมูลให้เติมใน [_load]
+/// ค่าห้องพัก (getPaymentLodging) และค่าห้องกิจกรรม (getPaymentActivity)
+/// ข้อมูลที่รอสเปก: ค่าอาหาร ค่าบริการอื่นๆ ชื่อผู้บันทึก และการพิมพ์/บันทึก
+/// — โครงสร้างข้อมูลเตรียมไว้แล้วใน [OtherServiceLine] เมื่อได้ที่มาของข้อมูล
+/// ให้เติมใน [_load]
 class PaymentScreen extends StatefulWidget {
   final ApiService apiService;
 
@@ -152,17 +153,13 @@ class _PaymentScreenState extends State<PaymentScreen> {
         bookId: widget.bookId,
       );
 
-      // ห้องกิจกรรม: ตอนนี้มีแค่ รายการ และ ห้อง จากสรุปจำนวนห้อง
-      // คืน/วัน/ชั่วโมง และเงิน รอสเปก
-      final rooms = await widget.apiService.getPaymentRoomSummary(
+      // ห้องกิจกรรม: ครบทุกช่องจากคิวรี่ค่าห้องกิจกรรม (นับตามช่วงเวลาใน t_schedule)
+      final activity = await widget.apiService.getPaymentActivity(
         bookId: widget.bookId,
       );
-      PaymentLine toLine(PaymentRoomSummary r) =>
-          PaymentLine(name: r.roomTypeName ?? '-', rooms: r.rooms);
 
-      // TODO: คืน/วัน/ชั่วโมง และเงินของห้องกิจกรรม ค่าอาหาร ค่าบริการอื่นๆ
-      // และชื่อผู้บันทึก รอสเปกว่าดึงจากตารางไหน แล้วเติม units/amount ของ
-      // _activityLines, _foodAmount, _otherServices, _recorderName ตรงนี้
+      // TODO: ค่าอาหาร ค่าบริการอื่นๆ และชื่อผู้บันทึก รอสเปกว่าดึงจากตารางไหน
+      // แล้วเติม _foodAmount, _otherServices, _recorderName ตรงนี้
 
       if (!mounted) return;
       setState(() {
@@ -179,7 +176,16 @@ class _PaymentScreenState extends State<PaymentScreen> {
               ),
             )
             .toList();
-        _activityLines = rooms.where((r) => r.type == 'C').map(toLine).toList();
+        _activityLines = activity
+            .map(
+              (a) => PaymentLine(
+                name: a.name ?? '-',
+                rooms: a.rooms,
+                units: a.units,
+                amount: a.baht,
+              ),
+            )
+            .toList();
         _foodAmount = 0;
         _otherServices = const [];
         _loading = false;
@@ -424,11 +430,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
         _row([
           _cell(1, _text(l.name)),
           _cell(1, _text('${l.rooms}'), align: Alignment.centerRight),
-          _cell(
-            1,
-            _text(l.units == null ? '' : '${l.units}'),
-            align: Alignment.centerRight,
-          ),
+          _cell(1, _text(_unitsText(l.units)), align: Alignment.centerRight),
           _cell(
             1,
             l.amount == null ? const SizedBox() : _amount(l.amount!),
@@ -694,6 +696,12 @@ class _PaymentScreenState extends State<PaymentScreen> {
   );
 
   Widget _text(String v) => Text(v, style: const TextStyle(fontSize: 14));
+
+  /// 24 -> "24", 24.5 -> "24.5" ไม่ต่อ .0 ท้ายจำนวนเต็ม
+  static String _unitsText(num? v) {
+    if (v == null) return '';
+    return v == v.truncate() ? '${v.toInt()}' : v.toStringAsFixed(1);
+  }
 
   Widget _amount(double v) =>
       Text(_money.format(v), style: const TextStyle(fontSize: 14));
