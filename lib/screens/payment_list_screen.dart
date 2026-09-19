@@ -707,8 +707,11 @@ class _PaymentListScreenState extends State<PaymentListScreen> {
     await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) =>
-            PaymentScreen(apiService: widget.apiService, bookId: bookId),
+        builder: (_) => PaymentScreen(
+          apiService: widget.apiService,
+          authProvider: widget.authProvider,
+          bookId: bookId,
+        ),
       ),
     );
   }

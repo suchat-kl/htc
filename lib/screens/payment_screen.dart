@@ -5,6 +5,8 @@ import 'package:intl/intl.dart';
 import '../config/theme.dart';
 import '../models/bookroom.dart';
 import '../models/documentstatus.dart';
+import '../models/employee.dart';
+import '../providers/auth_provider.dart';
 import '../services/api_service.dart';
 import '../utils/logger.dart';
 import '../utils/snackbar_helper.dart';
@@ -53,11 +55,15 @@ class OtherServiceLine {
 ///
 /// ข้อมูลที่ต่อแล้ว: ชื่อผู้ใช้บริการ ช่วงวันที่ และสถานะการจอง (จากใบจอง)
 /// ค่าห้องพัก (getPaymentLodging) และค่าห้องกิจกรรม (getPaymentActivity)
-/// ข้อมูลที่รอสเปก: ค่าอาหาร ค่าบริการอื่นๆ ชื่อผู้บันทึก และการพิมพ์/บันทึก
+/// ผู้บันทึก (ผู้ใช้ที่ล็อกอิน)
+/// ข้อมูลที่รอสเปก: ค่าอาหาร ค่าบริการอื่นๆ และการพิมพ์/บันทึก
 /// — โครงสร้างข้อมูลเตรียมไว้แล้วใน [OtherServiceLine] เมื่อได้ที่มาของข้อมูล
 /// ให้เติมใน [_load]
 class PaymentScreen extends StatefulWidget {
   final ApiService apiService;
+
+  /// ผู้ใช้ที่ล็อกอินอยู่ — ใช้เป็นผู้บันทึกการรับชำระ
+  final AuthProvider authProvider;
 
   /// เลขที่ใบจองที่จะรับชำระ
   final int bookId;
@@ -65,6 +71,7 @@ class PaymentScreen extends StatefulWidget {
   const PaymentScreen({
     super.key,
     required this.apiService,
+    required this.authProvider,
     required this.bookId,
   });
 
@@ -100,8 +107,10 @@ class _PaymentScreenState extends State<PaymentScreen> {
   final _receiptNoCtrl = TextEditingController();
   DateTime? _receiptDate;
 
-  /// ชื่อผู้บันทึก — จะอ่านจากฐานข้อมูล ยังไม่ได้ต่อ
+  /// ผู้บันทึก — ผู้ใช้ที่ล็อกอินอยู่ แบบเดียวกับช่องผู้เบิกของหน้าบันทึกรับจ่าย
+  /// วัสดุซ่อมบำรุง ชื่อแสดงเหนือวันที่มุมขวาล่าง ส่วนรหัสเก็บไว้ใช้ตอนบันทึก
   String? _recorderName;
+  int? _recorderEmpId;
   final DateTime _recordDate = DateTime.now();
 
   @override
@@ -148,6 +157,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
       final booking = Bookroom.fromJson(list.first as Map<String, dynamic>);
       final statuses = await widget.apiService.getDocumentStatusList();
 
+      // ผู้บันทึก: หาชื่อจากรายชื่อพนักงานด้วยรหัสของผู้ใช้ที่ล็อกอิน
+      final recorder = await _resolveRecorder();
+
       // ห้องพัก: ครบทุกช่อง รายการ ห้อง คืน/วัน/ชั่วโมง เงิน จากคิวรี่ค่าห้องพัก
       final lodging = await widget.apiService.getPaymentLodging(
         bookId: widget.bookId,
@@ -158,8 +170,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
         bookId: widget.bookId,
       );
 
-      // TODO: ค่าอาหาร ค่าบริการอื่นๆ และชื่อผู้บันทึก รอสเปกว่าดึงจากตารางไหน
-      // แล้วเติม _foodAmount, _otherServices, _recorderName ตรงนี้
+      // TODO: ค่าอาหาร และค่าบริการอื่นๆ รอสเปกว่าดึงจากตารางไหน
+      // แล้วเติม _foodAmount, _otherServices ตรงนี้
 
       if (!mounted) return;
       setState(() {
@@ -186,6 +198,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
               ),
             )
             .toList();
+        _recorderEmpId = recorder.empId;
+        _recorderName = recorder.name;
         _foodAmount = 0;
         _otherServices = const [];
         _loading = false;
@@ -198,6 +212,44 @@ class _PaymentScreenState extends State<PaymentScreen> {
         _loading = false;
       });
     }
+  }
+
+  /// รหัสและชื่อของผู้บันทึก จากผู้ใช้ที่ล็อกอิน
+  ///
+  /// ใช้ empID ของผู้ใช้ แล้วหาชื่อ-นามสกุลจาก getEmployeesList เหมือนช่องผู้เบิก
+  /// ของหน้าบันทึกรับจ่ายวัสดุซ่อมบำรุง ถ้าหาในรายชื่อไม่เจอใช้ชื่อจากบัญชีแทน
+  /// ไม่ถอยไปใช้พนักงานคนแรกในรายชื่อ เพราะจะบันทึกผิดคน
+  /// โหลดรายชื่อไม่สำเร็จก็ไม่ให้ทั้งหน้าพัง แสดงชื่อจากบัญชีไปก่อน
+  Future<({int? empId, String? name})> _resolveRecorder() async {
+    final empId = widget.authProvider.empID;
+    final fallback = widget.authProvider.fullName;
+    if (empId == null) return (empId: null, name: fallback);
+    try {
+      final List<Employee> emps = await widget.apiService.getEmployeesList();
+      for (final e in emps) {
+        if (e.empID == empId) {
+          final name = '${e.name ?? ''} ${e.lastname ?? ''}'.trim();
+          return (empId: empId, name: name.isEmpty ? fallback : name);
+        }
+      }
+    } catch (e) {
+      if (AppLogger.on) AppLogger.d('Error loading employees: $e');
+    }
+    return (empId: empId, name: fallback);
+  }
+
+  /// บันทึกการรับชำระ — ตอนนี้ตรวจแค่ว่ามีผู้บันทึก ส่วนการบันทึกจริงรอสเปก
+  ///
+  /// ต้องมี [_recorderEmpId] เพราะจะบันทึกรหัสพนักงานผู้รับชำระลงฐานข้อมูล
+  /// ผู้ใช้ที่ไม่มีรหัสพนักงานผูกกับบัญชีจึงบันทึกไม่ได้
+  void _save() {
+    if (_recorderEmpId == null) {
+      context.showErrorSnackBar(
+        'ไม่พบรหัสพนักงานของผู้ใช้ที่ล็อกอิน จึงบันทึกการรับชำระไม่ได้',
+      );
+      return;
+    }
+    _notReady('บันทึก');
   }
 
   /// ปุ่มที่ยังไม่ได้ทำ — แจ้งผู้ใช้แทนการกดแล้วเงียบ
@@ -630,7 +682,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
             'บันทึก',
             Icons.save_outlined,
             const Color(0xFF43A047),
-            () => _notReady('บันทึก'),
+            _save,
           ),
           const SizedBox(width: 8),
           _actionButton(
