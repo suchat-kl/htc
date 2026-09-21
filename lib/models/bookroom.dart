@@ -15,6 +15,9 @@ class Bookroom {
   final String? requestconference;
   final String? bookremark;
 
+  /// หมายเหตุของใบแจ้งค่าอาหาร แยกจาก [bookremark] ของใบจอง
+  final String? foodremark;
+
   /// ข้อมูลใบเสร็จของหน้ารับชำระเงิน — เล่มที่ เลขที่ และวันที่ (yyyy-MM-dd)
   final int? receivebook;
   final int? receiveno;
@@ -48,6 +51,7 @@ class Bookroom {
     this.requestroom,
     this.requestconference,
     this.bookremark,
+    this.foodremark,
     this.receivebook,
     this.receiveno,
     this.receivedate,
@@ -78,6 +82,7 @@ class Bookroom {
       requestroom: json['requestroom'] as String?,
       requestconference: json['requestconference'] as String?,
       bookremark: json['bookremark'] as String?,
+      foodremark: json['foodremark'] as String?,
       receivebook: json['receivebook'] as int?,
       receiveno: json['receiveno'] as int?,
       receivedate: json['receivedate'] as String?,
@@ -109,6 +114,7 @@ class Bookroom {
       'requestroom': requestroom,
       'requestconference': requestconference,
       'bookremark': bookremark,
+      'foodremark': foodremark,
       'receivebook': receivebook,
       'receiveno': receiveno,
       'receivedate': receivedate,

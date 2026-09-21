@@ -161,7 +161,8 @@ class _FoodInvoiceScreenState extends State<FoodInvoiceScreen> {
         _booking = booking;
         _foodtypes = foodtypes;
         _lines = lines;
-        _remarkCtrl.text = booking.bookremark ?? '';
+        // หมายเหตุของใบแจ้งค่าอาหารแยกช่องกับหมายเหตุของใบจอง
+        _remarkCtrl.text = booking.foodremark ?? '';
         _recorderEmpId = recorder.empId;
         _recorderName = recorder.name;
         _loading = false;
