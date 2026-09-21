@@ -26,6 +26,13 @@ class _PartScreenState extends State<PartScreen> {
   String? _filterType;
   String? _filterStatus;
 
+  /// ช่องค้นหา — ค้นหาเมื่อกดปุ่มค้นหาหรือกด Enter เท่านั้น ไม่โหลดทุกตัวอักษร
+  final TextEditingController _searchController = TextEditingController();
+
+  /// เปลี่ยนค่าเพื่อบังคับสร้างตัวกรอง dropdown ใหม่
+  /// ใช้ตอนผู้ใช้กดยกเลิกการยืนยัน เพื่อให้ dropdown กลับไปแสดงค่าเดิม
+  int _filterRevision = 0;
+
   /// แถวที่แก้ไขได้ในตาราง — สร้างใหม่ทุกครั้งที่โหลดข้อมูล
   final List<_EditRow> _rows = [];
 
@@ -74,6 +81,7 @@ class _PartScreenState extends State<PartScreen> {
 
   @override
   void dispose() {
+    _searchController.dispose();
     for (final r in _rows) {
       r.dispose();
     }
@@ -297,6 +305,57 @@ class _PartScreenState extends State<PartScreen> {
       confirmText: 'ทิ้งการแก้ไข',
     );
     return ok == true;
+  }
+
+  // ---------------------------------------------------------------------------
+  // ค้นหา — ทุกทางที่ทำให้โหลดข้อมูลใหม่ต้องถามก่อนถ้ายังมีการแก้ไขค้าง
+  // ---------------------------------------------------------------------------
+
+  /// ค้นหาตามคำในช่องค้นหา (กดปุ่มค้นหา หรือกด Enter)
+  Future<void> _runSearch() async {
+    if (!await _confirmDiscard()) return;
+    setState(() {
+      _searchName = _searchController.text;
+      _currentPage = 0;
+    });
+    _loadData();
+  }
+
+  /// ล้างคำค้นแล้วโหลดใหม่
+  Future<void> _clearSearch() async {
+    if (!await _confirmDiscard()) return;
+    _searchController.clear();
+    setState(() {
+      _searchName = null;
+      _currentPage = 0;
+    });
+    _loadData();
+  }
+
+  /// เปลี่ยนตัวกรองประเภท — กดยกเลิกแล้วค่าเดิมต้องไม่เปลี่ยน
+  Future<void> _changeFilterType(String? value) async {
+    if (!await _confirmDiscard()) {
+      setState(() => _filterRevision++);
+      return;
+    }
+    setState(() {
+      _filterType = value;
+      _currentPage = 0;
+    });
+    _loadData();
+  }
+
+  /// เปลี่ยนตัวกรองสถานะ — กดยกเลิกแล้วค่าเดิมต้องไม่เปลี่ยน
+  Future<void> _changeFilterStatus(String? value) async {
+    if (!await _confirmDiscard()) {
+      setState(() => _filterRevision++);
+      return;
+    }
+    setState(() {
+      _filterStatus = value;
+      _currentPage = 0;
+    });
+    _loadData();
   }
 
   Widget _headerCell(String text, double width, {TextAlign? align}) {
@@ -637,6 +696,7 @@ class _PartScreenState extends State<PartScreen> {
                           : (isDesktop ? 180 : double.infinity),
                       height: isDesktop ? 48 : 44, // ✅ Fixed height
                       child: TextField(
+                        controller: _searchController,
                         style: TextStyle(fontSize: bodyFontSize),
                         decoration: InputDecoration(
                           hintText: 'ค้นหารายการ...',
@@ -650,12 +710,39 @@ class _PartScreenState extends State<PartScreen> {
                             horizontal: 12,
                             vertical: isDesktop ? 14 : 12,
                           ), // ✅ Match dropdown
+                          suffixIcon: _searchController.text.isEmpty
+                              ? null
+                              : IconButton(
+                                  icon: Icon(Icons.clear, size: iconSize),
+                                  tooltip: 'ล้างคำค้น',
+                                  padding: EdgeInsets.zero,
+                                  constraints: const BoxConstraints(),
+                                  onPressed: _clearSearch,
+                                ),
                         ),
-                        onChanged: (v) {
-                          _searchName = v;
-                          _currentPage = 0;
-                          _loadData();
-                        },
+                        // พิมพ์แล้วไม่โหลดข้อมูล แค่ให้ปุ่มกากบาทโผล่/หาย
+                        onChanged: (_) => setState(() {}),
+                        onSubmitted: (_) => _runSearch(),
+                      ),
+                    ),
+
+                    // ปุ่มค้นหา — โหลดข้อมูลใหม่เมื่อกดเท่านั้น
+                    SizedBox(
+                      height: isDesktop ? 48 : 44,
+                      child: ElevatedButton(
+                        onPressed: _runSearch,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppTheme.primaryColor,
+                          foregroundColor: Colors.white,
+                          padding: EdgeInsets.symmetric(
+                            horizontal: isDesktop ? 24 : 18,
+                          ),
+                          textStyle: TextStyle(fontSize: bodyFontSize),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text('ค้นหา'),
                       ),
                     ),
 
@@ -666,6 +753,11 @@ class _PartScreenState extends State<PartScreen> {
                           : (isDesktop ? 140 : (screenWidth - 56) / 2 - 6),
                       height: isDesktop ? 48 : 44, // ✅ Same fixed height
                       child: DropdownButtonFormField<String?>(
+                        // key เปลี่ยนทุกครั้งที่ค่าเปลี่ยนหรือผู้ใช้กดยกเลิก
+                        // เพื่อให้ช่องกลับไปแสดงค่าที่ใช้กรองอยู่จริง
+                        key: ValueKey(
+                          'filter-type-$_filterType-$_filterRevision',
+                        ),
                         initialValue:
                             _filterType, // ✅ Use value, not initialValue
                         isExpanded: true,
@@ -700,11 +792,7 @@ class _PartScreenState extends State<PartScreen> {
                             ),
                           ),
                         ],
-                        onChanged: (v) {
-                          _filterType = v;
-                          _currentPage = 0;
-                          _loadData();
-                        },
+                        onChanged: _changeFilterType,
                       ),
                     ),
 
@@ -715,6 +803,11 @@ class _PartScreenState extends State<PartScreen> {
                           : (isDesktop ? 140 : (screenWidth - 56) / 2 - 6),
                       height: isDesktop ? 48 : 44,
                       child: DropdownButtonFormField<String?>(
+                        // key เปลี่ยนทุกครั้งที่ค่าเปลี่ยนหรือผู้ใช้กดยกเลิก
+                        // เพื่อให้ช่องกลับไปแสดงค่าที่ใช้กรองอยู่จริง
+                        key: ValueKey(
+                          'filter-status-$_filterStatus-$_filterRevision',
+                        ),
                         initialValue: _filterStatus,
                         isExpanded: true,
                         style: TextStyle(fontSize: bodyFontSize),
@@ -748,11 +841,7 @@ class _PartScreenState extends State<PartScreen> {
                             ),
                           ),
                         ],
-                        onChanged: (v) {
-                          _filterStatus = v;
-                          _currentPage = 0;
-                          _loadData();
-                        },
+                        onChanged: _changeFilterStatus,
                       ),
                     ),
 

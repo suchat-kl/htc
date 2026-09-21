@@ -26,6 +26,10 @@ class _SectionScreenState extends State<SectionScreen> {
   String? _searchName;
   int? _filterOrgID;
 
+  /// ช่องค้นหาชื่อกลุ่ม — ค้นหาเมื่อกดปุ่มค้นหาหรือกด Enter เท่านั้น
+  /// ไม่โหลดข้อมูลใหม่ทุกตัวอักษร เพราะจะทับการแก้ไขที่ยังไม่ได้บันทึก
+  final TextEditingController _searchController = TextEditingController();
+
   /// แถวที่แก้ไขได้ในตาราง — สร้างใหม่ทุกครั้งที่โหลดข้อมูล
   final List<_EditRow> _rows = [];
 
@@ -51,6 +55,7 @@ class _SectionScreenState extends State<SectionScreen> {
 
   @override
   void dispose() {
+    _searchController.dispose();
     for (final r in _rows) {
       r.dispose();
     }
@@ -309,6 +314,39 @@ class _SectionScreenState extends State<SectionScreen> {
       confirmText: 'ทิ้งการแก้ไข',
     );
     return ok == true;
+  }
+
+  /// ค้นหาตามคำที่พิมพ์ไว้ — ถามก่อนถ้ายังมีการแก้ไขค้าง
+  Future<void> _runSearch() async {
+    if (!await _confirmDiscard()) return;
+    final keyword = _searchController.text.trim();
+    setState(() {
+      _searchName = keyword.isEmpty ? null : keyword;
+      _currentPage = 0;
+    });
+    _loadData();
+  }
+
+  /// ล้างคำค้นแล้วโหลดใหม่ — ถามก่อนถ้ายังมีการแก้ไขค้าง
+  Future<void> _clearSearch() async {
+    if (!await _confirmDiscard()) return;
+    setState(() {
+      _searchController.clear();
+      _searchName = null;
+      _currentPage = 0;
+    });
+    _loadData();
+  }
+
+  /// เปลี่ยนตัวกรองสังกัด — ถ้าผู้ใช้ไม่ยอมทิ้งการแก้ไข ค่าในช่องจะไม่เปลี่ยน
+  Future<void> _changeOrgFilter(int? orgID) async {
+    if (orgID == _filterOrgID) return;
+    if (!await _confirmDiscard()) return;
+    setState(() {
+      _filterOrgID = orgID;
+      _currentPage = 0;
+    });
+    _loadData();
   }
 
   /// รายการสังกัดของช่องเลือกในแถว — เติมค่าเดิมเข้าไปด้วยถ้ายังไม่มีในรายการ
@@ -647,6 +685,7 @@ class _SectionScreenState extends State<SectionScreen> {
                           ? 250
                           : (isDesktop ? 220 : double.infinity),
                       child: TextField(
+                        controller: _searchController,
                         style: TextStyle(fontSize: bodyFontSize),
                         decoration: InputDecoration(
                           hintText: 'ค้นหาชื่อกลุ่ม...',
@@ -660,23 +699,43 @@ class _SectionScreenState extends State<SectionScreen> {
                             horizontal: 12,
                             vertical: isDesktop ? 12 : 8,
                           ),
+                          suffixIcon: _searchController.text.isNotEmpty
+                              ? IconButton(
+                                  icon: Icon(Icons.clear, size: iconSize),
+                                  tooltip: 'ล้างคำค้น',
+                                  onPressed: _clearSearch,
+                                )
+                              : null,
                         ),
-                        onChanged: (v) {
-                          _searchName = v;
-                          _currentPage = 0;
-                          _loadData();
-                        },
+                        // ค้นหาเมื่อกด Enter เท่านั้น ไม่โหลดใหม่ทุกตัวอักษร
+                        onSubmitted: (_) => _runSearch(),
                       ),
+                    ),
+                    // ปุ่มค้นหา — ถามก่อนถ้ายังมีการแก้ไขที่ยังไม่ได้บันทึก
+                    ElevatedButton(
+                      onPressed: _runSearch,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.primaryColor,
+                        foregroundColor: Colors.white,
+                        padding: EdgeInsets.symmetric(
+                          horizontal: isDesktop ? 24 : 20,
+                          vertical: isDesktop ? 16 : 14,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        textStyle: TextStyle(fontSize: bodyFontSize),
+                      ),
+                      child: const Text('ค้นหา'),
                     ),
                     SizedBox(
                       width: isLargeScreen
                           ? 280
                           : (isDesktop ? 250 : double.infinity),
-                      child: DropdownButtonFormField<int?>(
-                        initialValue: _filterOrgID,
-                        isExpanded: true,
-                        isDense: true,
-                        style: TextStyle(fontSize: bodyFontSize),
+                      // ใช้ DropdownButton ที่คุมค่าเองได้ เพื่อให้ค่าในช่องไม่เปลี่ยน
+                      // เมื่อผู้ใช้กดยกเลิกการยืนยันทิ้งการแก้ไข
+                      child: InputDecorator(
+                        isEmpty: _filterOrgID == null,
                         decoration: InputDecoration(
                           hintText: 'สังกัด',
                           border: OutlineInputBorder(
@@ -689,30 +748,37 @@ class _SectionScreenState extends State<SectionScreen> {
                             vertical: isDesktop ? 12 : 8,
                           ),
                         ),
-                        items: [
-                          DropdownMenuItem<int?>(
-                            value: null,
-                            child: Text(
-                              'ทั้งหมด',
-                              style: TextStyle(fontSize: bodyFontSize),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<int?>(
+                            value: _filterOrgID,
+                            isExpanded: true,
+                            isDense: true,
+                            style: TextStyle(
+                              fontSize: bodyFontSize,
+                              color: Colors.black87,
                             ),
-                          ),
-                          ..._organizations.map(
-                            (o) => DropdownMenuItem<int?>(
-                              value: o.orgID,
-                              child: Text(
-                                o.orgName ?? '',
-                                style: TextStyle(fontSize: bodyFontSize),
-                                overflow: TextOverflow.ellipsis,
+                            items: [
+                              DropdownMenuItem<int?>(
+                                value: null,
+                                child: Text(
+                                  'ทั้งหมด',
+                                  style: TextStyle(fontSize: bodyFontSize),
+                                ),
                               ),
-                            ),
+                              ..._organizations.map(
+                                (o) => DropdownMenuItem<int?>(
+                                  value: o.orgID,
+                                  child: Text(
+                                    o.orgName ?? '',
+                                    style: TextStyle(fontSize: bodyFontSize),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ),
+                            ],
+                            onChanged: _changeOrgFilter,
                           ),
-                        ],
-                        onChanged: (v) {
-                          _filterOrgID = v;
-                          _currentPage = 0;
-                          _loadData();
-                        },
+                        ),
                       ),
                     ),
                     // ตัวเลือกแถวต่อหน้าย้ายไปอยู่ในแถบแบ่งหน้า AppPagination ด้านล่างแล้ว

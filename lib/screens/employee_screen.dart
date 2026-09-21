@@ -29,6 +29,17 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
   int? _filterOrgID;
   int? _filterUserID;
 
+  // ช่องกรอกของตัวกรอง — เก็บเป็น controller เพราะค้นหาเมื่อกดปุ่มเท่านั้น
+  final TextEditingController _searchNameCtrl = TextEditingController();
+  final TextEditingController _searchLastnameCtrl = TextEditingController();
+
+  /// ตัวนับสำหรับสร้าง dropdown ตัวกรองใหม่
+  ///
+  /// DropdownButtonFormField เก็บค่าที่เลือกไว้ในตัวเอง ถ้าผู้ใช้กดยกเลิก
+  /// การยืนยันแล้วเราไม่ทำอะไรต่อ ช่องจะยังแสดงค่าที่เพิ่งเลือก
+  /// จึงเพิ่มตัวนับนี้เพื่อเปลี่ยน key ให้ widget ถูกสร้างใหม่ด้วยค่าเดิม
+  int _filterEpoch = 0;
+
   /// แถวที่แก้ไขได้ในตาราง — สร้างใหม่ทุกครั้งที่โหลดข้อมูล
   final List<_EditRow> _rows = [];
 
@@ -73,6 +84,8 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
 
   @override
   void dispose() {
+    _searchNameCtrl.dispose();
+    _searchLastnameCtrl.dispose();
     for (final r in _rows) {
       r.dispose();
     }
@@ -359,6 +372,25 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
       confirmText: 'ทิ้งการแก้ไข',
     );
     return ok == true;
+  }
+
+  /// ค้นหาตามค่าที่กรอกไว้ในช่องกรอง — ถามก่อนถ้ายังมีการแก้ไขค้าง
+  ///
+  /// เรียกเมื่อกดปุ่มค้นหา หรือกด Enter ในช่องกรอกเท่านั้น
+  /// ไม่ได้ค้นหาทุกตัวอักษรที่พิมพ์ เพราะจะโหลดทับการแก้ไขที่ยังไม่ได้บันทึก
+  Future<void> _runSearch() async {
+    if (!await _confirmDiscard()) return;
+    setState(() {
+      _searchName = _searchNameCtrl.text.trim();
+      _searchLastname = _searchLastnameCtrl.text.trim();
+      _currentPage = 0;
+    });
+    _loadData();
+  }
+
+  /// ผู้ใช้กดยกเลิกการยืนยัน — สร้าง dropdown ตัวกรองใหม่ให้กลับเป็นค่าเดิม
+  void _cancelFilterChange() {
+    setState(() => _filterEpoch++);
   }
 
   /// รายการสังกัดของ dropdown ในแถว
@@ -732,6 +764,7 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
                           ? 200
                           : (isDesktop ? 170 : double.infinity),
                       child: TextField(
+                        controller: _searchNameCtrl,
                         style: TextStyle(fontSize: bodyFontSize),
                         decoration: InputDecoration(
                           hintText: 'ชื่อ...',
@@ -746,11 +779,8 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
                             vertical: isDesktop ? 12 : 8,
                           ),
                         ),
-                        onChanged: (v) {
-                          _searchName = v;
-                          _currentPage = 0;
-                          _loadData();
-                        },
+                        // ค้นหาเมื่อกด Enter เท่านั้น
+                        onSubmitted: (_) => _runSearch(),
                       ),
                     ),
                     SizedBox(
@@ -758,6 +788,7 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
                           ? 200
                           : (isDesktop ? 170 : double.infinity),
                       child: TextField(
+                        controller: _searchLastnameCtrl,
                         style: TextStyle(fontSize: bodyFontSize),
                         decoration: InputDecoration(
                           hintText: 'นามสกุล...',
@@ -771,11 +802,8 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
                             vertical: isDesktop ? 12 : 8,
                           ),
                         ),
-                        onChanged: (v) {
-                          _searchLastname = v;
-                          _currentPage = 0;
-                          _loadData();
-                        },
+                        // ค้นหาเมื่อกด Enter เท่านั้น
+                        onSubmitted: (_) => _runSearch(),
                       ),
                     ),
                     SizedBox(
@@ -783,6 +811,7 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
                           ? 250
                           : (isDesktop ? 220 : double.infinity),
                       child: DropdownButtonFormField<int?>(
+                        key: ValueKey('filter-org-$_filterEpoch'),
                         initialValue: _filterOrgID,
                         isExpanded: true,
                         isDense: true,
@@ -818,11 +847,37 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
                             ),
                           ),
                         ],
-                        onChanged: (v) {
-                          _filterOrgID = v;
-                          _currentPage = 0;
+                        onChanged: (v) async {
+                          // ถามก่อนทิ้งการแก้ไข ถ้ายกเลิกต้องไม่เปลี่ยนค่าในช่อง
+                          if (!await _confirmDiscard()) {
+                            _cancelFilterChange();
+                            return;
+                          }
+                          setState(() {
+                            _filterOrgID = v;
+                            _currentPage = 0;
+                          });
                           _loadData();
                         },
+                      ),
+                    ),
+                    // ปุ่มค้นหา — ทางเดียวที่โหลดข้อมูลใหม่จากช่องกรอก
+                    ElevatedButton(
+                      onPressed: _runSearch,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.primaryColor,
+                        foregroundColor: Colors.white,
+                        padding: EdgeInsets.symmetric(
+                          horizontal: isDesktop ? 24 : 20,
+                          vertical: isDesktop ? 16 : 12,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: Text(
+                        'ค้นหา',
+                        style: TextStyle(fontSize: bodyFontSize),
                       ),
                     ),
                     // ตัวเลือกแถวต่อหน้าย้ายไปอยู่ในแถบแบ่งหน้า AppPagination ด้านล่างแล้ว

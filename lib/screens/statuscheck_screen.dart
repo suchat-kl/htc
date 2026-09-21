@@ -632,7 +632,8 @@ class _StatusCheckScreenState extends State<StatusCheckScreen> {
                             suffixIcon: _searchController.text.isNotEmpty
                                 ? IconButton(
                                     icon: const Icon(Icons.clear),
-                                    onPressed: () {
+                                    onPressed: () async {
+                                      if (!await _confirmDiscard()) return;
                                       _searchController.clear();
                                       _searchKeyword = '';
                                       _currentPage = 0;
@@ -641,7 +642,8 @@ class _StatusCheckScreenState extends State<StatusCheckScreen> {
                                   )
                                 : null,
                           ),
-                          onSubmitted: (value) {
+                          onSubmitted: (value) async {
+                            if (!await _confirmDiscard()) return;
                             setState(() {
                               _searchKeyword = value.trim();
                               _currentPage = 0;
@@ -652,7 +654,8 @@ class _StatusCheckScreenState extends State<StatusCheckScreen> {
                       ),
                       const SizedBox(width: 12),
                       ElevatedButton(
-                        onPressed: () {
+                        onPressed: () async {
+                          if (!await _confirmDiscard()) return;
                           setState(() {
                             _searchKeyword = _searchController.text.trim();
                             _currentPage = 0;

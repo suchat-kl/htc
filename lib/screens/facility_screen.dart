@@ -28,6 +28,13 @@ class _FacilityScreenState extends State<FacilityScreen> {
   // String? _filterType;
   String? _filterStatus;
 
+  /// ช่องค้นหา — ค้นเมื่อกดปุ่มค้นหาหรือกด Enter เท่านั้น
+  final TextEditingController _searchCtrl = TextEditingController();
+
+  /// นับรอบรีเซ็ตตัวกรอง — เปลี่ยนค่าเพื่อบังคับสร้าง dropdown ใหม่
+  /// ให้กลับไปแสดงค่าเดิมเมื่อผู้ใช้ไม่ยอมทิ้งการแก้ไข
+  int _filterEpoch = 0;
+
   /// แถวที่แก้ไขได้ในตาราง — สร้างใหม่ทุกครั้งที่โหลดข้อมูล
   final List<_EditRow> _rows = [];
 
@@ -45,6 +52,7 @@ class _FacilityScreenState extends State<FacilityScreen> {
 
   @override
   void dispose() {
+    _searchCtrl.dispose();
     for (final r in _rows) {
       r.dispose();
     }
@@ -283,6 +291,41 @@ class _FacilityScreenState extends State<FacilityScreen> {
       confirmText: 'ทิ้งการแก้ไข',
     );
     return ok == true;
+  }
+
+  /// ค้นหาตามคำในช่องค้นหา — เรียกจากปุ่มค้นหาและการกด Enter
+  Future<void> _search() async {
+    if (!await _confirmDiscard()) return;
+    setState(() {
+      _searchName = _searchCtrl.text;
+      _currentPage = 0;
+    });
+    _loadData();
+  }
+
+  /// ล้างคำค้นแล้วโหลดใหม่
+  Future<void> _clearSearch() async {
+    if (!await _confirmDiscard()) return;
+    setState(() {
+      _searchCtrl.clear();
+      _searchName = '';
+      _currentPage = 0;
+    });
+    _loadData();
+  }
+
+  /// เปลี่ยนตัวกรองสถานะ — ถ้าไม่ยอมทิ้งการแก้ไข ให้ dropdown กลับไปแสดงค่าเดิม
+  Future<void> _changeStatusFilter(String? value) async {
+    if (value == _filterStatus) return;
+    if (!await _confirmDiscard()) {
+      setState(() => _filterEpoch++);
+      return;
+    }
+    setState(() {
+      _filterStatus = value;
+      _currentPage = 0;
+    });
+    _loadData();
   }
 
   /// หนึ่งแถวของตารางที่แก้ไขได้
@@ -618,6 +661,7 @@ class _FacilityScreenState extends State<FacilityScreen> {
                           ? 350
                           : (isDesktop ? 280 : double.infinity),
                       child: TextField(
+                        controller: _searchCtrl,
                         style: TextStyle(fontSize: bodyFontSize),
                         decoration: InputDecoration(
                           hintText: 'ค้นหารายการ...',
@@ -632,13 +676,33 @@ class _FacilityScreenState extends State<FacilityScreen> {
                             horizontal: 16,
                             vertical: isDesktop ? 14 : 10,
                           ),
+                          suffixIcon: _searchCtrl.text.isNotEmpty
+                              ? IconButton(
+                                  icon: Icon(Icons.clear, size: iconSize),
+                                  tooltip: 'ล้างคำค้น',
+                                  onPressed: _clearSearch,
+                                )
+                              : null,
                         ),
-                        onChanged: (v) {
-                          _searchName = v;
-                          _currentPage = 0;
-                          _loadData();
-                        },
+                        // พิมพ์แล้วให้ปุ่มกากบาทโผล่/หาย แต่ยังไม่โหลดข้อมูล
+                        onChanged: (_) => setState(() {}),
+                        onSubmitted: (_) => _search(),
                       ),
+                    ),
+
+                    // ปุ่มค้นหา — โหลดข้อมูลใหม่เมื่อกดเท่านั้น
+                    ElevatedButton(
+                      onPressed: _search,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.primaryColor,
+                        foregroundColor: Colors.white,
+                        padding: buttonPadding,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        textStyle: TextStyle(fontSize: bodyFontSize),
+                      ),
+                      child: const Text('ค้นหา'),
                     ),
 
                     // Status filter
@@ -647,6 +711,7 @@ class _FacilityScreenState extends State<FacilityScreen> {
                           ? 200
                           : (isDesktop ? 180 : (screenWidth - 56) / 2 - 8),
                       child: DropdownButtonFormField<String>(
+                        key: ValueKey('fstatus-$_filterStatus-$_filterEpoch'),
                         initialValue: _filterStatus,
                         style: TextStyle(
                           fontSize: bodyFontSize,
@@ -688,11 +753,7 @@ class _FacilityScreenState extends State<FacilityScreen> {
                             ),
                           ),
                         ],
-                        onChanged: (v) {
-                          _filterStatus = v;
-                          _currentPage = 0;
-                          _loadData();
-                        },
+                        onChanged: _changeStatusFilter,
                       ),
                     ),
 

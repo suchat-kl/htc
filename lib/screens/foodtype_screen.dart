@@ -23,6 +23,13 @@ class _FoodtypeScreenState extends State<FoodtypeScreen> {
   String? _fName;
   int? _fGroup;
 
+  /// ช่องค้นหา — ค้นเมื่อกดปุ่มค้นหาหรือกด Enter เท่านั้น
+  final TextEditingController _searchCtrl = TextEditingController();
+
+  /// นับรอบรีเซ็ตตัวกรอง — เปลี่ยนค่าเพื่อบังคับสร้าง dropdown ใหม่
+  /// ให้กลับไปแสดงค่าเดิมเมื่อผู้ใช้ไม่ยอมทิ้งการแก้ไข
+  int _filterEpoch = 0;
+
   /// แถวที่แก้ไขได้ในตาราง — สร้างใหม่ทุกครั้งที่โหลดข้อมูล
   final List<_EditRow> _rows = [];
 
@@ -40,6 +47,7 @@ class _FoodtypeScreenState extends State<FoodtypeScreen> {
 
   @override
   void dispose() {
+    _searchCtrl.dispose();
     for (final r in _rows) {
       r.dispose();
     }
@@ -272,6 +280,41 @@ class _FoodtypeScreenState extends State<FoodtypeScreen> {
       confirmText: 'ทิ้งการแก้ไข',
     );
     return ok == true;
+  }
+
+  /// ค้นหาตามคำในช่องค้นหา — เรียกจากปุ่มค้นหาและการกด Enter
+  Future<void> _search() async {
+    if (!await _confirmDiscard()) return;
+    setState(() {
+      _fName = _searchCtrl.text;
+      _cp = 0;
+    });
+    _load();
+  }
+
+  /// ล้างคำค้นแล้วโหลดใหม่
+  Future<void> _clearSearch() async {
+    if (!await _confirmDiscard()) return;
+    setState(() {
+      _searchCtrl.clear();
+      _fName = '';
+      _cp = 0;
+    });
+    _load();
+  }
+
+  /// เปลี่ยนตัวกรองกลุ่ม — ถ้าไม่ยอมทิ้งการแก้ไข ให้ dropdown กลับไปแสดงค่าเดิม
+  Future<void> _changeGroupFilter(int? value) async {
+    if (value == _fGroup) return;
+    if (!await _confirmDiscard()) {
+      setState(() => _filterEpoch++);
+      return;
+    }
+    setState(() {
+      _fGroup = value;
+      _cp = 0;
+    });
+    _load();
   }
 
   /// หนึ่งแถวของตารางที่แก้ไขได้
@@ -541,6 +584,7 @@ class _FoodtypeScreenState extends State<FoodtypeScreen> {
                     SizedBox(
                       width: isL ? 200 : (isD ? 170 : double.infinity),
                       child: TextField(
+                        controller: _searchCtrl,
                         style: TextStyle(fontSize: bf - 1),
                         decoration: InputDecoration(
                           hintText: 'ค้นหารายการ...',
@@ -554,17 +598,39 @@ class _FoodtypeScreenState extends State<FoodtypeScreen> {
                             horizontal: 10,
                             vertical: 8,
                           ),
+                          suffixIcon: _searchCtrl.text.isNotEmpty
+                              ? IconButton(
+                                  icon: const Icon(Icons.clear, size: 18),
+                                  tooltip: 'ล้างคำค้น',
+                                  onPressed: _clearSearch,
+                                )
+                              : null,
                         ),
-                        onChanged: (v) {
-                          _fName = v;
-                          _cp = 0;
-                          _load();
-                        },
+                        // พิมพ์แล้วให้ปุ่มกากบาทโผล่/หาย แต่ยังไม่โหลดข้อมูล
+                        onChanged: (_) => setState(() {}),
+                        onSubmitted: (_) => _search(),
                       ),
+                    ),
+                    ElevatedButton(
+                      onPressed: _search,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.primaryColor,
+                        foregroundColor: Colors.white,
+                        padding: EdgeInsets.symmetric(
+                          horizontal: isD ? 20 : 14,
+                          vertical: isD ? 14 : 12,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        textStyle: TextStyle(fontSize: bf - 1),
+                      ),
+                      child: const Text('ค้นหา'),
                     ),
                     SizedBox(
                       width: isL ? 170 : (isD ? 140 : 120),
                       child: DropdownButtonFormField<int?>(
+                        key: ValueKey('fgroup-$_fGroup-$_filterEpoch'),
                         initialValue: _fGroup,
                         isExpanded: true,
                         style: TextStyle(fontSize: bf - 1),
@@ -598,11 +664,7 @@ class _FoodtypeScreenState extends State<FoodtypeScreen> {
                             child: Text('อาหารว่างและเครื่องดื่ม'),
                           ),
                         ],
-                        onChanged: (v) {
-                          _fGroup = v;
-                          _cp = 0;
-                          _load();
-                        },
+                        onChanged: _changeGroupFilter,
                       ),
                     ),
                     // ตัวเลือกแถวต่อหน้าย้ายไปอยู่ในแถบแบ่งหน้า (AppPagination) แล้ว

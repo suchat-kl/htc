@@ -625,7 +625,9 @@ class _DocumentStatusScreenState extends State<DocumentStatusScreen> {
                             suffixIcon: _searchController.text.isNotEmpty
                                 ? IconButton(
                                     icon: const Icon(Icons.clear),
-                                    onPressed: () {
+                                    onPressed: () async {
+                                      // ถามก่อนเพราะการล้างคำค้นทำให้โหลดข้อมูลใหม่
+                                      if (!await _confirmDiscard()) return;
                                       _searchController.clear();
                                       _searchKeyword = '';
                                       _currentPage = 0;
@@ -634,7 +636,10 @@ class _DocumentStatusScreenState extends State<DocumentStatusScreen> {
                                   )
                                 : null,
                           ),
-                          onSubmitted: (value) {
+                          // พิมพ์แล้วให้ปุ่มกากบาทโผล่/หาย แต่ยังไม่โหลดข้อมูล
+                          onChanged: (_) => setState(() {}),
+                          onSubmitted: (value) async {
+                            if (!await _confirmDiscard()) return;
                             setState(() {
                               _searchKeyword = value.trim();
                               _currentPage = 0;
@@ -645,7 +650,8 @@ class _DocumentStatusScreenState extends State<DocumentStatusScreen> {
                       ),
                       const SizedBox(width: 12),
                       ElevatedButton(
-                        onPressed: () {
+                        onPressed: () async {
+                          if (!await _confirmDiscard()) return;
                           setState(() {
                             _searchKeyword = _searchController.text.trim();
                             _currentPage = 0;

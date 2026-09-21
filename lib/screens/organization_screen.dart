@@ -26,6 +26,11 @@ class _OrganizationScreenState extends State<OrganizationScreen> {
   String? _searchName;
   String? _filterLevel;
 
+  /// ช่องค้นหา — ค้นหาเมื่อกดปุ่มค้นหาหรือกด Enter เท่านั้น ไม่โหลดทุกตัวอักษร
+  final TextEditingController _codeSearchCtrl = TextEditingController();
+  final TextEditingController _nameSearchCtrl = TextEditingController();
+  final TextEditingController _levelSearchCtrl = TextEditingController();
+
   /// แถวที่แก้ไขได้ในตาราง — สร้างใหม่ทุกครั้งที่โหลดข้อมูล
   final List<_EditRow> _rows = [];
 
@@ -55,6 +60,9 @@ class _OrganizationScreenState extends State<OrganizationScreen> {
 
   @override
   void dispose() {
+    _codeSearchCtrl.dispose();
+    _nameSearchCtrl.dispose();
+    _levelSearchCtrl.dispose();
     for (final r in _rows) {
       r.dispose();
     }
@@ -301,6 +309,37 @@ class _OrganizationScreenState extends State<OrganizationScreen> {
       confirmText: 'ทิ้งการแก้ไข',
     );
     return ok == true;
+  }
+
+  // ---------------------------------------------------------------------------
+  // ค้นหา — ทุกทางที่ทำให้โหลดข้อมูลใหม่ต้องถามก่อนถ้ายังมีการแก้ไขค้าง
+  // ---------------------------------------------------------------------------
+
+  /// ค้นหาตามค่าในช่องค้นหาทั้งสามช่อง (กดปุ่มค้นหา หรือกด Enter)
+  Future<void> _runSearch() async {
+    if (!await _confirmDiscard()) return;
+    setState(() {
+      _searchCode = _codeSearchCtrl.text;
+      _searchName = _nameSearchCtrl.text;
+      _filterLevel = _levelSearchCtrl.text;
+      _currentPage = 0;
+    });
+    _loadData();
+  }
+
+  /// ล้างคำค้นทั้งหมดแล้วโหลดใหม่
+  Future<void> _clearSearch() async {
+    if (!await _confirmDiscard()) return;
+    _codeSearchCtrl.clear();
+    _nameSearchCtrl.clear();
+    _levelSearchCtrl.clear();
+    setState(() {
+      _searchCode = null;
+      _searchName = null;
+      _filterLevel = null;
+      _currentPage = 0;
+    });
+    _loadData();
   }
 
   Widget _headerCell(String text, double width, {TextAlign? align}) {
@@ -616,6 +655,7 @@ class _OrganizationScreenState extends State<OrganizationScreen> {
                           ? 200
                           : (isDesktop ? 170 : double.infinity),
                       child: TextField(
+                        controller: _codeSearchCtrl,
                         style: TextStyle(fontSize: bodyFontSize),
                         decoration: InputDecoration(
                           hintText: 'ค้นหารหัส...',
@@ -630,11 +670,8 @@ class _OrganizationScreenState extends State<OrganizationScreen> {
                             vertical: isDesktop ? 12 : 8,
                           ),
                         ),
-                        onChanged: (v) {
-                          _searchCode = v;
-                          _currentPage = 0;
-                          _loadData();
-                        },
+                        // พิมพ์แล้วไม่โหลดข้อมูล ค้นหาเมื่อกดปุ่มหรือกด Enter
+                        onSubmitted: (_) => _runSearch(),
                       ),
                     ),
                     SizedBox(
@@ -642,6 +679,7 @@ class _OrganizationScreenState extends State<OrganizationScreen> {
                           ? 250
                           : (isDesktop ? 220 : double.infinity),
                       child: TextField(
+                        controller: _nameSearchCtrl,
                         style: TextStyle(fontSize: bodyFontSize),
                         decoration: InputDecoration(
                           hintText: 'ค้นหาชื่อ...',
@@ -655,11 +693,8 @@ class _OrganizationScreenState extends State<OrganizationScreen> {
                             vertical: isDesktop ? 12 : 8,
                           ),
                         ),
-                        onChanged: (v) {
-                          _searchName = v;
-                          _currentPage = 0;
-                          _loadData();
-                        },
+                        // พิมพ์แล้วไม่โหลดข้อมูล ค้นหาเมื่อกดปุ่มหรือกด Enter
+                        onSubmitted: (_) => _runSearch(),
                       ),
                     ),
 
@@ -668,6 +703,7 @@ class _OrganizationScreenState extends State<OrganizationScreen> {
                           ? 150
                           : (isDesktop ? 130 : (screenWidth - 56) / 2 - 6),
                       child: TextField(
+                        controller: _levelSearchCtrl,
                         style: TextStyle(fontSize: bodyFontSize),
                         decoration: InputDecoration(
                           hintText: 'ค้นหาระดับ...',
@@ -681,12 +717,45 @@ class _OrganizationScreenState extends State<OrganizationScreen> {
                             vertical: isDesktop ? 12 : 8,
                           ),
                         ),
-                        onChanged: (v) {
-                          _filterLevel = v;
-                          _currentPage = 0;
-                          _loadData();
-                        },
+                        // พิมพ์แล้วไม่โหลดข้อมูล ค้นหาเมื่อกดปุ่มหรือกด Enter
+                        onSubmitted: (_) => _runSearch(),
                       ),
+                    ),
+
+                    // ปุ่มค้นหา — โหลดข้อมูลใหม่เมื่อกดเท่านั้น
+                    ElevatedButton(
+                      onPressed: _runSearch,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.primaryColor,
+                        foregroundColor: Colors.white,
+                        padding: EdgeInsets.symmetric(
+                          horizontal: isDesktop ? 24 : 18,
+                          vertical: isDesktop ? 16 : 12,
+                        ),
+                        textStyle: TextStyle(fontSize: bodyFontSize),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text('ค้นหา'),
+                    ),
+
+                    // ปุ่มล้างคำค้นทั้งหมด
+                    OutlinedButton(
+                      onPressed: _clearSearch,
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppTheme.primaryColor,
+                        side: BorderSide(color: AppTheme.primaryColor),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: isDesktop ? 20 : 16,
+                          vertical: isDesktop ? 16 : 12,
+                        ),
+                        textStyle: TextStyle(fontSize: bodyFontSize),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text('ล้าง'),
                     ),
 
                     // ตัวเลือกแถวต่อหน้าย้ายไปอยู่ในแถบแบ่งหน้า AppPagination ด้านล่างแล้ว

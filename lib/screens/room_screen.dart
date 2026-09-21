@@ -31,6 +31,18 @@ class _RoomScreenState extends State<RoomScreen> {
   int? _filterFloor;
   String? _filterStatus;
 
+  // ช่องกรอกของตัวกรอง — เก็บเป็น controller เพราะค้นหาเมื่อกดปุ่มเท่านั้น
+  final TextEditingController _searchRoomNOCtrl = TextEditingController();
+  final TextEditingController _filterBuildingCtrl = TextEditingController();
+  final TextEditingController _filterFloorCtrl = TextEditingController();
+
+  /// ตัวนับสำหรับสร้าง dropdown ตัวกรองใหม่
+  ///
+  /// DropdownButtonFormField เก็บค่าที่เลือกไว้ในตัวเอง ถ้าผู้ใช้กดยกเลิก
+  /// การยืนยันแล้วเราไม่ทำอะไรต่อ ช่องจะยังแสดงค่าที่เพิ่งเลือก
+  /// จึงเพิ่มตัวนับนี้เพื่อเปลี่ยน key ให้ widget ถูกสร้างใหม่ด้วยค่าเดิม
+  int _filterEpoch = 0;
+
   /// แถวที่แก้ไขได้ในตาราง — สร้างใหม่ทุกครั้งที่โหลดข้อมูล
   final List<_EditRow> _rows = [];
 
@@ -79,6 +91,9 @@ class _RoomScreenState extends State<RoomScreen> {
 
   @override
   void dispose() {
+    _searchRoomNOCtrl.dispose();
+    _filterBuildingCtrl.dispose();
+    _filterFloorCtrl.dispose();
     for (final r in _rows) {
       r.dispose();
     }
@@ -352,6 +367,26 @@ class _RoomScreenState extends State<RoomScreen> {
       confirmText: 'ทิ้งการแก้ไข',
     );
     return ok == true;
+  }
+
+  /// ค้นหาตามค่าที่กรอกไว้ในช่องกรอง — ถามก่อนถ้ายังมีการแก้ไขค้าง
+  ///
+  /// เรียกเมื่อกดปุ่มค้นหา หรือกด Enter ในช่องกรอกเท่านั้น
+  /// ไม่ได้ค้นหาทุกตัวอักษรที่พิมพ์ เพราะจะโหลดทับการแก้ไขที่ยังไม่ได้บันทึก
+  Future<void> _runSearch() async {
+    if (!await _confirmDiscard()) return;
+    setState(() {
+      _searchRoomNO = _searchRoomNOCtrl.text.trim();
+      _filterBuilding = int.tryParse(_filterBuildingCtrl.text.trim());
+      _filterFloor = int.tryParse(_filterFloorCtrl.text.trim());
+      _currentPage = 0;
+    });
+    _loadData();
+  }
+
+  /// ผู้ใช้กดยกเลิกการยืนยัน — สร้าง dropdown ตัวกรองใหม่ให้กลับเป็นค่าเดิม
+  void _cancelFilterChange() {
+    setState(() => _filterEpoch++);
   }
 
   /// รายการประเภทห้องของ dropdown ในแถว
@@ -733,6 +768,7 @@ class _RoomScreenState extends State<RoomScreen> {
                           ? 200
                           : (isDesktop ? 170 : double.infinity),
                       child: TextField(
+                        controller: _searchRoomNOCtrl,
                         style: TextStyle(fontSize: bodyFontSize),
                         decoration: InputDecoration(
                           hintText: 'ค้นหาเลขห้อง...',
@@ -747,11 +783,8 @@ class _RoomScreenState extends State<RoomScreen> {
                             vertical: isDesktop ? 12 : 8,
                           ),
                         ),
-                        onChanged: (v) {
-                          _searchRoomNO = v;
-                          _currentPage = 0;
-                          _loadData();
-                        },
+                        // ค้นหาเมื่อกด Enter เท่านั้น
+                        onSubmitted: (_) => _runSearch(),
                       ),
                     ),
                     SizedBox(
@@ -759,6 +792,7 @@ class _RoomScreenState extends State<RoomScreen> {
                           ? 200
                           : (isDesktop ? 170 : (screenWidth - 56) / 2 - 6),
                       child: DropdownButtonFormField<int?>(
+                        key: ValueKey('filter-type-$_filterEpoch'),
                         initialValue: _filterRoomTypeID,
                         style: TextStyle(fontSize: bodyFontSize),
                         decoration: InputDecoration(
@@ -791,9 +825,16 @@ class _RoomScreenState extends State<RoomScreen> {
                             ),
                           ),
                         ],
-                        onChanged: (v) {
-                          _filterRoomTypeID = v;
-                          _currentPage = 0;
+                        onChanged: (v) async {
+                          // ถามก่อนทิ้งการแก้ไข ถ้ายกเลิกต้องไม่เปลี่ยนค่าในช่อง
+                          if (!await _confirmDiscard()) {
+                            _cancelFilterChange();
+                            return;
+                          }
+                          setState(() {
+                            _filterRoomTypeID = v;
+                            _currentPage = 0;
+                          });
                           _loadData();
                         },
                       ),
@@ -803,6 +844,7 @@ class _RoomScreenState extends State<RoomScreen> {
                           ? 120
                           : (isDesktop ? 100 : (screenWidth - 56) / 2 - 6),
                       child: TextField(
+                        controller: _filterBuildingCtrl,
                         style: TextStyle(fontSize: bodyFontSize),
                         keyboardType: TextInputType.number,
                         decoration: InputDecoration(
@@ -817,11 +859,8 @@ class _RoomScreenState extends State<RoomScreen> {
                             vertical: isDesktop ? 12 : 8,
                           ),
                         ),
-                        onChanged: (v) {
-                          _filterBuilding = int.tryParse(v);
-                          _currentPage = 0;
-                          _loadData();
-                        },
+                        // ค้นหาเมื่อกด Enter เท่านั้น
+                        onSubmitted: (_) => _runSearch(),
                       ),
                     ),
                     SizedBox(
@@ -829,6 +868,7 @@ class _RoomScreenState extends State<RoomScreen> {
                           ? 120
                           : (isDesktop ? 100 : (screenWidth - 56) / 2 - 6),
                       child: TextField(
+                        controller: _filterFloorCtrl,
                         style: TextStyle(fontSize: bodyFontSize),
                         keyboardType: TextInputType.number,
                         decoration: InputDecoration(
@@ -843,11 +883,8 @@ class _RoomScreenState extends State<RoomScreen> {
                             vertical: isDesktop ? 12 : 8,
                           ),
                         ),
-                        onChanged: (v) {
-                          _filterFloor = int.tryParse(v);
-                          _currentPage = 0;
-                          _loadData();
-                        },
+                        // ค้นหาเมื่อกด Enter เท่านั้น
+                        onSubmitted: (_) => _runSearch(),
                       ),
                     ),
                     SizedBox(
@@ -855,6 +892,7 @@ class _RoomScreenState extends State<RoomScreen> {
                           ? 150
                           : (isDesktop ? 130 : (screenWidth - 56) / 2 - 6),
                       child: DropdownButtonFormField<String?>(
+                        key: ValueKey('filter-status-$_filterEpoch'),
                         initialValue: _filterStatus,
                         style: TextStyle(fontSize: bodyFontSize),
                         decoration: InputDecoration(
@@ -887,11 +925,37 @@ class _RoomScreenState extends State<RoomScreen> {
                             ),
                           ),
                         ],
-                        onChanged: (v) {
-                          _filterStatus = v;
-                          _currentPage = 0;
+                        onChanged: (v) async {
+                          // ถามก่อนทิ้งการแก้ไข ถ้ายกเลิกต้องไม่เปลี่ยนค่าในช่อง
+                          if (!await _confirmDiscard()) {
+                            _cancelFilterChange();
+                            return;
+                          }
+                          setState(() {
+                            _filterStatus = v;
+                            _currentPage = 0;
+                          });
                           _loadData();
                         },
+                      ),
+                    ),
+                    // ปุ่มค้นหา — ทางเดียวที่โหลดข้อมูลใหม่จากช่องกรอก
+                    ElevatedButton(
+                      onPressed: _runSearch,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.primaryColor,
+                        foregroundColor: Colors.white,
+                        padding: EdgeInsets.symmetric(
+                          horizontal: isDesktop ? 24 : 20,
+                          vertical: isDesktop ? 16 : 12,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: Text(
+                        'ค้นหา',
+                        style: TextStyle(fontSize: bodyFontSize),
                       ),
                     ),
                   ],
