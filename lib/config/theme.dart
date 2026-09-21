@@ -55,6 +55,9 @@ class AppTheme {
   /// ปุ่มกลาง เช่น เลือกทั้งหมด ล้าง ปิด กลับ — เทาน้ำเงิน
   static const Color neutralColor = Color(0xFF546E7A);
 
+  /// ยกเลิก — ส้ม สื่อว่าทิ้งสิ่งที่กรอกไว้ แต่ไม่ใช่การลบข้อมูล
+  static const Color cancelColor = Color(0xFFEF6C00);
+
   /// แดง = อันตราย / ปุ่มลบ
   static const Color dangerColor = Color(0xFFE53935);
 

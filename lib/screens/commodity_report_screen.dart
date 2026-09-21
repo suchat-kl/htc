@@ -217,7 +217,7 @@ class _CommodityReportScreenState extends State<CommodityReportScreen> {
                     onPressed: () {
                       Navigator.pop(context, _selectedDate);
                     },
-                    child: const Text('ยกเลิก'),
+                    style: TextButton.styleFrom(foregroundColor: AppTheme.cancelColor), child: const Text('ยกเลิก'),
                   ),
                 ],
               ),

@@ -385,17 +385,15 @@ class _LoginDialogState extends State<LoginDialog> {
                               ? null
                               : () => Navigator.of(context).pop(false),
                           style: OutlinedButton.styleFrom(
+                            foregroundColor: AppTheme.cancelColor,
+                            side: const BorderSide(color: AppTheme.cancelColor),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
-                            side: BorderSide(color: Colors.grey.shade400),
                           ),
                           child: Text(
                             'ยกเลิก',
-                            style: TextStyle(
-                              fontSize: isDesktop ? 16 : 14,
-                              color: Colors.grey.shade600,
-                            ),
+                            style: TextStyle(fontSize: isDesktop ? 16 : 14),
                           ),
                         ),
                       ),

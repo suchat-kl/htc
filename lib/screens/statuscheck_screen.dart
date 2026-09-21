@@ -237,12 +237,15 @@ class _StatusCheckScreenState extends State<StatusCheckScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
+              style: TextButton.styleFrom(
+                foregroundColor: AppTheme.cancelColor,
+              ),
               child: const Text('ยกเลิก'),
             ),
             ElevatedButton(
               onPressed: _saveStatusCheck,
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.primaryColor,
+                backgroundColor: AppTheme.saveColor,
                 foregroundColor: Colors.white,
               ),
               child: Text(item == null ? 'บันทึก' : 'อัปเดต'),

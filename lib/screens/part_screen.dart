@@ -142,6 +142,7 @@ class _PartScreenState extends State<PartScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
+            style: TextButton.styleFrom(foregroundColor: AppTheme.cancelColor),
             child: const Text('ยกเลิก'),
           ),
           ElevatedButton(

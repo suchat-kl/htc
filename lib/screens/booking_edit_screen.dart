@@ -320,7 +320,7 @@ class _BookingEditScreenState extends State<BookingEditScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(c, false),
-            child: const Text('ยกเลิก'),
+            style: TextButton.styleFrom(foregroundColor: AppTheme.cancelColor), child: const Text('ยกเลิก'),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(c, true),
@@ -1031,7 +1031,7 @@ class _BookingEditScreenState extends State<BookingEditScreen> {
 //       actions: [
 //         TextButton(
 //           onPressed: () => Navigator.pop(context),
-//           child: const Text('ยกเลิก'),
+//           style: TextButton.styleFrom(foregroundColor: AppTheme.cancelColor), child: const Text('ยกเลิก'),
 //         ),
 //         ElevatedButton(
 //           onPressed: () {
@@ -1168,6 +1168,7 @@ class _AddTfoodDialogState extends State<_AddTfoodDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
+          style: TextButton.styleFrom(foregroundColor: AppTheme.cancelColor),
           child: const Text('ยกเลิก'),
         ),
         ElevatedButton(

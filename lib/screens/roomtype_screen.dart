@@ -170,6 +170,7 @@ class _RoomtypeScreenState extends State<RoomtypeScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
+            style: TextButton.styleFrom(foregroundColor: AppTheme.cancelColor),
             child: const Text('ยกเลิก', style: TextStyle(fontSize: 16)),
           ),
           ElevatedButton(

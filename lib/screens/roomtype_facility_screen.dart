@@ -184,6 +184,7 @@ class _RoomtypeFacilityScreenState extends State<RoomtypeFacilityScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
+            style: TextButton.styleFrom(foregroundColor: AppTheme.cancelColor),
             child: const Text('ยกเลิก', style: TextStyle(fontSize: 16)),
           ),
           ElevatedButton(
@@ -919,6 +920,10 @@ class _RoomtypeFacilityFormDialogState
                                   ? null
                                   : () => Navigator.pop(context),
                               style: OutlinedButton.styleFrom(
+                                foregroundColor: AppTheme.cancelColor,
+                                side: const BorderSide(
+                                  color: AppTheme.cancelColor,
+                                ),
                                 padding: EdgeInsets.symmetric(
                                   vertical: isDesktop ? 14 : 12,
                                 ),

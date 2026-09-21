@@ -297,6 +297,10 @@ class _EquipmentDialogState extends State<EquipmentDialog> {
                             child: OutlinedButton(
                               onPressed: () => Navigator.pop(context),
                               style: OutlinedButton.styleFrom(
+                                foregroundColor: AppTheme.cancelColor,
+                                side: const BorderSide(
+                                  color: AppTheme.cancelColor,
+                                ),
                                 padding: const EdgeInsets.symmetric(
                                   vertical: 12,
                                 ),

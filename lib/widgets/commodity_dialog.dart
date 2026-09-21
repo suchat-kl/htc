@@ -322,6 +322,10 @@ class _CommodityDialogState extends State<CommodityDialog> {
                                   ? null
                                   : () => Navigator.pop(context),
                               style: OutlinedButton.styleFrom(
+                                foregroundColor: AppTheme.cancelColor,
+                                side: const BorderSide(
+                                  color: AppTheme.cancelColor,
+                                ),
                                 padding: EdgeInsets.symmetric(
                                   vertical: isDesktop ? 14 : 12,
                                 ),

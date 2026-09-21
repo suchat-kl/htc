@@ -389,6 +389,8 @@ class _RoomtypeDialogState extends State<RoomtypeDialog> {
           child: OutlinedButton(
             onPressed: _isLoading ? null : () => Navigator.pop(context),
             style: OutlinedButton.styleFrom(
+              foregroundColor: AppTheme.cancelColor,
+              side: const BorderSide(color: AppTheme.cancelColor),
               padding: EdgeInsets.symmetric(vertical: isDesktop ? 14 : 12),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),

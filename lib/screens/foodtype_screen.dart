@@ -109,6 +109,7 @@ class _FoodtypeScreenState extends State<FoodtypeScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(c, false),
+            style: TextButton.styleFrom(foregroundColor: AppTheme.cancelColor),
             child: const Text('ยกเลิก'),
           ),
           ElevatedButton(

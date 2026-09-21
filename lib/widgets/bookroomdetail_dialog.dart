@@ -296,6 +296,7 @@ class _BookRoomDetailDialogState extends State<BookRoomDetailDialog> {
         children: [
           TextButton(
             onPressed: _isSaving ? null : () => Navigator.pop(context),
+            style: TextButton.styleFrom(foregroundColor: AppTheme.cancelColor),
             child: const Text('ยกเลิก'),
           ),
           const SizedBox(width: 8),

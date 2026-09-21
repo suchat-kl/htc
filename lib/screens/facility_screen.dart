@@ -116,6 +116,7 @@ class _FacilityScreenState extends State<FacilityScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
+            style: TextButton.styleFrom(foregroundColor: AppTheme.cancelColor),
             child: const Text('ยกเลิก', style: TextStyle(fontSize: 16)),
           ),
           ElevatedButton(

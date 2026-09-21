@@ -321,7 +321,7 @@ class _RoomScheduleDialogState extends State<RoomScheduleDialog> {
             icon: const Icon(Icons.close, size: 18),
             label: const Text('ยกเลิก'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.dangerColor,
+              backgroundColor: AppTheme.cancelColor,
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 14),
               shape: RoundedRectangleBorder(

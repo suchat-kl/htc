@@ -140,6 +140,7 @@ class _OrganizationScreenState extends State<OrganizationScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
+            style: TextButton.styleFrom(foregroundColor: AppTheme.cancelColor),
             child: const Text('ยกเลิก'),
           ),
           ElevatedButton(
@@ -1140,6 +1141,10 @@ class _OrganizationDialogState extends State<_OrganizationDialog> {
                             child: OutlinedButton(
                               onPressed: () => Navigator.pop(context),
                               style: OutlinedButton.styleFrom(
+                                foregroundColor: AppTheme.cancelColor,
+                                side: const BorderSide(
+                                  color: AppTheme.cancelColor,
+                                ),
                                 padding: const EdgeInsets.symmetric(
                                   vertical: 14,
                                 ),

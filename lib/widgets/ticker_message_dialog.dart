@@ -587,6 +587,8 @@ class _TickerMessageDialogState extends State<TickerMessageDialog> {
             child: OutlinedButton(
               onPressed: _isSaving ? null : () => Navigator.pop(context),
               style: OutlinedButton.styleFrom(
+                foregroundColor: AppTheme.cancelColor,
+                side: const BorderSide(color: AppTheme.cancelColor),
                 padding: EdgeInsets.symmetric(vertical: isDesktop ? 14 : 12),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),

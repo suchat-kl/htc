@@ -132,6 +132,7 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(c, false),
+            style: TextButton.styleFrom(foregroundColor: AppTheme.cancelColor),
             child: const Text('ยกเลิก'),
           ),
           ElevatedButton(

@@ -147,6 +147,7 @@ class _TpartScreenState extends State<TpartScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(c, false),
+            style: TextButton.styleFrom(foregroundColor: AppTheme.cancelColor),
             child: const Text('ยกเลิก'),
           ),
           ElevatedButton(
