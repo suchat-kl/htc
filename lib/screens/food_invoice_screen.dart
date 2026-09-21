@@ -599,15 +599,15 @@ class _FoodInvoiceScreenState extends State<FoodInvoiceScreen> {
                     Expanded(flex: 2, child: _subHead('คน', center: true)),
                     Expanded(flex: 2, child: _subHead('มื้อ', center: true)),
                     Expanded(
-                      flex: 3,
+                      flex: 4,
                       child: _subHead('วันที่เริ่มต้น', center: true),
                     ),
                     Expanded(
-                      flex: 3,
+                      flex: 4,
                       child: _subHead('วันที่สิ้นสุด', center: true),
                     ),
                     Expanded(
-                      flex: 3,
+                      flex: 2,
                       child: _subHead('จำนวนเงิน', right: true),
                     ),
                   ],
@@ -677,10 +677,10 @@ class _FoodInvoiceScreenState extends State<FoodInvoiceScreen> {
               (v) => setState(() => line.meals = v),
             ),
           ),
-          Expanded(flex: 3, child: _dateField(line, true)),
-          Expanded(flex: 3, child: _dateField(line, false)),
+          Expanded(flex: 4, child: _dateField(line, true)),
+          Expanded(flex: 4, child: _dateField(line, false)),
           Expanded(
-            flex: 3,
+            flex: 2,
             child: Align(
               alignment: Alignment.centerRight,
               child: _text(_money.format(line.amount)),
