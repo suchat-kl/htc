@@ -636,11 +636,15 @@ class _FoodInvoiceScreenState extends State<FoodInvoiceScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              _smallButton('ลบที่เลือก', _deleteSelected),
+              _smallButton(
+                'ลบที่เลือก',
+                _deleteSelected,
+                color: AppTheme.deleteColor,
+              ),
               const SizedBox(width: 12),
               _smallButton('เลือกทั้งหมด', _selectAll),
               const SizedBox(width: 4),
-              _smallButton('เพิ่ม', _addLine),
+              _smallButton('เพิ่ม', _addLine, color: AppTheme.addColor),
             ],
           ),
         ],
@@ -931,12 +935,20 @@ class _FoodInvoiceScreenState extends State<FoodInvoiceScreen> {
     );
   }
 
-  Widget _smallButton(String label, VoidCallback onTap) {
+  /// ปุ่มเล็กใต้ตาราง สีตามประเภทเหมือนหน้ารายการหลัก
+  Widget _smallButton(
+    String label,
+    VoidCallback onTap, {
+    Color color = AppTheme.neutralColor,
+  }) {
     return ElevatedButton(
       onPressed: onTap,
       style: ElevatedButton.styleFrom(
-        backgroundColor: AppTheme.primaryColor,
-        foregroundColor: Colors.white,
+        backgroundColor: color,
+        // พื้นสีทองต้องใช้ตัวอักษรสีเข้ม ไม่งั้นอ่านไม่ออก
+        foregroundColor: color == AppTheme.editColor
+            ? AppTheme.onSecondaryColor
+            : Colors.white,
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         minimumSize: const Size(0, 32),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),

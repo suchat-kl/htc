@@ -425,7 +425,11 @@ class _PaymentScreenState extends State<PaymentScreen> {
             _cell(1, _label('ค่าอาหาร อาหารว่าง และเครื่องดื่ม')),
             _cell(
               2,
-              _smallButton('รายละเอียด', _openFoodInvoice),
+              _smallButton(
+                'รายละเอียด',
+                _openFoodInvoice,
+                color: AppTheme.editColor,
+              ),
               align: Alignment.centerRight,
             ),
             _cell(1, _amount(_foodAmount), align: Alignment.centerRight),
@@ -614,11 +618,19 @@ class _PaymentScreenState extends State<PaymentScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              _smallButton('ลบที่เลือก', () => _notReady('ลบที่เลือก')),
+              _smallButton(
+                'ลบที่เลือก',
+                () => _notReady('ลบที่เลือก'),
+                color: AppTheme.deleteColor,
+              ),
               const SizedBox(width: 12),
               _smallButton('เลือกทั้งหมด', () => _notReady('เลือกทั้งหมด')),
               const SizedBox(width: 4),
-              _smallButton('เพิ่ม', () => _notReady('เพิ่มค่าบริการ')),
+              _smallButton(
+                'เพิ่ม',
+                () => _notReady('เพิ่มค่าบริการ'),
+                color: AppTheme.addColor,
+              ),
             ],
           ),
         ],
@@ -841,12 +853,20 @@ class _PaymentScreenState extends State<PaymentScreen> {
     );
   }
 
-  Widget _smallButton(String label, VoidCallback onTap) {
+  /// ปุ่มเล็กใต้ตาราง สีตามประเภทเหมือนหน้ารายการหลัก
+  Widget _smallButton(
+    String label,
+    VoidCallback onTap, {
+    Color color = AppTheme.neutralColor,
+  }) {
     return ElevatedButton(
       onPressed: onTap,
       style: ElevatedButton.styleFrom(
-        backgroundColor: AppTheme.primaryColor,
-        foregroundColor: Colors.white,
+        backgroundColor: color,
+        // พื้นสีทองต้องใช้ตัวอักษรสีเข้ม ไม่งั้นอ่านไม่ออก
+        foregroundColor: color == AppTheme.editColor
+            ? AppTheme.onSecondaryColor
+            : Colors.white,
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         minimumSize: const Size(0, 32),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
