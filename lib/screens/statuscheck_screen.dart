@@ -566,11 +566,15 @@ class _StatusCheckScreenState extends State<StatusCheckScreen> {
                 style: TextStyle(fontSize: 13, color: AppTheme.warningColor),
               ),
             ),
-          _rowButton('ลบที่เลือก', _deleteSelectedRows),
+          _rowButton(
+            'ลบที่เลือก',
+            _deleteSelectedRows,
+            color: AppTheme.deleteColor,
+          ),
           const SizedBox(width: 12),
           _rowButton('เลือกทั้งหมด', _rows.isEmpty ? null : _selectAll),
           const SizedBox(width: 4),
-          _rowButton('เพิ่ม', _addRow),
+          _rowButton('เพิ่ม', _addRow, color: AppTheme.addColor),
           const SizedBox(width: 12),
           ElevatedButton.icon(
             onPressed: _isSaving ? null : _saveRows,
@@ -579,9 +583,9 @@ class _StatusCheckScreenState extends State<StatusCheckScreen> {
             style: ElevatedButton.styleFrom(
               backgroundColor: AppTheme.saveColor,
               foregroundColor: Colors.white,
-              disabledBackgroundColor: const Color(
-                0xFF43A047,
-              ).withValues(alpha: 0.45),
+              disabledBackgroundColor: AppTheme.saveColor.withValues(
+                alpha: 0.45,
+              ),
               disabledForegroundColor: Colors.white70,
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               shape: RoundedRectangleBorder(
@@ -594,11 +598,15 @@ class _StatusCheckScreenState extends State<StatusCheckScreen> {
     );
   }
 
-  Widget _rowButton(String label, VoidCallback? onTap) {
+  Widget _rowButton(
+    String label,
+    VoidCallback? onTap, {
+    Color color = AppTheme.neutralColor,
+  }) {
     return ElevatedButton(
       onPressed: onTap,
       style: ElevatedButton.styleFrom(
-        backgroundColor: AppTheme.primaryColor,
+        backgroundColor: color,
         foregroundColor: Colors.white,
         disabledBackgroundColor: Colors.grey.shade300,
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -649,7 +657,7 @@ class _StatusCheckScreenState extends State<StatusCheckScreen> {
                 icon: const Icon(Icons.add, size: 20),
                 label: const Text('เพิ่ม', style: TextStyle(fontSize: 14)),
                 // style: ElevatedButton.styleFrom(
-                //   backgroundColor: Colors.white,
+                //   backgroundColor: AppTheme.addColor,
                 //   foregroundColor: AppTheme.primaryColor,
                 // ),
                 style: ElevatedButton.styleFrom(
@@ -695,7 +703,7 @@ class _StatusCheckScreenState extends State<StatusCheckScreen> {
                       ElevatedButton(
                         onPressed: _runSearch,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: AppTheme.primaryColor,
+                          backgroundColor: AppTheme.searchColor,
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(
                             horizontal: 20,

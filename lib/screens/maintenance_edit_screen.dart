@@ -216,7 +216,9 @@ class _MaintenanceEditScreenState extends State<MaintenanceEditScreen> {
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(c, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.deleteColor,
+            ),
             child: const Text('ลบ', style: TextStyle(color: Colors.white)),
           ),
         ],
@@ -282,7 +284,7 @@ class _MaintenanceEditScreenState extends State<MaintenanceEditScreen> {
                 icon: const Icon(Icons.delete, size: 18),
                 label: const Text('ลบ'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red,
+                  backgroundColor: AppTheme.deleteColor,
                   foregroundColor: Colors.white,
                 ),
               ),
@@ -303,7 +305,7 @@ class _MaintenanceEditScreenState extends State<MaintenanceEditScreen> {
                   : const Icon(Icons.save, size: 18),
               label: const Text('บันทึก'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.secondaryColor,
+                backgroundColor: AppTheme.saveColor,
                 foregroundColor: Colors.white,
               ),
             ),
@@ -368,7 +370,7 @@ class _MaintenanceEditScreenState extends State<MaintenanceEditScreen> {
                       icon: const Icon(Icons.add, size: 16),
                       label: const Text('เพิ่มรายการ'),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.secondaryColor,
+                        backgroundColor: AppTheme.addColor,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(
                           horizontal: 14,

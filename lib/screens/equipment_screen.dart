@@ -129,7 +129,9 @@ class _EquipmentScreenState extends State<EquipmentScreen> {
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.deleteColor,
+            ),
             child: const Text('ลบ', style: TextStyle(color: Colors.white)),
           ),
         ],
@@ -185,7 +187,7 @@ class _EquipmentScreenState extends State<EquipmentScreen> {
                 style: TextStyle(fontSize: bodyFontSize),
               ),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.secondaryColor,
+                backgroundColor: AppTheme.addColor,
                 foregroundColor: Colors.white,
                 padding: EdgeInsets.symmetric(
                   horizontal: isDesktop ? 20 : 14,

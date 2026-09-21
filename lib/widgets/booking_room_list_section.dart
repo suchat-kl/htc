@@ -272,7 +272,7 @@ class _BookingRoomListSectionState extends State<BookingRoomListSection> {
                   icon: const Icon(Icons.add, size: 18),
                   label: const Text('เพิ่มรายการ'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.successColor,
+                    backgroundColor: AppTheme.addColor,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(
                       horizontal: 18,
@@ -449,7 +449,7 @@ class _BookingRoomListSectionState extends State<BookingRoomListSection> {
         ElevatedButton(
           onPressed: () => _checkAvailability(d),
           style: ElevatedButton.styleFrom(
-            backgroundColor: AppTheme.infoColor,
+            backgroundColor: AppTheme.editColor,
             foregroundColor: Colors.white,
             elevation: 0,
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),

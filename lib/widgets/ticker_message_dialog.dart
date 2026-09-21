@@ -265,6 +265,10 @@ class _TickerMessageDialogState extends State<TickerMessageDialog> {
               onPressed: _addNewMessage,
               icon: const Icon(Icons.add),
               label: const Text('เพิ่มข้อความ'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.addColor,
+                foregroundColor: Colors.white,
+              ),
             ),
           ],
         ),
@@ -596,7 +600,7 @@ class _TickerMessageDialogState extends State<TickerMessageDialog> {
             child: ElevatedButton(
               onPressed: _isSaving ? null : _handleSave,
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.primaryColor,
+                backgroundColor: AppTheme.saveColor,
                 padding: EdgeInsets.symmetric(vertical: isDesktop ? 14 : 12),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),

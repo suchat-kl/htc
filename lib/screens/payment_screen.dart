@@ -729,7 +729,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
           _actionButton(
             'พิมพ์',
             Icons.print_outlined,
-            AppTheme.primaryColor,
+            AppTheme.printColor,
             () => _notReady('พิมพ์'),
           ),
           const SizedBox(width: 8),
@@ -743,7 +743,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
           _actionButton(
             'กลับ',
             Icons.arrow_back,
-            Colors.grey.shade600,
+            AppTheme.neutralColor,
             () => Navigator.pop(context),
           ),
         ],

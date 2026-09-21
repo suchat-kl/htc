@@ -113,7 +113,9 @@ class _FoodtypeScreenState extends State<FoodtypeScreen> {
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(c, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.deleteColor,
+            ),
             child: const Text('ลบ', style: TextStyle(color: Colors.white)),
           ),
         ],
@@ -469,9 +471,13 @@ class _FoodtypeScreenState extends State<FoodtypeScreen> {
               'มีการแก้ไขที่ยังไม่ได้บันทึก',
               style: TextStyle(fontSize: 13, color: AppTheme.warningColor),
             ),
-          _rowButton('ลบที่เลือก', _deleteSelectedRows),
+          _rowButton(
+            'ลบที่เลือก',
+            _deleteSelectedRows,
+            color: AppTheme.deleteColor,
+          ),
           _rowButton('เลือกทั้งหมด', _rows.isEmpty ? null : _selectAll),
-          _rowButton('เพิ่ม', _addRow),
+          _rowButton('เพิ่ม', _addRow, color: AppTheme.addColor),
           ElevatedButton.icon(
             onPressed: _isSaving ? null : _saveRows,
             icon: const Icon(Icons.save_outlined, size: 18),
@@ -479,9 +485,9 @@ class _FoodtypeScreenState extends State<FoodtypeScreen> {
             style: ElevatedButton.styleFrom(
               backgroundColor: AppTheme.saveColor,
               foregroundColor: Colors.white,
-              disabledBackgroundColor: const Color(
-                0xFF43A047,
-              ).withValues(alpha: 0.45),
+              disabledBackgroundColor: AppTheme.saveColor.withValues(
+                alpha: 0.45,
+              ),
               disabledForegroundColor: Colors.white70,
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               shape: RoundedRectangleBorder(
@@ -494,11 +500,15 @@ class _FoodtypeScreenState extends State<FoodtypeScreen> {
     );
   }
 
-  Widget _rowButton(String label, VoidCallback? onTap) {
+  Widget _rowButton(
+    String label,
+    VoidCallback? onTap, {
+    Color color = AppTheme.neutralColor,
+  }) {
     return ElevatedButton(
       onPressed: onTap,
       style: ElevatedButton.styleFrom(
-        backgroundColor: AppTheme.primaryColor,
+        backgroundColor: color,
         foregroundColor: Colors.white,
         disabledBackgroundColor: Colors.grey.shade300,
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -548,7 +558,7 @@ class _FoodtypeScreenState extends State<FoodtypeScreen> {
                 icon: Icon(Icons.add, size: ic),
                 label: Text('เพิ่มรายการ', style: TextStyle(fontSize: bf)),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.secondaryColor,
+                  backgroundColor: AppTheme.addColor,
                   foregroundColor: Colors.white,
                   padding: EdgeInsets.symmetric(
                     horizontal: isD ? 20 : 14,
@@ -614,7 +624,7 @@ class _FoodtypeScreenState extends State<FoodtypeScreen> {
                     ElevatedButton(
                       onPressed: _search,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.primaryColor,
+                        backgroundColor: AppTheme.searchColor,
                         foregroundColor: Colors.white,
                         padding: EdgeInsets.symmetric(
                           horizontal: isD ? 20 : 14,
@@ -693,6 +703,10 @@ class _FoodtypeScreenState extends State<FoodtypeScreen> {
                             onPressed: _addRow,
                             icon: const Icon(Icons.add),
                             label: const Text('เพิ่มแถวในตาราง'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppTheme.addColor,
+                              foregroundColor: Colors.white,
+                            ),
                           ),
                         ],
                       ),

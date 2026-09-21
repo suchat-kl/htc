@@ -751,9 +751,9 @@ class _RoomAvailabilityDialogState extends State<RoomAvailabilityDialog> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppTheme.saveColor,
                   foregroundColor: Colors.white,
-                  disabledBackgroundColor: const Color(
-                    0xFF43A047,
-                  ).withValues(alpha: 0.45),
+                  disabledBackgroundColor: AppTheme.saveColor.withValues(
+                    alpha: 0.45,
+                  ),
                   disabledForegroundColor: Colors.white70,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 26,
@@ -772,7 +772,7 @@ class _RoomAvailabilityDialogState extends State<RoomAvailabilityDialog> {
             icon: const Icon(Icons.close, size: 18),
             label: const Text('ปิด'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.dangerColor,
+              backgroundColor: AppTheme.neutralColor,
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 14),
               shape: RoundedRectangleBorder(

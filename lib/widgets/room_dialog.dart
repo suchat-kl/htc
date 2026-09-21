@@ -301,7 +301,7 @@ class _RoomDialogState extends State<RoomDialog> {
                             child: ElevatedButton(
                               onPressed: _isLoading ? null : _handleSave,
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: AppTheme.primaryColor,
+                                backgroundColor: AppTheme.saveColor,
                                 padding: const EdgeInsets.symmetric(
                                   vertical: 14,
                                 ),

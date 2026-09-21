@@ -301,7 +301,7 @@ class _BookingListScreenState extends State<BookingListScreen> {
                 icon: const Icon(Icons.clear, size: 18),
                 label: const Text('ล้าง'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.grey.shade300,
+                  backgroundColor: AppTheme.neutralColor,
                   foregroundColor: Colors.black87,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 20,
@@ -320,7 +320,7 @@ class _BookingListScreenState extends State<BookingListScreen> {
                 icon: const Icon(Icons.search, size: 18),
                 label: const Text('ค้นหา'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.primaryColor,
+                  backgroundColor: AppTheme.searchColor,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 24,

@@ -441,9 +441,9 @@ class _RoomAssignmentDialogState extends State<RoomAssignmentDialog> {
             style: ElevatedButton.styleFrom(
               backgroundColor: AppTheme.saveColor,
               foregroundColor: Colors.white,
-              disabledBackgroundColor: const Color(
-                0xFF43A047,
-              ).withValues(alpha: 0.45),
+              disabledBackgroundColor: AppTheme.saveColor.withValues(
+                alpha: 0.45,
+              ),
               disabledForegroundColor: Colors.white70,
               padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 14),
               shape: RoundedRectangleBorder(

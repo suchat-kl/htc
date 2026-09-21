@@ -334,7 +334,7 @@ class _ActivityRoomSearchScreenState extends State<ActivityRoomSearchScreen> {
               icon: const Icon(Icons.search, size: 18),
               label: const Text('ค้นหา'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.primaryColor,
+                backgroundColor: AppTheme.searchColor,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(
                   horizontal: 24,

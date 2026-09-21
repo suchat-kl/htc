@@ -388,7 +388,7 @@ class _CommodityReportScreenState extends State<CommodityReportScreen> {
                       style: TextStyle(fontSize: bodyFontSize),
                     ),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.primaryColor,
+                      backgroundColor: AppTheme.searchColor,
                       foregroundColor: Colors.white,
                       padding: EdgeInsets.symmetric(
                         horizontal: 24,

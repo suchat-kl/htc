@@ -324,7 +324,7 @@ class _BookingEditScreenState extends State<BookingEditScreen> {
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(c, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.deleteColor),
             child: const Text('ลบ', style: TextStyle(color: Colors.white)),
           ),
         ],
@@ -675,8 +675,7 @@ class _BookingEditScreenState extends State<BookingEditScreen> {
                                         icon: const Icon(Icons.add, size: 16),
                                         label: const Text('เพิ่ม'),
                                         style: ElevatedButton.styleFrom(
-                                          backgroundColor:
-                                              AppTheme.secondaryColor,
+                                          backgroundColor: AppTheme.addColor,
                                           foregroundColor: Colors.white,
                                         ),
                                       ),
@@ -1182,6 +1181,10 @@ class _AddTfoodDialogState extends State<_AddTfoodDialog> {
               'stopdate': DateFormat('yyyy-MM-dd').format(_stopDate),
             });
           },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppTheme.addColor,
+            foregroundColor: Colors.white,
+          ),
           child: const Text('เพิ่ม'),
         ),
       ],

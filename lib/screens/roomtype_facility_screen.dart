@@ -189,7 +189,7 @@ class _RoomtypeFacilityScreenState extends State<RoomtypeFacilityScreen> {
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
+              backgroundColor: AppTheme.deleteColor,
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             ),
             child: const Text(
@@ -253,7 +253,7 @@ class _RoomtypeFacilityScreenState extends State<RoomtypeFacilityScreen> {
                 style: TextStyle(fontSize: bodyFontSize),
               ),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.secondaryColor,
+                backgroundColor: AppTheme.addColor,
                 foregroundColor: Colors.white,
                 padding: EdgeInsets.symmetric(
                   horizontal: isDesktop ? 20 : 14,
@@ -316,6 +316,8 @@ class _RoomtypeFacilityScreenState extends State<RoomtypeFacilityScreen> {
                             icon: const Icon(Icons.add),
                             label: const Text('เพิ่มรายการ'),
                             style: ElevatedButton.styleFrom(
+                              backgroundColor: AppTheme.addColor,
+                              foregroundColor: Colors.white,
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 24,
                                 vertical: 12,
@@ -932,7 +934,7 @@ class _RoomtypeFacilityFormDialogState
                             child: ElevatedButton(
                               onPressed: _isLoading ? null : _handleSave,
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: AppTheme.primaryColor,
+                                backgroundColor: AppTheme.saveColor,
                                 padding: EdgeInsets.symmetric(
                                   vertical: isDesktop ? 14 : 12,
                                 ),

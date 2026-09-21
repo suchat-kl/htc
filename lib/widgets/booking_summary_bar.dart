@@ -315,7 +315,7 @@ class _BookingSummaryBarState extends State<BookingSummaryBar> {
         _actionButton(
           label: 'กลับ',
           icon: Icons.arrow_back,
-          color: AppTheme.infoColor,
+          color: AppTheme.neutralColor,
           busy: false,
           // ส่ง _hasSaved กลับไป หน้ารายการจะรีเฟรชเฉพาะตอนที่ข้อมูลถูกแก้จริง
           onPressed: busy ? null : () => Navigator.pop(context, _hasSaved),

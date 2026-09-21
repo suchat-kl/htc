@@ -193,7 +193,9 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.deleteColor,
+            ),
             child: const Text('ลบ', style: TextStyle(color: Colors.white)),
           ),
         ],
@@ -639,9 +641,13 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
               'มีการแก้ไขที่ยังไม่ได้บันทึก',
               style: TextStyle(fontSize: 13, color: AppTheme.warningColor),
             ),
-          _rowButton('ลบที่เลือก', _deleteSelectedRows),
+          _rowButton(
+            'ลบที่เลือก',
+            _deleteSelectedRows,
+            color: AppTheme.deleteColor,
+          ),
           _rowButton('เลือกทั้งหมด', _rows.isEmpty ? null : _selectAll),
-          _rowButton('เพิ่ม', _addRow),
+          _rowButton('เพิ่ม', _addRow, color: AppTheme.addColor),
           ElevatedButton.icon(
             onPressed: _isSaving ? null : _saveRows,
             icon: const Icon(Icons.save_outlined, size: 18),
@@ -649,9 +655,9 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
             style: ElevatedButton.styleFrom(
               backgroundColor: AppTheme.saveColor,
               foregroundColor: Colors.white,
-              disabledBackgroundColor: const Color(
-                0xFF43A047,
-              ).withValues(alpha: 0.45),
+              disabledBackgroundColor: AppTheme.saveColor.withValues(
+                alpha: 0.45,
+              ),
               disabledForegroundColor: Colors.white70,
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               shape: RoundedRectangleBorder(
@@ -664,11 +670,15 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
     );
   }
 
-  Widget _rowButton(String label, VoidCallback? onTap) {
+  Widget _rowButton(
+    String label,
+    VoidCallback? onTap, {
+    Color color = AppTheme.neutralColor,
+  }) {
     return ElevatedButton(
       onPressed: onTap,
       style: ElevatedButton.styleFrom(
-        backgroundColor: AppTheme.primaryColor,
+        backgroundColor: color,
         foregroundColor: Colors.white,
         disabledBackgroundColor: Colors.grey.shade300,
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -725,7 +735,7 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
                   style: TextStyle(fontSize: bodyFontSize),
                 ),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.secondaryColor,
+                  backgroundColor: AppTheme.addColor,
                   foregroundColor: Colors.white,
                   padding: EdgeInsets.symmetric(
                     horizontal: isDesktop ? 20 : 14,
@@ -865,7 +875,7 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
                     ElevatedButton(
                       onPressed: _runSearch,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.primaryColor,
+                        backgroundColor: AppTheme.searchColor,
                         foregroundColor: Colors.white,
                         padding: EdgeInsets.symmetric(
                           horizontal: isDesktop ? 24 : 20,
@@ -1296,7 +1306,7 @@ class _EmployeeDialogState extends State<_EmployeeDialog> {
                             child: ElevatedButton(
                               onPressed: _isLoading ? null : _handleSave,
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: AppTheme.primaryColor,
+                                backgroundColor: AppTheme.saveColor,
                                 padding: const EdgeInsets.symmetric(
                                   vertical: 14,
                                 ),

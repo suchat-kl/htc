@@ -349,7 +349,7 @@ class _FacilityDialogState extends State<FacilityDialog> {
                             child: ElevatedButton(
                               onPressed: _isLoading ? null : _handleSave,
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: AppTheme.primaryColor,
+                                backgroundColor: AppTheme.saveColor,
                                 padding: EdgeInsets.symmetric(
                                   vertical: isDesktop ? 14 : 12,
                                 ),

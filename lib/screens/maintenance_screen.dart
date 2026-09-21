@@ -136,7 +136,9 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(c, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.deleteColor,
+            ),
             child: const Text('ลบ', style: TextStyle(color: Colors.white)),
           ),
         ],
@@ -184,7 +186,7 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
               icon: Icon(Icons.add, size: ic),
               label: Text('เพิ่มรายการ', style: TextStyle(fontSize: bf)),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.secondaryColor,
+                backgroundColor: AppTheme.addColor,
                 foregroundColor: Colors.white,
                 padding: EdgeInsets.symmetric(
                   horizontal: isD ? 20 : 14,

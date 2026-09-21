@@ -206,7 +206,7 @@ class _FoodtypeDialogState extends State<FoodtypeDialog> {
                             child: ElevatedButton(
                               onPressed: _loading ? null : _save,
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: AppTheme.primaryColor,
+                                backgroundColor: AppTheme.saveColor,
                                 padding: const EdgeInsets.symmetric(
                                   vertical: 12,
                                 ),

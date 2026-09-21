@@ -402,7 +402,7 @@ class _RoomtypeDialogState extends State<RoomtypeDialog> {
           child: ElevatedButton(
             onPressed: _isLoading ? null : _handleSave,
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.primaryColor,
+              backgroundColor: AppTheme.saveColor,
               padding: EdgeInsets.symmetric(vertical: isDesktop ? 14 : 12),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),

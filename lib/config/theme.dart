@@ -32,8 +32,28 @@ class AppTheme {
   /// เขียว = สำเร็จ ใช้กับข้อความแจ้งผลและปุ่มเพิ่มรายการ
   static const Color successColor = Color(0xFF43A047);
 
-  /// สีปุ่มบันทึก — ใช้สีหลักให้เป็นชุดเดียวกับแถบบน
+  // ── สีปุ่มตามประเภทการทำงาน ──────────────────────────────
+  // ปุ่มคนละหน้าที่ต้องคนละสี ผู้ใช้จะจำสีได้โดยไม่ต้องอ่านป้าย
+  /// บันทึก — ฟ้า เข้าชุดกับแถบบน
   static const Color saveColor = primaryColor;
+
+  /// เพิ่ม / เพิ่มรายการ — เขียว
+  static const Color addColor = successColor;
+
+  /// ลบ / ลบที่เลือก — แดง
+  static const Color deleteColor = dangerColor;
+
+  /// ค้นหา — เขียวน้ำทะเล
+  static const Color searchColor = Color(0xFF00897B);
+
+  /// แก้ไข / รายละเอียด — ทอง (ตัวอักษรใช้ onSecondaryColor)
+  static const Color editColor = secondaryColor;
+
+  /// พิมพ์ / ออกรายงาน — ม่วง
+  static const Color printColor = Color(0xFF6A4FBF);
+
+  /// ปุ่มกลาง เช่น เลือกทั้งหมด ล้าง ปิด กลับ — เทาน้ำเงิน
+  static const Color neutralColor = Color(0xFF546E7A);
 
   /// แดง = อันตราย / ปุ่มลบ
   static const Color dangerColor = Color(0xFFE53935);
