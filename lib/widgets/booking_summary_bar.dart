@@ -301,7 +301,7 @@ class _BookingSummaryBarState extends State<BookingSummaryBar> {
         _actionButton(
           label: 'บันทึก',
           icon: Icons.save_outlined,
-          color: AppTheme.successColor,
+          color: AppTheme.saveColor,
           busy: _isSaving,
           onPressed: busy ? null : _save,
         ),

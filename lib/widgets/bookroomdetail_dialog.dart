@@ -313,7 +313,7 @@ class _BookRoomDetailDialogState extends State<BookRoomDetailDialog> {
                 : const Icon(Icons.save_outlined, size: 18),
             label: const Text('บันทึก'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.successColor,
+              backgroundColor: AppTheme.saveColor,
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
               shape: RoundedRectangleBorder(

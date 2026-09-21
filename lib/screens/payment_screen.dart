@@ -736,7 +736,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
           _actionButton(
             'บันทึก',
             Icons.save_outlined,
-            AppTheme.successColor,
+            AppTheme.saveColor,
             _save,
           ),
           const SizedBox(width: 8),

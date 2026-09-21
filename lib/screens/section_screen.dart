@@ -568,7 +568,7 @@ class _SectionScreenState extends State<SectionScreen> {
             icon: const Icon(Icons.save_outlined, size: 18),
             label: Text(_isSaving ? 'กำลังบันทึก...' : 'บันทึก'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.successColor,
+              backgroundColor: AppTheme.saveColor,
               foregroundColor: Colors.white,
               disabledBackgroundColor: const Color(
                 0xFF43A047,

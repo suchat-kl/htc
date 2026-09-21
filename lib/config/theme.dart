@@ -29,8 +29,11 @@ class AppTheme {
   static const Color accentColor = Color(0xFF00897B);
 
   // ── สีตามความหมาย ────────────────────────────────────────
-  /// เขียว = สำเร็จ / ปุ่มบันทึก
+  /// เขียว = สำเร็จ ใช้กับข้อความแจ้งผลและปุ่มเพิ่มรายการ
   static const Color successColor = Color(0xFF43A047);
+
+  /// สีปุ่มบันทึก — ใช้สีหลักให้เป็นชุดเดียวกับแถบบน
+  static const Color saveColor = primaryColor;
 
   /// แดง = อันตราย / ปุ่มลบ
   static const Color dangerColor = Color(0xFFE53935);

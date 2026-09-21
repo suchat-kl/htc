@@ -749,7 +749,7 @@ class _RoomAvailabilityDialogState extends State<RoomAvailabilityDialog> {
                             : 'บันทึก (${_selected.length})'),
                 ),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.successColor,
+                  backgroundColor: AppTheme.saveColor,
                   foregroundColor: Colors.white,
                   disabledBackgroundColor: const Color(
                     0xFF43A047,

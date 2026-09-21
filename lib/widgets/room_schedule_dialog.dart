@@ -303,7 +303,7 @@ class _RoomScheduleDialogState extends State<RoomScheduleDialog> {
                 : const Icon(Icons.save_outlined, size: 18),
             label: Text(_saving ? 'กำลังบันทึก...' : 'บันทึก'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.successColor,
+              backgroundColor: AppTheme.saveColor,
               foregroundColor: Colors.white,
               disabledBackgroundColor: const Color(
                 0xFF43A047,

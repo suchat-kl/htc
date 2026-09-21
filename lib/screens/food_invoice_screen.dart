@@ -834,7 +834,7 @@ class _FoodInvoiceScreenState extends State<FoodInvoiceScreen> {
           _actionButton(
             _saving ? 'กำลังบันทึก...' : 'บันทึก',
             Icons.save_outlined,
-            AppTheme.successColor,
+            AppTheme.saveColor,
             _saving ? null : _save,
           ),
           const SizedBox(width: 8),
