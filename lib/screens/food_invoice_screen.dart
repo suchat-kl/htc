@@ -532,7 +532,7 @@ class _FoodInvoiceScreenState extends State<FoodInvoiceScreen> {
             _cell(3, _label('ค่าบริการ')),
             _cell(1, _amountText(_total), align: Alignment.centerRight),
           ]),
-          _row([_cell(3, _linesBox()), _cell(1, const SizedBox())]),
+          _row([_cell(4, _linesBox())]),
           _row([
             _cell(3, _label('รวมเงินทั้งหมด'), align: Alignment.centerRight),
             _cell(
@@ -753,13 +753,18 @@ class _FoodInvoiceScreenState extends State<FoodInvoiceScreen> {
   Widget _dateField(FoodInvoiceLine line, bool isStart) {
     final value = isStart ? line.startDate : line.stopDate;
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 4),
       child: InkWell(
         onTap: () => _pickDate(line, isStart),
         borderRadius: BorderRadius.circular(6),
         child: InputDecorator(
           decoration: _input().copyWith(
+            contentPadding: const EdgeInsets.fromLTRB(8, 10, 0, 10),
             suffixIcon: const Icon(Icons.calendar_today, size: 14),
+            suffixIconConstraints: const BoxConstraints(
+              minWidth: 26,
+              minHeight: 26,
+            ),
           ),
           child: Text(
             value == null ? 'เลือกวันที่' : Util.formatThaiDate(value),
