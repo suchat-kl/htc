@@ -11,6 +11,7 @@ import '../services/api_service.dart';
 import '../utils/logger.dart';
 import '../utils/snackbar_helper.dart';
 import '../utils/util.dart';
+import 'food_invoice_screen.dart';
 
 /// หนึ่งแถวค่าห้องในตารางสรุปค่าบริการ
 class PaymentLine {
@@ -248,6 +249,20 @@ class _PaymentScreenState extends State<PaymentScreen> {
     return (empId: empId, name: fallback);
   }
 
+  /// เปิดใบแจ้งค่าอาหาร อาหารว่าง และเครื่องดื่ม ของใบจองนี้
+  Future<void> _openFoodInvoice() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => FoodInvoiceScreen(
+          apiService: widget.apiService,
+          authProvider: widget.authProvider,
+          bookId: widget.bookId,
+        ),
+      ),
+    );
+  }
+
   /// บันทึกการรับชำระ — ตอนนี้ตรวจแค่ว่ามีผู้บันทึก ส่วนการบันทึกจริงรอสเปก
   ///
   /// ต้องมี [_recorderEmpId] เพราะจะบันทึกรหัสพนักงานผู้รับชำระลงฐานข้อมูล
@@ -377,7 +392,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
             _cell(1, _label('ค่าอาหาร อาหารว่าง และเครื่องดื่ม')),
             _cell(
               2,
-              _smallButton('รายละเอียด', () => _notReady('รายละเอียดค่าอาหาร')),
+              _smallButton('รายละเอียด', _openFoodInvoice),
               align: Alignment.centerRight,
             ),
             _cell(1, _amount(_foodAmount), align: Alignment.centerRight),
