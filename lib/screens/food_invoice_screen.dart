@@ -1,5 +1,6 @@
 // lib/screens/food_invoice_screen.dart
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
 import '../config/theme.dart';
@@ -9,6 +10,7 @@ import '../models/foodtype.dart';
 import '../models/tfood.dart';
 import '../providers/auth_provider.dart';
 import '../services/api_service.dart';
+import '../utils/dialog.dart';
 import '../utils/logger.dart';
 import '../utils/snackbar_helper.dart';
 import '../utils/util.dart';
@@ -21,18 +23,18 @@ class FoodInvoiceLine {
   int? foodtypeId;
   String? foodtypeName;
 
-  /// ราคาต่อคน — มาจากประเภทอาหารที่เลือก
+  /// ราคาต่อคน — ล็อกตามประเภทอาหารที่เลือก แก้ราคาได้ที่หน้ารายการอาหาร
   int price;
 
-  /// จำนวนคน
+  /// จำนวนคน ต้องอย่างน้อย 1
   int persons;
 
-  /// จำนวนมื้อ
+  /// จำนวนมื้อ ต้องอย่างน้อย 1
   int meals;
 
-  int? sequence;
-  String? startdate;
-  String? stopdate;
+  int sequence;
+  DateTime? startDate;
+  DateTime? stopDate;
 
   /// ติ๊กเลือกไว้ (สำหรับปุ่มลบที่เลือก)
   bool selected;
@@ -42,11 +44,11 @@ class FoodInvoiceLine {
     this.foodtypeId,
     this.foodtypeName,
     this.price = 0,
-    this.persons = 0,
-    this.meals = 0,
-    this.sequence,
-    this.startdate,
-    this.stopdate,
+    this.persons = 1,
+    this.meals = 1,
+    this.sequence = 0,
+    this.startDate,
+    this.stopDate,
     this.selected = false,
   });
 
@@ -57,22 +59,45 @@ class FoodInvoiceLine {
     price: t.price ?? 0,
     persons: t.amount ?? 0,
     meals: t.times ?? 0,
-    sequence: t.sequence,
-    startdate: t.startdate,
-    stopdate: t.stopdate,
+    sequence: t.sequence ?? 0,
+    startDate: parseDate(t.startdate),
+    stopDate: parseDate(t.stopdate),
   );
+
+  static DateTime? parseDate(String? s) =>
+      (s == null || s.isEmpty) ? null : DateTime.tryParse(s);
+
+  static String _fmt(DateTime? d) =>
+      d == null ? '' : DateFormat('yyyy-MM-dd').format(d);
 
   /// จำนวนเงิน = ราคา/คน x คน x มื้อ
   double get amount => (price * persons * meals).toDouble();
+
+  /// ใช้เทียบว่ามีการแก้ไขค้างอยู่หรือไม่
+  String get signature =>
+      '$id|$foodtypeId|$price|$persons|$meals|$sequence|'
+      '${_fmt(startDate)}|${_fmt(stopDate)}';
+
+  Tfood toTfood(int bookId) => Tfood(
+    id: id,
+    bookID: bookId,
+    foodtypeid: foodtypeId,
+    price: price,
+    amount: persons,
+    times: meals,
+    sequence: sequence,
+    startdate: _fmt(startDate),
+    stopdate: _fmt(stopDate),
+  );
 }
 
 /// ใบแจ้งค่าอาหาร อาหารว่าง และเครื่องดื่ม ของใบจองหนึ่ง
 ///
 /// เปิดจากปุ่มรายละเอียดในแถวค่าอาหารของหน้ารับชำระเงิน
 ///
-/// รายการมาจาก tfood ของใบจองนั้น แก้ไขในหน้าจอได้ (เลือกประเภทอาหาร จำนวนคน
-/// จำนวนมื้อ เพิ่มแถว ลบแถวที่เลือก) จำนวนเงินและยอดรวมคำนวณให้ทันที
-/// การบันทึกลงฐานข้อมูลและการพิมพ์ยังรอสเปก
+/// รายการมาจาก tfood ของใบจองนั้น แก้ไขในหน้าจอแล้วกดบันทึกทีเดียว
+/// หมายเหตุเก็บที่ bookroom.foodremark บันทึกผ่านการอัปเดตใบจอง
+/// การพิมพ์ยังรอแบบฟอร์ม
 class FoodInvoiceScreen extends StatefulWidget {
   final ApiService apiService;
   final AuthProvider authProvider;
@@ -93,16 +118,22 @@ class _FoodInvoiceScreenState extends State<FoodInvoiceScreen> {
   static final _money = NumberFormat('#,##0.00');
 
   /// ตารางกว้างอย่างน้อยเท่านี้ จอแคบกว่าให้เลื่อนแนวนอน
-  static const double _minTableWidth = 1000;
+  static const double _minTableWidth = 1200;
 
   static final Color _line = AppTheme.primaryColor.withValues(alpha: 0.45);
 
   bool _loading = true;
+  bool _saving = false;
   String? _error;
 
   Bookroom? _booking;
   List<Foodtype> _foodtypes = [];
   List<FoodInvoiceLine> _lines = [];
+
+  /// สภาพตอนโหลดมา ใช้หาแถวที่ถูกลบ และเช็คว่ามีการแก้ไขค้างหรือยัง
+  List<String> _originalSignatures = [];
+  List<int> _originalIds = [];
+  String _originalRemark = '';
 
   final _remarkCtrl = TextEditingController();
 
@@ -123,6 +154,21 @@ class _FoodInvoiceScreenState extends State<FoodInvoiceScreen> {
   }
 
   double get _total => _lines.fold<double>(0, (sum, l) => sum + l.amount);
+
+  DateTime? get _bookingStart => FoodInvoiceLine.parseDate(_booking?.startdate);
+
+  DateTime? get _bookingStop => FoodInvoiceLine.parseDate(_booking?.stopdate);
+
+  /// มีการแก้ไขที่ยังไม่ได้บันทึกหรือไม่
+  bool get _dirty {
+    if (_remarkCtrl.text.trim() != _originalRemark.trim()) return true;
+    final now = _lines.map((l) => l.signature).toList();
+    if (now.length != _originalSignatures.length) return true;
+    for (var i = 0; i < now.length; i++) {
+      if (now[i] != _originalSignatures[i]) return true;
+    }
+    return false;
+  }
 
   Future<void> _load() async {
     setState(() {
@@ -152,7 +198,7 @@ class _FoodInvoiceScreenState extends State<FoodInvoiceScreen> {
       final lines = ((tfoodRes['tfoods'] as List?) ?? const [])
           .map((j) => FoodInvoiceLine.fromTfood(Tfood.fromJson(j)))
           .toList();
-      lines.sort((a, b) => (a.sequence ?? 0).compareTo(b.sequence ?? 0));
+      lines.sort((a, b) => a.sequence.compareTo(b.sequence));
 
       final recorder = await _resolveRecorder();
 
@@ -161,8 +207,14 @@ class _FoodInvoiceScreenState extends State<FoodInvoiceScreen> {
         _booking = booking;
         _foodtypes = foodtypes;
         _lines = lines;
+        _originalSignatures = lines.map((l) => l.signature).toList();
+        _originalIds = lines
+            .where((l) => l.id != null)
+            .map((l) => l.id!)
+            .toList();
         // หมายเหตุของใบแจ้งค่าอาหารแยกช่องกับหมายเหตุของใบจอง
-        _remarkCtrl.text = booking.foodremark ?? '';
+        _originalRemark = booking.foodremark ?? '';
+        _remarkCtrl.text = _originalRemark;
         _recorderEmpId = recorder.empId;
         _recorderName = recorder.name;
         _loading = false;
@@ -178,6 +230,8 @@ class _FoodInvoiceScreenState extends State<FoodInvoiceScreen> {
   }
 
   /// รหัสและชื่อของผู้บันทึก จากผู้ใช้ที่ล็อกอิน — วิธีเดียวกับหน้ารับชำระเงิน
+  ///
+  /// ใช้แสดงบนเอกสารและออกรายงานเท่านั้น ยังไม่ได้บันทึกลงฐานข้อมูล
   Future<({int? empId, String? name})> _resolveRecorder() async {
     final empId = widget.authProvider.empID;
     final fallback = widget.authProvider.fullName;
@@ -200,24 +254,25 @@ class _FoodInvoiceScreenState extends State<FoodInvoiceScreen> {
     context.showInfoSnackBar('$what ยังไม่เปิดใช้งาน');
   }
 
-  /// บันทึกใบแจ้งค่าอาหาร — รอสเปก ตรวจความครบถ้วนไว้ก่อน
-  void _save() {
-    if (_recorderEmpId == null) {
-      context.showErrorSnackBar(
-        'ไม่พบรหัสพนักงานของผู้ใช้ที่ล็อกอิน จึงบันทึกไม่ได้',
-      );
-      return;
-    }
-    final incomplete = _lines.any((l) => l.foodtypeId == null);
-    if (incomplete) {
-      context.showErrorSnackBar('มีแถวที่ยังไม่ได้เลือกรายการอาหาร');
-      return;
-    }
-    _notReady('บันทึก');
-  }
+  // ---------------------------------------------------------------------------
+  // แก้ไขรายการ
+  // ---------------------------------------------------------------------------
 
+  /// เพิ่มแถวใหม่ — ลำดับต่อจากแถวสุดท้าย วันที่ใช้ช่วงของใบจอง คนและมื้อเริ่มที่ 1
   void _addLine() {
-    setState(() => _lines.add(FoodInvoiceLine(sequence: _lines.length + 1)));
+    final maxSeq = _lines.fold<int>(
+      0,
+      (m, l) => l.sequence > m ? l.sequence : m,
+    );
+    setState(() {
+      _lines.add(
+        FoodInvoiceLine(
+          sequence: maxSeq + 1,
+          startDate: _bookingStart,
+          stopDate: _bookingStop,
+        ),
+      );
+    });
   }
 
   void _selectAll() {
@@ -229,7 +284,7 @@ class _FoodInvoiceScreenState extends State<FoodInvoiceScreen> {
     });
   }
 
-  /// ลบเฉพาะในหน้าจอ ยังไม่ลบในฐานข้อมูลจนกว่าจะกดบันทึก (รอสเปกการบันทึก)
+  /// ลบออกจากหน้าจอ แถวที่เคยมีในฐานข้อมูลจะถูกลบจริงตอนกดบันทึก
   void _deleteSelected() {
     final count = _lines.where((l) => l.selected).length;
     if (count == 0) {
@@ -237,44 +292,191 @@ class _FoodInvoiceScreenState extends State<FoodInvoiceScreen> {
       return;
     }
     setState(() => _lines.removeWhere((l) => l.selected));
-    context.showSuccessSnackBar('ลบออกจากหน้าจอแล้ว $count รายการ');
+    context.showInfoSnackBar(
+      'ลบ $count รายการออกจากหน้าจอแล้ว กดบันทึกเพื่อยืนยัน',
+    );
   }
+
+  Future<void> _pickDate(FoodInvoiceLine line, bool isStart) async {
+    final current = isStart ? line.startDate : line.stopDate;
+    final picked = await Util.dateFieldPickerNullable(context, current);
+    if (picked == null || !mounted) return;
+    setState(() {
+      if (isStart) {
+        line.startDate = picked;
+      } else {
+        line.stopDate = picked;
+      }
+    });
+  }
+
+  // ---------------------------------------------------------------------------
+  // บันทึก
+  // ---------------------------------------------------------------------------
+
+  /// ข้อความแจ้งเตือนเมื่อข้อมูลยังไม่พร้อมบันทึก — null แปลว่าผ่าน
+  String? _validate() {
+    if (_recorderEmpId == null) {
+      return 'ไม่พบรหัสพนักงานของผู้ใช้ที่ล็อกอิน จึงบันทึกไม่ได้';
+    }
+    for (var i = 0; i < _lines.length; i++) {
+      final l = _lines[i];
+      final no = i + 1;
+      if (l.foodtypeId == null) return 'แถวที่ $no ยังไม่ได้เลือกรายการอาหาร';
+      if (l.persons < 1) return 'แถวที่ $no จำนวนคนต้องอย่างน้อย 1';
+      if (l.meals < 1) return 'แถวที่ $no จำนวนมื้อต้องอย่างน้อย 1';
+      if (l.startDate == null || l.stopDate == null) {
+        return 'แถวที่ $no ยังไม่ได้เลือกวันที่';
+      }
+      if (l.stopDate!.isBefore(l.startDate!)) {
+        return 'แถวที่ $no วันที่สิ้นสุดอยู่ก่อนวันที่เริ่มต้น';
+      }
+    }
+
+    // รายการซ้ำกันทำให้ยอดผิดโดยไม่ตั้งใจ จึงห้ามบันทึก
+    final seen = <int, int>{};
+    for (var i = 0; i < _lines.length; i++) {
+      final id = _lines[i].foodtypeId!;
+      if (seen.containsKey(id)) {
+        return 'รายการ "${_lines[i].foodtypeName ?? ''}" ซ้ำกัน '
+            '(แถวที่ ${seen[id]! + 1} และ ${i + 1})';
+      }
+      seen[id] = i;
+    }
+    return null;
+  }
+
+  /// บันทึกรายการอาหารและหมายเหตุ
+  ///
+  /// แถวที่หายไปจากหน้าจอแต่เคยมีในฐานข้อมูลจะถูกลบ แถวที่มี id อยู่แล้วอัปเดต
+  /// แถวใหม่สร้างใหม่ ส่วนหมายเหตุบันทึกผ่านการอัปเดตใบจอง
+  Future<void> _save() async {
+    if (_saving) return;
+    final problem = _validate();
+    if (problem != null) {
+      context.showErrorSnackBar(problem);
+      return;
+    }
+
+    setState(() => _saving = true);
+    try {
+      final keptIds = _lines
+          .where((l) => l.id != null)
+          .map((l) => l.id!)
+          .toSet();
+      for (final id in _originalIds) {
+        if (!keptIds.contains(id)) {
+          await widget.apiService.deleteTfood(id);
+        }
+      }
+
+      for (final l in _lines) {
+        final tfood = l.toTfood(widget.bookId);
+        if (l.id == null) {
+          await widget.apiService.createTfood(tfood);
+        } else {
+          await widget.apiService.updateTfood(l.id!, tfood);
+        }
+      }
+
+      await _saveRemark();
+
+      if (!mounted) return;
+      context.showSuccessSnackBar('บันทึกใบแจ้งค่าอาหารเรียบร้อยแล้ว');
+      setState(() => _saving = false);
+      // โหลดใหม่เพื่อให้ได้ id ของแถวที่เพิ่งสร้าง และล้างสถานะแก้ไขค้าง
+      await _load();
+    } catch (e) {
+      if (AppLogger.on) AppLogger.d('Error saving food invoice: $e');
+      if (!mounted) return;
+      setState(() => _saving = false);
+      context.showErrorSnackBar(
+        'บันทึกไม่สำเร็จ\n${e.toString().replaceAll('Exception: ', '')}',
+      );
+      // อาจบันทึกสำเร็จไปแล้วบางส่วน จึงโหลดใหม่ให้ตรงของจริง
+      await _load();
+    }
+  }
+
+  /// บันทึกหมายเหตุผ่านการอัปเดตใบจอง — ข้ามเมื่อหมายเหตุว่างหรือไม่ได้แก้
+  ///
+  /// ส่งค่าเดิมของใบจองกลับไปครบ เปลี่ยนเฉพาะ foodremark
+  /// backend โหลดใบจองเดิมก่อนแล้วเขียนทับเฉพาะฟิลด์ที่ส่งไป สถานะจึงไม่หาย
+  Future<void> _saveRemark() async {
+    final remark = _remarkCtrl.text.trim();
+    if (remark.isEmpty || remark == _originalRemark.trim()) return;
+    final payload = Bookroom.fromJson({
+      ..._booking!.toJson(),
+      'foodremark': remark,
+    });
+    await widget.apiService.updateBooking(widget.bookId, payload);
+  }
+
+  /// ถามยืนยันเมื่อยังมีการแก้ไขค้างอยู่ — true = ออกได้
+  Future<bool> _confirmLeave() async {
+    if (!_dirty) return true;
+    final ok = await AppDialog.showConfirm(
+      context,
+      'ยังมีการแก้ไขที่ยังไม่ได้บันทึก ต้องการออกจากหน้านี้หรือไม่?',
+      confirmText: 'ออกโดยไม่บันทึก',
+    );
+    return ok == true;
+  }
+
+  Future<void> _close() async {
+    if (!await _confirmLeave()) return;
+    if (mounted) Navigator.pop(context);
+  }
+
+  // ---------------------------------------------------------------------------
+  // หน้าจอ
+  // ---------------------------------------------------------------------------
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.close, size: 28),
-          tooltip: 'ปิด',
-          onPressed: () => Navigator.pop(context),
+    return PopScope(
+      // ปิดด้วยปุ่มย้อนกลับของเบราว์เซอร์ก็ต้องถามก่อนเหมือนกัน
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        if (await _confirmLeave() && mounted) {
+          if (context.mounted) Navigator.pop(context);
+        }
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          leading: IconButton(
+            icon: const Icon(Icons.close, size: 28),
+            tooltip: 'ปิด',
+            onPressed: _close,
+          ),
+          title: Text(
+            'ใบแจ้งค่าอาหาร เลขที่จอง ${widget.bookId}',
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          ),
+          backgroundColor: AppTheme.primaryColor,
+          foregroundColor: Colors.white,
+          elevation: 4,
         ),
-        title: Text(
-          'ใบแจ้งค่าอาหาร เลขที่จอง ${widget.bookId}',
-          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-        ),
-        backgroundColor: AppTheme.primaryColor,
-        foregroundColor: Colors.white,
-        elevation: 4,
+        body: _loading
+            ? const Center(child: CircularProgressIndicator())
+            : _error != null
+            ? _errorView(_error!)
+            : LayoutBuilder(
+                builder: (context, c) {
+                  final width = c.maxWidth < _minTableWidth + 32
+                      ? _minTableWidth
+                      : c.maxWidth - 32;
+                  return SingleChildScrollView(
+                    padding: const EdgeInsets.all(16),
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: SizedBox(width: width, child: _invoice()),
+                    ),
+                  );
+                },
+              ),
       ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : _error != null
-          ? _errorView(_error!)
-          : LayoutBuilder(
-              builder: (context, c) {
-                final width = c.maxWidth < _minTableWidth + 32
-                    ? _minTableWidth
-                    : c.maxWidth - 32;
-                return SingleChildScrollView(
-                  padding: const EdgeInsets.all(16),
-                  child: SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: SizedBox(width: width, child: _invoice()),
-                  ),
-                );
-              },
-            ),
     );
   }
 
@@ -354,6 +556,7 @@ class _FoodInvoiceScreenState extends State<FoodInvoiceScreen> {
                 maxLines: 4,
                 style: const TextStyle(fontSize: 14),
                 decoration: _input(),
+                onChanged: (_) => setState(() {}),
               ),
             ),
           ]),
@@ -367,7 +570,7 @@ class _FoodInvoiceScreenState extends State<FoodInvoiceScreen> {
     );
   }
 
-  /// ตารางรายการอาหาร — เลือกประเภท กรอกคนและมื้อ ราคาและจำนวนเงินคำนวณให้
+  /// ตารางรายการอาหาร — เลือกประเภท กรอกคน มื้อ และช่วงวันที่ของแต่ละแถว
   Widget _linesBox() {
     return Container(
       padding: const EdgeInsets.all(8),
@@ -396,7 +599,15 @@ class _FoodInvoiceScreenState extends State<FoodInvoiceScreen> {
                     Expanded(flex: 2, child: _subHead('คน', center: true)),
                     Expanded(flex: 2, child: _subHead('มื้อ', center: true)),
                     Expanded(
-                      flex: 2,
+                      flex: 3,
+                      child: _subHead('วันที่เริ่มต้น', center: true),
+                    ),
+                    Expanded(
+                      flex: 3,
+                      child: _subHead('วันที่สิ้นสุด', center: true),
+                    ),
+                    Expanded(
+                      flex: 3,
                       child: _subHead('จำนวนเงิน', right: true),
                     ),
                   ],
@@ -466,8 +677,10 @@ class _FoodInvoiceScreenState extends State<FoodInvoiceScreen> {
               (v) => setState(() => line.meals = v),
             ),
           ),
+          Expanded(flex: 3, child: _dateField(line, true)),
+          Expanded(flex: 3, child: _dateField(line, false)),
           Expanded(
-            flex: 2,
+            flex: 3,
             child: Align(
               alignment: Alignment.centerRight,
               child: _text(_money.format(line.amount)),
@@ -512,7 +725,7 @@ class _FoodInvoiceScreenState extends State<FoodInvoiceScreen> {
           setState(() {
             line.foodtypeId = v;
             line.foodtypeName = f.name;
-            // ราคาต่อคนมาจากประเภทอาหาร เปลี่ยนรายการแล้วราคาเปลี่ยนตาม
+            // ราคาต่อคนล็อกตามประเภทอาหาร แก้ราคาได้ที่หน้ารายการอาหารเท่านั้น
             line.price = f.price ?? 0;
           });
         },
@@ -520,6 +733,7 @@ class _FoodInvoiceScreenState extends State<FoodInvoiceScreen> {
     );
   }
 
+  /// ช่องตัวเลขจำนวนเต็ม รับเฉพาะตัวเลข ค่าน้อยกว่า 1 จะถูกเตือนตอนบันทึก
   Widget _numberField(int value, ValueChanged<int> onChanged) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 6),
@@ -528,8 +742,34 @@ class _FoodInvoiceScreenState extends State<FoodInvoiceScreen> {
         style: const TextStyle(fontSize: 14),
         textAlign: TextAlign.right,
         keyboardType: TextInputType.number,
+        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
         decoration: _input(),
         onChanged: (v) => onChanged(int.tryParse(v.trim()) ?? 0),
+      ),
+    );
+  }
+
+  /// ช่องวันที่ของแถว — กดเพื่อเลือก แสดงเป็นวันที่ภาษาไทย
+  Widget _dateField(FoodInvoiceLine line, bool isStart) {
+    final value = isStart ? line.startDate : line.stopDate;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 6),
+      child: InkWell(
+        onTap: () => _pickDate(line, isStart),
+        borderRadius: BorderRadius.circular(6),
+        child: InputDecorator(
+          decoration: _input().copyWith(
+            suffixIcon: const Icon(Icons.calendar_today, size: 14),
+          ),
+          child: Text(
+            value == null ? 'เลือกวันที่' : Util.formatThaiDate(value),
+            style: TextStyle(
+              fontSize: 13,
+              color: value == null ? Colors.grey.shade500 : Colors.black87,
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
       ),
     );
   }
@@ -555,6 +795,14 @@ class _FoodInvoiceScreenState extends State<FoodInvoiceScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
+          if (_dirty)
+            Padding(
+              padding: const EdgeInsets.only(right: 12),
+              child: Text(
+                'มีการแก้ไขที่ยังไม่ได้บันทึก',
+                style: TextStyle(fontSize: 13, color: Colors.orange.shade800),
+              ),
+            ),
           _actionButton(
             'พิมพ์',
             Icons.print_outlined,
@@ -563,18 +811,13 @@ class _FoodInvoiceScreenState extends State<FoodInvoiceScreen> {
           ),
           const SizedBox(width: 8),
           _actionButton(
-            'บันทึก',
+            _saving ? 'กำลังบันทึก...' : 'บันทึก',
             Icons.save_outlined,
             const Color(0xFF43A047),
-            _save,
+            _saving ? null : _save,
           ),
           const SizedBox(width: 8),
-          _actionButton(
-            'กลับ',
-            Icons.arrow_back,
-            Colors.grey.shade600,
-            () => Navigator.pop(context),
-          ),
+          _actionButton('กลับ', Icons.arrow_back, Colors.grey.shade600, _close),
         ],
       ),
     );
@@ -677,7 +920,7 @@ class _FoodInvoiceScreenState extends State<FoodInvoiceScreen> {
     String label,
     IconData icon,
     Color color,
-    VoidCallback onTap,
+    VoidCallback? onTap,
   ) {
     return ElevatedButton.icon(
       onPressed: onTap,
@@ -686,6 +929,8 @@ class _FoodInvoiceScreenState extends State<FoodInvoiceScreen> {
       style: ElevatedButton.styleFrom(
         backgroundColor: color,
         foregroundColor: Colors.white,
+        disabledBackgroundColor: color.withValues(alpha: 0.45),
+        disabledForegroundColor: Colors.white70,
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
