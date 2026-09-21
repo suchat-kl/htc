@@ -404,12 +404,12 @@ class _CommodityInDialogState extends State<CommodityInDialog> {
         const SizedBox(height: 6),
         InkWell(
           onTap: () async {
-            final picked = await Util.dateFieldPicker(
+            final picked = await Util.dateFieldPickerNullable(
               context, // ✅ Pass context
 
               _selectedDate, // Christian year DateTime
             );
-            if (picked != _selectedDate) setState(() => _selectedDate = picked);
+            if (picked != null && picked != _selectedDate) setState(() => _selectedDate = picked);
             /*
             final picked = await showDatePicker(
               context: context,

@@ -238,19 +238,19 @@ class _BookRoomDetailDialogState extends State<BookRoomDetailDialog> {
                       _numField('จำนวนห้อง', _numberRoomCtrl, suffix: 'ห้อง'),
                       const SizedBox(height: 18),
                       _dateField('วันที่เริ่มต้น', _startDate, () async {
-                        final p = await Util.dateFieldPicker(
+                        final p = await Util.dateFieldPickerNullable(
                           context,
                           _startDate,
                         );
-                        if (p != _startDate) setState(() => _startDate = p);
+                        if (p != null && p != _startDate) setState(() => _startDate = p);
                       }),
                       const SizedBox(height: 18),
                       _dateField('วันที่สิ้นสุด', _stopDate, () async {
-                        final p = await Util.dateFieldPicker(
+                        final p = await Util.dateFieldPickerNullable(
                           context,
                           _stopDate,
                         );
-                        if (p != _stopDate) setState(() => _stopDate = p);
+                        if (p != null && p != _stopDate) setState(() => _stopDate = p);
                       }),
                     ],
                   ),

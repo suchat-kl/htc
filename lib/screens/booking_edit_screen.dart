@@ -489,11 +489,11 @@ class _BookingEditScreenState extends State<BookingEditScreen> {
                                   'วันที่เริ่มต้น',
                                   _startDate,
                                   () async {
-                                    final p = await Util.dateFieldPicker(
+                                    final p = await Util.dateFieldPickerNullable(
                                       context,
                                       _startDate,
                                     );
-                                    if (p != _startDate) {
+                                    if (p != null && p != _startDate) {
                                       setState(() => _startDate = p);
                                     }
                                   },
@@ -502,11 +502,11 @@ class _BookingEditScreenState extends State<BookingEditScreen> {
                                   'วันที่สิ้นสุด',
                                   _stopDate,
                                   () async {
-                                    final p = await Util.dateFieldPicker(
+                                    final p = await Util.dateFieldPickerNullable(
                                       context,
                                       _stopDate,
                                     );
-                                    if (p != _stopDate) {
+                                    if (p != null && p != _stopDate) {
                                       setState(() => _stopDate = p);
                                     }
                                   },
@@ -1018,13 +1018,13 @@ class _BookingEditScreenState extends State<BookingEditScreen> {
 //           ),
 //           const SizedBox(height: 10),
 //          _dateField('วันที่เริ่มต้น', widget.startDate, () async {
-//             final p = await Util.dateFieldPicker(context, widget.startDate);
-//             if (p != widget.startDate) setState(() => widget.startDate = p);
+//             final p = await Util.dateFieldPickerNullable(context, widget.startDate);
+//             if (p != null && p != widget.startDate) setState(() => widget.startDate = p);
 //           }),
 //        const SizedBox(height: 10),
 // _dateField('วันที่สิ้นสุด', widget.startDate, () async {
-//             final p = await Util.dateFieldPicker(context, widget.startDate);
-//             if (p != widget.startDate) setState(() => widget.startDate = p);
+//             final p = await Util.dateFieldPickerNullable(context, widget.startDate);
+//             if (p != null && p != widget.startDate) setState(() => widget.startDate = p);
 //           }),
 //         ],
 //       ),
@@ -1151,15 +1151,15 @@ class _AddTfoodDialogState extends State<_AddTfoodDialog> {
           const SizedBox(height: 10),
           // ✅ ใช้ _dateField ที่สร้างในคลาสนี้
           _dateField('วันที่เริ่มต้น', _startDate, () async {
-            final p = await Util.dateFieldPicker(context, _startDate);
-            if (p != _startDate) {
+            final p = await Util.dateFieldPickerNullable(context, _startDate);
+            if (p != null && p != _startDate) {
               setState(() => _startDate = p);
             }
           }),
           const SizedBox(height: 10),
           _dateField('วันที่สิ้นสุด', _stopDate, () async {
-            final p = await Util.dateFieldPicker(context, _stopDate);
-            if (p != _stopDate) {
+            final p = await Util.dateFieldPickerNullable(context, _stopDate);
+            if (p != null && p != _stopDate) {
               setState(() => _stopDate = p);
             }
           }),

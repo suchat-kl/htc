@@ -1,27 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../config/theme.dart';
+
 // import 'package:flutter_localizations/flutter_localizations.dart';
 
 class Util {
   Util();
 
-  /// เลือกวันที่ด้วยปฏิทินภาษาไทย (พ.ศ.) — คืนค่าเดิมเมื่อกดยกเลิก
+  /// เลือกวันที่ด้วยปฏิทินภาษาไทย (พ.ศ.) — คืน null เมื่อกดยกเลิก
   ///
-  /// เหมาะกับช่องที่ต้องมีวันที่เสมอ ช่องที่ว่างได้ (เช่นช่องค้นหา) ให้ใช้
-  /// [dateFieldPickerNullable] แทน ไม่งั้นกดยกเลิกแล้วจะได้วันที่เริ่มต้นกลับมา
-  static Future<DateTime> dateFieldPicker(
-    BuildContext context,
-    DateTime iniDate,
-  ) async {
-    final picked = await dateFieldPickerNullable(context, iniDate);
-    return picked ?? iniDate;
-  }
-
-  /// ปฏิทินเดียวกับ [dateFieldPicker] แต่คืน null เมื่อกดยกเลิก
-  ///
+  /// ทั้งระบบใช้ตัวนี้ตัวเดียว ผู้เรียกต้องเช็ค null เองก่อนนำค่าไปใช้
+  /// เพื่อให้แยกออกว่าผู้ใช้กดยกเลิก หรือตั้งใจเลือกวันเดิม
   /// [iniDate] เป็น null ได้ ปฏิทินจะเปิดที่วันนี้ ใช้กับช่องที่ยังไม่ได้เลือก
-  /// ทำให้แยกได้ว่าผู้ใช้ยกเลิก หรือตั้งใจเลือกวันเดียวกับวันเริ่มต้น
   static Future<DateTime?> dateFieldPickerNullable(
     BuildContext context,
     DateTime? iniDate,
@@ -50,10 +41,10 @@ class Util {
         return Theme(
           data: Theme.of(context).copyWith(
             colorScheme: const ColorScheme.light(
-              primary: Colors.blue,
+              primary: AppTheme.primaryColor,
               onPrimary: Colors.white,
               surface: Colors.white,
-              onSurface: Colors.black,
+              onSurface: AppTheme.textPrimary,
             ),
           ),
           child: Localizations.override(

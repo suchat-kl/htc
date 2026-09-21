@@ -177,10 +177,12 @@ class _CommodityReportScreenState extends State<CommodityReportScreen> {
   Future<void> _selectDate() async {
     // AppLogger.d("dateNow $dateNow");
     // int y = dateNow.year;
-    final DateTime? picked; //=
-    picked = await Util.dateFieldPicker(context, _selectedDate);
-    if (picked != _selectedDate) {
-      setState(() => _selectedDate = picked!);
+    final DateTime? picked = await Util.dateFieldPickerNullable(
+      context,
+      _selectedDate,
+    );
+    if (picked != null && picked != _selectedDate) {
+      setState(() => _selectedDate = picked);
     }
     /*
     await showDatePicker(

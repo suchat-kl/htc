@@ -452,12 +452,12 @@ class _BookingInfoTabState extends State<BookingInfoTab> {
               const SizedBox(height: 18),
               _twoCol(
                 a: _dateField('วันที่เริ่มต้น', _startDate, () async {
-                  final p = await Util.dateFieldPicker(context, _startDate);
-                  if (p != _startDate) setState(() => _startDate = p);
+                  final p = await Util.dateFieldPickerNullable(context, _startDate);
+                  if (p != null && p != _startDate) setState(() => _startDate = p);
                 }),
                 b: _dateField('วันที่สิ้นสุด', _stopDate, () async {
-                  final p = await Util.dateFieldPicker(context, _stopDate);
-                  if (p != _stopDate) setState(() => _stopDate = p);
+                  final p = await Util.dateFieldPickerNullable(context, _stopDate);
+                  if (p != null && p != _stopDate) setState(() => _stopDate = p);
                 }),
               ),
               const SizedBox(height: 18),

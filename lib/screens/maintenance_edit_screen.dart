@@ -449,12 +449,12 @@ class _MaintenanceEditScreenState extends State<MaintenanceEditScreen> {
         //   if (p != null) setState(() => _reportDate = p);
         // }),
         _dateField('วันที่แจ้ง', _reportDate, () async {
-          final DateTime picked = await Util.dateFieldPicker(
+          final DateTime? picked = await Util.dateFieldPickerNullable(
             context, // ✅ Pass context
             _reportDate, // Christian year DateTime
           );
 
-          if (picked != _reportDate) {
+          if (picked != null && picked != _reportDate) {
             setState(() => _reportDate = picked);
           }
         }),
@@ -559,23 +559,23 @@ class _MaintenanceEditScreenState extends State<MaintenanceEditScreen> {
         ], (v) => setState(() => _workstatus = v!)),
 
         _dateField('วันที่รับงาน', _startDate, () async {
-          final DateTime picked = await Util.dateFieldPicker(
+          final DateTime? picked = await Util.dateFieldPickerNullable(
             context, // ✅ Pass context
             _startDate, // Christian year DateTime
           );
 
-          if (picked != _startDate) {
+          if (picked != null && picked != _startDate) {
             setState(() => _startDate = picked);
           }
         }),
 
         _dateField('วันที่ปิดงาน', _stopDate, () async {
-          final DateTime picked = await Util.dateFieldPicker(
+          final DateTime? picked = await Util.dateFieldPickerNullable(
             context, // ✅ Pass context
             _stopDate, // Christian year DateTime
           );
 
-          if (picked != _stopDate) {
+          if (picked != null && picked != _stopDate) {
             setState(() => _stopDate = picked);
           }
         }),

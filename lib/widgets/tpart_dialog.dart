@@ -244,12 +244,12 @@ class _TpartDialogState extends State<TpartDialog> {
                       _fld('จำนวน', _qtyCtrl, inputType: TextInputType.number),
                       const SizedBox(height: 10),
                       _dateField('วันที่', _selectedDate, () async {
-                        DateTime p = await Util.dateFieldPicker(
+                        DateTime? p = await Util.dateFieldPickerNullable(
                           context, // ✅ Pass context
 
                           _selectedDate, // Christian year DateTime
                         );
-                        if (p != _selectedDate) {
+                        if (p != null && p != _selectedDate) {
                           setState(() => _selectedDate = p);
                         }
                       }),

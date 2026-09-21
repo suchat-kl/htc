@@ -252,11 +252,11 @@ class _TfoodDialogState extends State<TfoodDialog> {
                       _numField('มื้อ', _timesCtrl, suffix: 'มื้อ'),
                       const SizedBox(height: 18),
                       _dateField('วันที่เริ่มต้น', _startDate, () async {
-                        final p = await Util.dateFieldPicker(
+                        final p = await Util.dateFieldPickerNullable(
                           context,
                           _startDate,
                         );
-                        if (p != _startDate) {
+                        if (p != null && p != _startDate) {
                           setState(() {
                             _startDate = p;
                             _syncTimesWithDates();
@@ -265,11 +265,11 @@ class _TfoodDialogState extends State<TfoodDialog> {
                       }),
                       const SizedBox(height: 18),
                       _dateField('วันที่สิ้นสุด', _stopDate, () async {
-                        final p = await Util.dateFieldPicker(
+                        final p = await Util.dateFieldPickerNullable(
                           context,
                           _stopDate,
                         );
-                        if (p != _stopDate) {
+                        if (p != null && p != _stopDate) {
                           setState(() {
                             _stopDate = p;
                             _syncTimesWithDates();
