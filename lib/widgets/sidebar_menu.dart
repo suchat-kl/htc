@@ -1684,7 +1684,7 @@ const Divider(indent: 16, endIndent: 16),
               ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppTheme.secondaryColor,
-                foregroundColor: Colors.white,
+                foregroundColor: AppTheme.onSecondaryColor,
                 padding: EdgeInsets.symmetric(vertical: compact ? 10 : 14),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(compact ? 8 : 10),

@@ -413,8 +413,8 @@ class _BookingEditScreenState extends State<BookingEditScreen> {
                     : const Icon(Icons.check, size: 20),
                 label: const Text('Booking', style: TextStyle(fontSize: 14)),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.secondaryColor,
-                  foregroundColor: Colors.white,
+                  backgroundColor: AppTheme.editColor,
+                  foregroundColor: AppTheme.onSecondaryColor,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 16,
                     vertical: 10,
@@ -489,10 +489,11 @@ class _BookingEditScreenState extends State<BookingEditScreen> {
                                   'วันที่เริ่มต้น',
                                   _startDate,
                                   () async {
-                                    final p = await Util.dateFieldPickerNullable(
-                                      context,
-                                      _startDate,
-                                    );
+                                    final p =
+                                        await Util.dateFieldPickerNullable(
+                                          context,
+                                          _startDate,
+                                        );
                                     if (p != null && p != _startDate) {
                                       setState(() => _startDate = p);
                                     }
@@ -502,10 +503,11 @@ class _BookingEditScreenState extends State<BookingEditScreen> {
                                   'วันที่สิ้นสุด',
                                   _stopDate,
                                   () async {
-                                    final p = await Util.dateFieldPickerNullable(
-                                      context,
-                                      _stopDate,
-                                    );
+                                    final p =
+                                        await Util.dateFieldPickerNullable(
+                                          context,
+                                          _stopDate,
+                                        );
                                     if (p != null && p != _stopDate) {
                                       setState(() => _stopDate = p);
                                     }

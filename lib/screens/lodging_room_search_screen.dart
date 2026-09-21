@@ -386,6 +386,8 @@ class _LodgingRoomSearchScreenState extends State<LodgingRoomSearchScreen> {
               icon: const Icon(Icons.close, size: 18),
               label: const Text('ล้าง'),
               style: OutlinedButton.styleFrom(
+                foregroundColor: AppTheme.neutralColor,
+                side: const BorderSide(color: AppTheme.neutralColor),
                 padding: const EdgeInsets.symmetric(
                   horizontal: 20,
                   vertical: 14,
@@ -584,6 +586,7 @@ class _LodgingRoomSearchScreenState extends State<LodgingRoomSearchScreen> {
           ),
           TextButton(
             onPressed: () => _search(page: _page),
+            style: TextButton.styleFrom(foregroundColor: AppTheme.primaryColor),
             child: const Text('ลองใหม่'),
           ),
         ],
@@ -676,8 +679,8 @@ class _LodgingRoomSearchScreenState extends State<LodgingRoomSearchScreen> {
       child: ElevatedButton(
         onPressed: bookId == null ? null : () => _showBookingDetail(bookId),
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppTheme.secondaryColor,
-          foregroundColor: Colors.white,
+          backgroundColor: AppTheme.editColor,
+          foregroundColor: AppTheme.onSecondaryColor,
           padding: const EdgeInsets.all(6),
           minimumSize: const Size(50, 32),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),

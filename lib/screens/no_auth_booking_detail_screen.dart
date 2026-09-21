@@ -133,6 +133,10 @@ class _NoAuthBookingDetailScreenState extends State<NoAuthBookingDetailScreen>
                   const SizedBox(height: 16),
                   ElevatedButton(
                     onPressed: _loadBookingData,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.primaryColor,
+                      foregroundColor: Colors.white,
+                    ),
                     child: const Text('ลองอีกครั้ง'),
                   ),
                 ],

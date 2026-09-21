@@ -328,6 +328,9 @@ class _RoomAvailabilityDialogState extends State<RoomAvailabilityDialog> {
             OutlinedButton.icon(
               onPressed: _load,
               icon: const Icon(Icons.refresh, size: 18),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppTheme.primaryColor,
+              ),
               label: const Text('ลองใหม่'),
             ),
           ],

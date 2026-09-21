@@ -375,7 +375,11 @@ class _BookingRoomAssignmentSectionState
           Expanded(
             child: Text(msg, style: TextStyle(color: Colors.red.shade700)),
           ),
-          TextButton(onPressed: _load, child: const Text('ลองใหม่')),
+          TextButton(
+            onPressed: _load,
+            style: TextButton.styleFrom(foregroundColor: AppTheme.primaryColor),
+            child: const Text('ลองใหม่'),
+          ),
         ],
       ),
     );

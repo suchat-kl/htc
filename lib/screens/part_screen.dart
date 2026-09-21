@@ -508,12 +508,12 @@ class _PartScreenState extends State<PartScreen> {
                   onPressed: row.isNew
                       ? null
                       : () => _showAddEditDialog(part: row.toPart()),
-                  icon: const Icon(Icons.edit, size: 20, color: Colors.blue),
+                  icon: const Icon(Icons.edit, size: 20, color: AppTheme.primaryColor),
                   tooltip: 'แก้ไขในหน้าต่าง',
                 ),
                 IconButton(
                   onPressed: row.isNew ? null : () => _deletePart(row.toPart()),
-                  icon: const Icon(Icons.delete, size: 20, color: Colors.red),
+                  icon: const Icon(Icons.delete, size: 20, color: AppTheme.deleteColor),
                   tooltip: 'ลบทันที',
                 ),
               ],

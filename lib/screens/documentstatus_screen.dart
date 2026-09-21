@@ -462,14 +462,14 @@ class _DocumentStatusScreenState extends State<DocumentStatusScreen> {
                         ? null
                         : () =>
                               _showAddEditDialog(item: row.toDocumentStatus()),
-                    icon: const Icon(Icons.edit, size: 20, color: Colors.blue),
+                    icon: const Icon(Icons.edit, size: 20, color: AppTheme.primaryColor),
                     tooltip: 'แก้ไขในหน้าต่าง',
                   ),
                   IconButton(
                     onPressed: row.isNew
                         ? null
                         : () => _deleteDocumentStatus(row.toDocumentStatus()),
-                    icon: const Icon(Icons.delete, size: 20, color: Colors.red),
+                    icon: const Icon(Icons.delete, size: 20, color: AppTheme.deleteColor),
                     tooltip: 'ลบทันที',
                   ),
                 ],
@@ -658,8 +658,8 @@ class _DocumentStatusScreenState extends State<DocumentStatusScreen> {
                 //   foregroundColor: AppTheme.primaryColor,
                 // ),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.secondaryColor,
-                  foregroundColor: Colors.white,
+                  backgroundColor: AppTheme.editColor,
+                  foregroundColor: AppTheme.onSecondaryColor,
                   padding: EdgeInsets.symmetric(
                     horizontal: isDesktop ? 20 : 14,
                     vertical: isDesktop ? 14 : 10,
@@ -717,6 +717,8 @@ class _DocumentStatusScreenState extends State<DocumentStatusScreen> {
                         icon: const Icon(Icons.close, size: 18),
                         label: const Text('ล้าง'),
                         style: OutlinedButton.styleFrom(
+                          foregroundColor: AppTheme.neutralColor,
+                          side: const BorderSide(color: AppTheme.neutralColor),
                           padding: const EdgeInsets.symmetric(
                             horizontal: 16,
                             vertical: 16,
@@ -756,6 +758,10 @@ class _DocumentStatusScreenState extends State<DocumentStatusScreen> {
                               const SizedBox(height: 16),
                               ElevatedButton(
                                 onPressed: _loadData,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppTheme.primaryColor,
+                                  foregroundColor: Colors.white,
+                                ),
                                 child: const Text('ลองอีกครั้ง'),
                               ),
                             ],

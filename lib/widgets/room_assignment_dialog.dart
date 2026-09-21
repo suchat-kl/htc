@@ -365,6 +365,9 @@ class _RoomAssignmentDialogState extends State<RoomAssignmentDialog> {
                 setState(() => _loadingStatuses = true);
                 _loadStatuses();
               },
+              style: TextButton.styleFrom(
+                foregroundColor: AppTheme.primaryColor,
+              ),
               child: const Text('ลองใหม่'),
             ),
           ],

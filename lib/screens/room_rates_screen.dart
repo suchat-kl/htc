@@ -79,7 +79,7 @@ class _RoomRatesScreenState extends State<RoomRatesScreen> {
               ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppTheme.secondaryColor,
-                foregroundColor: Colors.white,
+                foregroundColor: AppTheme.onSecondaryColor,
                 padding: EdgeInsets.symmetric(
                   horizontal: isDesktop ? 20 : 14,
                   vertical: 12,
@@ -599,7 +599,7 @@ class _RoomRatesScreenState extends State<RoomRatesScreen> {
             ),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppTheme.secondaryColor,
-              foregroundColor: Colors.white,
+              foregroundColor: AppTheme.onSecondaryColor,
               padding: EdgeInsets.symmetric(
                 horizontal: isDesktop ? 32 : 24,
                 vertical: isDesktop ? 16 : 12,

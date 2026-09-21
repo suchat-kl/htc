@@ -236,6 +236,10 @@ class _PaymentListScreenState extends State<PaymentListScreen> {
                                   const SizedBox(height: 16),
                                   ElevatedButton(
                                     onPressed: _searchBookings,
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: AppTheme.primaryColor,
+                                      foregroundColor: Colors.white,
+                                    ),
                                     child: const Text('ลองอีกครั้ง'),
                                   ),
                                 ],
@@ -305,7 +309,7 @@ class _PaymentListScreenState extends State<PaymentListScreen> {
                 label: const Text('ล้าง'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppTheme.neutralColor,
-                  foregroundColor: Colors.black87,
+                  foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 20,
                     vertical: 10,
@@ -566,8 +570,8 @@ class _PaymentListScreenState extends State<PaymentListScreen> {
                                 _showPayment(item.bookID!);
                               },
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: AppTheme.secondaryColor,
-                                foregroundColor: Colors.white,
+                                backgroundColor: AppTheme.editColor,
+                                foregroundColor: AppTheme.onSecondaryColor,
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 6,
                                   vertical: 6,

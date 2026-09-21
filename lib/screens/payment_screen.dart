@@ -368,7 +368,11 @@ class _PaymentScreenState extends State<PaymentScreen> {
             style: TextStyle(color: Colors.red.shade700),
           ),
           const SizedBox(height: 12),
-          TextButton(onPressed: _load, child: const Text('ลองใหม่')),
+          TextButton(
+            onPressed: _load,
+            style: TextButton.styleFrom(foregroundColor: AppTheme.primaryColor),
+            child: const Text('ลองใหม่'),
+          ),
         ],
       ),
     );

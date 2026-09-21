@@ -233,6 +233,10 @@ class _BookingListScreenState extends State<BookingListScreen> {
                                   const SizedBox(height: 16),
                                   ElevatedButton(
                                     onPressed: _searchBookings,
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: AppTheme.primaryColor,
+                                      foregroundColor: Colors.white,
+                                    ),
                                     child: const Text('ลองอีกครั้ง'),
                                   ),
                                 ],
@@ -302,7 +306,7 @@ class _BookingListScreenState extends State<BookingListScreen> {
                 label: const Text('ล้าง'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppTheme.neutralColor,
-                  foregroundColor: Colors.black87,
+                  foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 20,
                     vertical: 10,
@@ -563,8 +567,8 @@ class _BookingListScreenState extends State<BookingListScreen> {
                                 _showBookingDetail(item.bookID!);
                               },
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: AppTheme.secondaryColor,
-                                foregroundColor: Colors.white,
+                                backgroundColor: AppTheme.editColor,
+                                foregroundColor: AppTheme.onSecondaryColor,
                                 padding: const EdgeInsets.all(6),
                                 minimumSize: const Size(50, 32),
                                 shape: RoundedRectangleBorder(
