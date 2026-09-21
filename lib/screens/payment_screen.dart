@@ -53,7 +53,8 @@ class OtherServiceLine {
 /// เปิดจากปุ่มรับชำระในหน้ารายการรับชำระเงิน หน้าตาตามหน้าจอสรุปค่าบริการ
 /// ของระบบเดิม
 ///
-/// ข้อมูลที่ต่อแล้ว: ชื่อผู้ใช้บริการ ช่วงวันที่ และสถานะการจอง (จากใบจอง)
+/// ข้อมูลที่ต่อแล้ว: ชื่อผู้ใช้บริการ ช่วงวันที่ สถานะการจอง หมายเหตุ และ
+/// ข้อมูลใบเสร็จ (เล่มที่ เลขที่ วันที่) — ทั้งหมดจากใบจองชุดเดียวกัน
 /// ค่าห้องพัก (getPaymentLodging) และค่าห้องกิจกรรม (getPaymentActivity)
 /// ผู้บันทึก (ผู้ใช้ที่ล็อกอิน)
 /// ข้อมูลที่รอสเปก: ค่าอาหาร ค่าบริการอื่นๆ และการพิมพ์/บันทึก
@@ -101,7 +102,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
   double _foodAmount = 0;
   List<OtherServiceLine> _otherServices = [];
 
-  // ---------- ข้อมูลใบเสร็จ ----------
+  // ---------- ข้อมูลใบเสร็จ (เติมจากใบจองตอนโหลด) ----------
   final _remarkCtrl = TextEditingController();
   final _receiptBookCtrl = TextEditingController();
   final _receiptNoCtrl = TextEditingController();
@@ -160,6 +161,14 @@ class _PaymentScreenState extends State<PaymentScreen> {
       // ผู้บันทึก: หาชื่อจากรายชื่อพนักงานด้วยรหัสของผู้ใช้ที่ล็อกอิน
       final recorder = await _resolveRecorder();
 
+      // หมายเหตุและข้อมูลใบเสร็จมาจากใบจองชุดเดียวกับส่วนหัว
+      _remarkCtrl.text = booking.bookremark ?? '';
+      _receiptBookCtrl.text = booking.receivebook?.toString() ?? '';
+      _receiptNoCtrl.text = booking.receiveno?.toString() ?? '';
+      final receiptDate = booking.receivedate == null
+          ? null
+          : DateTime.tryParse(booking.receivedate!);
+
       // ห้องพัก: ครบทุกช่อง รายการ ห้อง คืน/วัน/ชั่วโมง เงิน จากคิวรี่ค่าห้องพัก
       final lodging = await widget.apiService.getPaymentLodging(
         bookId: widget.bookId,
@@ -198,6 +207,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
               ),
             )
             .toList();
+        _receiptDate = receiptDate;
         _recorderEmpId = recorder.empId;
         _recorderName = recorder.name;
         _foodAmount = 0;

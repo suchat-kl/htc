@@ -14,6 +14,11 @@ class Bookroom {
   final String? requestroom;
   final String? requestconference;
   final String? bookremark;
+
+  /// ข้อมูลใบเสร็จของหน้ารับชำระเงิน — เล่มที่ เลขที่ และวันที่ (yyyy-MM-dd)
+  final int? receivebook;
+  final int? receiveno;
+  final String? receivedate;
   final int? statusId;
   final String? statusName;
   // ฟิลด์ที่มีอยู่แล้วใน BookroomDTO ฝั่ง Spring Boot แต่ยังไม่เคยประกาศที่นี่
@@ -43,6 +48,9 @@ class Bookroom {
     this.requestroom,
     this.requestconference,
     this.bookremark,
+    this.receivebook,
+    this.receiveno,
+    this.receivedate,
     this.statusId,
     this.statusName,
     this.bookdate,
@@ -70,6 +78,9 @@ class Bookroom {
       requestroom: json['requestroom'] as String?,
       requestconference: json['requestconference'] as String?,
       bookremark: json['bookremark'] as String?,
+      receivebook: json['receivebook'] as int?,
+      receiveno: json['receiveno'] as int?,
+      receivedate: json['receivedate'] as String?,
       statusId: json['statusId'] as int?,
       statusName: json['statusName'] as String?,
       bookdate: json['bookdate'] as String?,
@@ -98,6 +109,9 @@ class Bookroom {
       'requestroom': requestroom,
       'requestconference': requestconference,
       'bookremark': bookremark,
+      'receivebook': receivebook,
+      'receiveno': receiveno,
+      'receivedate': receivedate,
       'statusId': statusId,
       'statusName': statusName,
       'bookdate': bookdate,
