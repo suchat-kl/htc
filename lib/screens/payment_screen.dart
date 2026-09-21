@@ -6,6 +6,7 @@ import '../config/theme.dart';
 import '../models/bookroom.dart';
 import '../models/documentstatus.dart';
 import '../models/employee.dart';
+import '../models/tfood.dart';
 import '../providers/auth_provider.dart';
 import '../services/api_service.dart';
 import '../utils/logger.dart';
@@ -54,7 +55,7 @@ class OtherServiceLine {
 /// เปิดจากปุ่มรับชำระในหน้ารายการรับชำระเงิน หน้าตาตามหน้าจอสรุปค่าบริการ
 /// ของระบบเดิม
 ///
-/// ข้อมูลที่ต่อแล้ว: ชื่อผู้ใช้บริการ ช่วงวันที่ สถานะการจอง หมายเหตุ และ
+/// ข้อมูลที่ต่อแล้ว: ชื่อผู้ใช้บริการ ช่วงวันที่ สถานะการจอง ค่าอาหาร หมายเหตุ และ
 /// ข้อมูลใบเสร็จ (เล่มที่ เลขที่ วันที่) — ทั้งหมดจากใบจองชุดเดียวกัน
 /// ค่าห้องพัก (getPaymentLodging) และค่าห้องกิจกรรม (getPaymentActivity)
 /// ผู้บันทึก (ผู้ใช้ที่ล็อกอิน)
@@ -180,8 +181,11 @@ class _PaymentScreenState extends State<PaymentScreen> {
         bookId: widget.bookId,
       );
 
-      // TODO: ค่าอาหาร และค่าบริการอื่นๆ รอสเปกว่าดึงจากตารางไหน
-      // แล้วเติม _foodAmount, _otherServices ตรงนี้
+      // ค่าอาหาร อาหารว่าง และเครื่องดื่ม: ยอดรวมของรายการอาหารในใบจอง
+      // ตัวเดียวกับที่แสดงในใบแจ้งค่าอาหาร
+      final foodAmount = await _loadFoodAmount();
+
+      // TODO: ค่าบริการอื่นๆ รอสเปกว่าดึงจากตารางไหน แล้วเติม _otherServices
 
       if (!mounted) return;
       setState(() {
@@ -211,7 +215,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
         _receiptDate = receiptDate;
         _recorderEmpId = recorder.empId;
         _recorderName = recorder.name;
-        _foodAmount = 0;
+        _foodAmount = foodAmount;
         _otherServices = const [];
         _loading = false;
       });
@@ -222,6 +226,27 @@ class _PaymentScreenState extends State<PaymentScreen> {
         _error = 'โหลดข้อมูลไม่สำเร็จ\n${e.toString()}';
         _loading = false;
       });
+    }
+  }
+
+  /// ยอดรวมค่าอาหารของใบจอง = ผลรวมของ ราคา/คน x คน x มื้อ ทุกรายการ
+  ///
+  /// คิดจาก tfood ชุดเดียวกับใบแจ้งค่าอาหาร ยอดสองหน้าจึงตรงกันเสมอ
+  /// ดึงไม่สำเร็จให้เป็น 0 แทนที่จะทำทั้งหน้าพัง
+  Future<double> _loadFoodAmount() async {
+    try {
+      final res = await widget.apiService.getTfoods(
+        bookID: widget.bookId,
+        size: 200,
+      );
+      final list = (res['tfoods'] as List?) ?? const [];
+      return list.fold<double>(0, (sum, j) {
+        final t = Tfood.fromJson(j as Map<String, dynamic>);
+        return sum + ((t.price ?? 0) * (t.amount ?? 0) * (t.times ?? 0));
+      });
+    } catch (e) {
+      if (AppLogger.on) AppLogger.d('Error loading tfoods: $e');
+      return 0;
     }
   }
 
@@ -250,6 +275,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
   }
 
   /// เปิดใบแจ้งค่าอาหาร อาหารว่าง และเครื่องดื่ม ของใบจองนี้
+  ///
+  /// กลับมาแล้วโหลดใหม่ เผื่อรายการอาหารถูกแก้ ยอดค่าอาหารจะได้ตรงกัน
   Future<void> _openFoodInvoice() async {
     await Navigator.push(
       context,
@@ -261,6 +288,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
         ),
       ),
     );
+    if (!mounted) return;
+    await _load();
   }
 
   /// บันทึกการรับชำระ — ตอนนี้ตรวจแค่ว่ามีผู้บันทึก ส่วนการบันทึกจริงรอสเปก
