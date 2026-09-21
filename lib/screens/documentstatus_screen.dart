@@ -1,6 +1,6 @@
 // lib/screens/documentstatus_screen.dart
 import 'package:flutter/material.dart';
-// import 'package:flutter/services.dart';
+import 'package:flutter/services.dart';
 import 'package:highway_training/utils/dialog.dart';
 import '../config/theme.dart';
 import '../models/documentstatus.dart';
@@ -31,8 +31,13 @@ class _DocumentStatusScreenState extends State<DocumentStatusScreen> {
   String? _error;
 
   // Search
-  final TextEditingController _searchController = TextEditingController();
-  String _searchKeyword = '';
+  // ค้นหาแยกช่อง รหัส และ ชื่อสถานะ
+  final TextEditingController _codeSearchCtrl = TextEditingController();
+  final TextEditingController _nameSearchCtrl = TextEditingController();
+
+  /// ค่าที่ใช้ค้นหาจริง อัปเดตเมื่อกดปุ่มค้นหาเท่านั้น
+  int? _searchStatusId;
+  String _searchStatusName = '';
 
   /// แถวที่แก้ไขได้ในตาราง — สร้างใหม่ทุกครั้งที่โหลดข้อมูล
   final List<_EditRow> _rows = [];
@@ -56,7 +61,8 @@ class _DocumentStatusScreenState extends State<DocumentStatusScreen> {
 
   @override
   void dispose() {
-    _searchController.dispose();
+    _codeSearchCtrl.dispose();
+    _nameSearchCtrl.dispose();
     _nameController.dispose();
     for (final r in _rows) {
       r.dispose();
@@ -74,7 +80,8 @@ class _DocumentStatusScreenState extends State<DocumentStatusScreen> {
       final response = await widget.apiService.getDocumentStatus(
         page: _currentPage,
         size: _pageSize,
-        keyword: _searchKeyword.isEmpty ? null : _searchKeyword,
+        statusId: _searchStatusId,
+        statusName: _searchStatusName.isEmpty ? null : _searchStatusName,
       );
 
       if (mounted) {
@@ -542,6 +549,60 @@ class _DocumentStatusScreenState extends State<DocumentStatusScreen> {
     );
   }
 
+  /// ค้นหาตามค่าที่กรอกไว้ในช่องรหัสและชื่อ
+  ///
+  /// อ่านค่าจากช่องกรอกตอนกดค้นหาเท่านั้น พิมพ์เฉยๆ ไม่โหลดข้อมูลใหม่
+  Future<void> _runSearch() async {
+    if (!await _confirmDiscard()) return;
+    setState(() {
+      _searchStatusId = int.tryParse(_codeSearchCtrl.text.trim());
+      _searchStatusName = _nameSearchCtrl.text.trim();
+      _currentPage = 0;
+    });
+    _loadData();
+  }
+
+  /// ล้างทั้งสองช่องแล้วโหลดรายการทั้งหมด
+  Future<void> _clearSearch() async {
+    if (!await _confirmDiscard()) return;
+    setState(() {
+      _codeSearchCtrl.clear();
+      _nameSearchCtrl.clear();
+      _searchStatusId = null;
+      _searchStatusName = '';
+      _currentPage = 0;
+    });
+    _loadData();
+  }
+
+  /// ช่องค้นหาหนึ่งช่อง — กด Enter แล้วค้นหาเลย
+  Widget _searchField({
+    required TextEditingController controller,
+    required String hint,
+    required double width,
+    bool numberOnly = false,
+  }) {
+    return SizedBox(
+      width: width,
+      child: TextField(
+        controller: controller,
+        keyboardType: numberOnly ? TextInputType.number : TextInputType.text,
+        inputFormatters: numberOnly
+            ? [FilteringTextInputFormatter.digitsOnly]
+            : null,
+        decoration: InputDecoration(
+          hintText: hint,
+          prefixIcon: const Icon(Icons.search),
+          isDense: true,
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+          filled: true,
+          fillColor: Colors.grey.shade50,
+        ),
+        onSubmitted: (_) => _runSearch(),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     // final isDesktop = MediaQuery.of(context).size.width > 1024;
@@ -606,58 +667,27 @@ class _DocumentStatusScreenState extends State<DocumentStatusScreen> {
             constraints: BoxConstraints(maxWidth: maxContentWidth),
             child: Column(
               children: [
-                // Search Bar
+                // Search Bar — หนึ่งช่องต่อหนึ่งฟิลด์
                 Padding(
                   padding: const EdgeInsets.all(16),
-                  child: Row(
+                  child: Wrap(
+                    spacing: 12,
+                    runSpacing: 12,
+                    crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
-                      Expanded(
-                        child: TextField(
-                          controller: _searchController,
-                          decoration: InputDecoration(
-                            hintText: 'ค้นหาด้วย รหัส หรือ ชื่อ',
-                            prefixIcon: const Icon(Icons.search),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            filled: true,
-                            fillColor: Colors.grey.shade50,
-                            suffixIcon: _searchController.text.isNotEmpty
-                                ? IconButton(
-                                    icon: const Icon(Icons.clear),
-                                    onPressed: () async {
-                                      // ถามก่อนเพราะการล้างคำค้นทำให้โหลดข้อมูลใหม่
-                                      if (!await _confirmDiscard()) return;
-                                      _searchController.clear();
-                                      _searchKeyword = '';
-                                      _currentPage = 0;
-                                      _loadData();
-                                    },
-                                  )
-                                : null,
-                          ),
-                          // พิมพ์แล้วให้ปุ่มกากบาทโผล่/หาย แต่ยังไม่โหลดข้อมูล
-                          onChanged: (_) => setState(() {}),
-                          onSubmitted: (value) async {
-                            if (!await _confirmDiscard()) return;
-                            setState(() {
-                              _searchKeyword = value.trim();
-                              _currentPage = 0;
-                            });
-                            _loadData();
-                          },
-                        ),
+                      _searchField(
+                        controller: _codeSearchCtrl,
+                        hint: 'รหัส',
+                        width: isDesktop ? 160 : 130,
+                        numberOnly: true,
                       ),
-                      const SizedBox(width: 12),
+                      _searchField(
+                        controller: _nameSearchCtrl,
+                        hint: 'ชื่อสถานะ',
+                        width: isDesktop ? 280 : 200,
+                      ),
                       ElevatedButton(
-                        onPressed: () async {
-                          if (!await _confirmDiscard()) return;
-                          setState(() {
-                            _searchKeyword = _searchController.text.trim();
-                            _currentPage = 0;
-                          });
-                          _loadData();
-                        },
+                        onPressed: _runSearch,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppTheme.primaryColor,
                           foregroundColor: Colors.white,
@@ -665,8 +695,25 @@ class _DocumentStatusScreenState extends State<DocumentStatusScreen> {
                             horizontal: 20,
                             vertical: 16,
                           ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
                         ),
                         child: const Text('ค้นหา'),
+                      ),
+                      OutlinedButton.icon(
+                        onPressed: _clearSearch,
+                        icon: const Icon(Icons.close, size: 18),
+                        label: const Text('ล้าง'),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 16,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
                       ),
                     ],
                   ),
@@ -715,7 +762,8 @@ class _DocumentStatusScreenState extends State<DocumentStatusScreen> {
                               ),
                               const SizedBox(height: 16),
                               Text(
-                                _searchKeyword.isEmpty
+                                (_searchStatusId == null &&
+                                        _searchStatusName.isEmpty)
                                     ? 'ไม่มีข้อมูลสถานะการจอง'
                                     : 'ไม่พบข้อมูลที่ค้นหา',
                                 style: const TextStyle(

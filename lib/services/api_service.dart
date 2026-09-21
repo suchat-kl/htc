@@ -2451,16 +2451,26 @@ class ApiService {
   // lib/services/api_service.dart
   // เพิ่ม method เหล่านี้ในคลาส ApiService
 
+  /// รายการสถานะการจองแบบแบ่งหน้า
+  ///
+  /// ค้นหาได้สองแบบ: [keyword] คำเดียวค้นทั้งรหัสและชื่อ (ของเดิม) หรือ
+  /// ค้นแยกทีละฟิลด์ด้วย [statusId] และ [statusName] ซึ่งหน้าจัดการสถานะการจองใช้อยู่
+  /// ถ้าส่งแบบแยกฟิลด์มา backend จะไม่สนใจ keyword
   Future<Map<String, dynamic>> getDocumentStatus({
     int page = 0,
     int size = 5,
     String? keyword,
+    int? statusId,
+    String? statusName,
   }) async {
     await _ensureToken();
     final queryParams = {
       'page': page.toString(),
       'size': size.toString(),
       if (keyword != null && keyword.isNotEmpty) 'keyword': keyword,
+      if (statusId != null) 'statusId': statusId.toString(),
+      if (statusName != null && statusName.trim().isNotEmpty)
+        'statusName': statusName.trim(),
     };
 
     final response = await dio.get(
@@ -2509,16 +2519,25 @@ class ApiService {
   // lib/services/api_service.dart
   // เพิ่ม method เหล่านี้ในคลาส ApiService
 
+  /// รายการสถานะห้องพักแบบแบ่งหน้า
+  ///
+  /// ค้นหาได้สองแบบ: [keyword] คำเดียวค้นทั้งรหัสและชื่อ (ของเดิม) หรือ
+  /// ค้นแยกทีละฟิลด์ด้วย [status] และ [name] ซึ่งหน้าจัดการสถานะห้องพักใช้อยู่
+  /// ถ้าส่งแบบแยกฟิลด์มา backend จะไม่สนใจ keyword
   Future<Map<String, dynamic>> getStatusChecks({
     int page = 0,
     int size = 5,
     String? keyword,
+    int? status,
+    String? name,
   }) async {
     await _ensureToken();
     final queryParams = {
       'page': page.toString(),
       'size': size.toString(),
       if (keyword != null && keyword.isNotEmpty) 'keyword': keyword,
+      if (status != null) 'status': status.toString(),
+      if (name != null && name.trim().isNotEmpty) 'name': name.trim(),
     };
 
     final response = await dio.get(
