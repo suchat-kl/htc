@@ -593,7 +593,7 @@ class _FoodInvoiceScreenState extends State<FoodInvoiceScreen> {
               children: [
                 Row(
                   children: [
-                    const SizedBox(width: 34),
+                    SizedBox(width: 34, child: _headerCheckbox()),
                     Expanded(flex: 6, child: _subHead('รายการ', center: true)),
                     Expanded(flex: 2, child: _subHead('ราคา/คน', right: true)),
                     Expanded(flex: 2, child: _subHead('คน', center: true)),
@@ -640,6 +640,21 @@ class _FoodInvoiceScreenState extends State<FoodInvoiceScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  /// ช่องติ๊กที่หัวคอลัมน์ — ความหมายเดียวกับปุ่มเลือกทั้งหมด
+  ///
+  /// เลือกบางแถวจะเป็นขีดกลาง กดแล้วเลือกทั้งหมด กดอีกครั้งยกเลิกทั้งหมด
+  Widget _headerCheckbox() {
+    final selected = _lines.where((l) => l.selected).length;
+    final value = _lines.isEmpty || selected == 0
+        ? false
+        : (selected == _lines.length ? true : null);
+    return Checkbox(
+      tristate: true,
+      value: value,
+      onChanged: _lines.isEmpty ? null : (_) => _selectAll(),
     );
   }
 
