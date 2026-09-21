@@ -388,6 +388,12 @@ class _StatusCheckScreenState extends State<StatusCheckScreen> {
     }
   }
 
+  /// ปิดหน้าจอ ถามก่อนถ้ายังมีการแก้ไขค้าง
+  Future<void> _closeScreen() async {
+    if (!await _confirmDiscard()) return;
+    if (mounted) Navigator.pop(context);
+  }
+
   /// ถามยืนยันเมื่อยังมีการแก้ไขค้างอยู่ — true = ไปต่อได้
   Future<bool> _confirmDiscard() async {
     if (!_dirty) return true;
@@ -552,264 +558,275 @@ class _StatusCheckScreenState extends State<StatusCheckScreen> {
     // ✅ กำหนดความกว้างสูงสุดของเนื้อหา
     final maxContentWidth = isDesktop ? 1200.0 : double.infinity;
 
-    return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.close, size: 28),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: const Text(
-          'สถานะห้องพัก',
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-        ),
-        backgroundColor: AppTheme.primaryColor,
-        foregroundColor: Colors.white,
-        elevation: 4,
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 16),
-            child: ElevatedButton.icon(
-              onPressed: () => _showAddEditDialog(),
-              icon: const Icon(Icons.add, size: 20),
-              label: const Text('เพิ่ม', style: TextStyle(fontSize: 14)),
-              // style: ElevatedButton.styleFrom(
-              //   backgroundColor: Colors.white,
-              //   foregroundColor: AppTheme.primaryColor,
-              // ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.secondaryColor,
-                foregroundColor: Colors.white,
-                padding: EdgeInsets.symmetric(
-                  horizontal: isDesktop ? 20 : 14,
-                  vertical: isDesktop ? 14 : 10,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
+    return PopScope(
+      // ปิดด้วยปุ่มย้อนกลับของเบราว์เซอร์ก็ต้องถามก่อนเหมือนกัน
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        if (await _confirmDiscard() && mounted) {
+          if (context.mounted) Navigator.pop(context);
+        }
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          leading: IconButton(
+            icon: const Icon(Icons.close, size: 28),
+            tooltip: 'ปิด',
+            onPressed: _closeScreen,
+          ),
+          title: const Text(
+            'สถานะห้องพัก',
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          ),
+          backgroundColor: AppTheme.primaryColor,
+          foregroundColor: Colors.white,
+          elevation: 4,
+          actions: [
+            Padding(
+              padding: const EdgeInsets.only(right: 16),
+              child: ElevatedButton.icon(
+                onPressed: () => _showAddEditDialog(),
+                icon: const Icon(Icons.add, size: 20),
+                label: const Text('เพิ่ม', style: TextStyle(fontSize: 14)),
+                // style: ElevatedButton.styleFrom(
+                //   backgroundColor: Colors.white,
+                //   foregroundColor: AppTheme.primaryColor,
+                // ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.secondaryColor,
+                  foregroundColor: Colors.white,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: isDesktop ? 20 : 14,
+                    vertical: isDesktop ? 14 : 10,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
                 ),
               ),
             ),
-          ),
-        ],
-      ),
-      body: Center(
-        child: Container(
-          // ✅ จำกัดความกว้างสูงสุดและจัดกึ่งกลาง
-          constraints: BoxConstraints(maxWidth: maxContentWidth),
-          child: Column(
-            children: [
-              // Search Bar
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _searchController,
-                        decoration: InputDecoration(
-                          hintText: 'ค้นหาด้วย รหัส หรือ ชื่อ',
-                          prefixIcon: const Icon(Icons.search),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10),
+          ],
+        ),
+        body: Center(
+          child: Container(
+            // ✅ จำกัดความกว้างสูงสุดและจัดกึ่งกลาง
+            constraints: BoxConstraints(maxWidth: maxContentWidth),
+            child: Column(
+              children: [
+                // Search Bar
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _searchController,
+                          decoration: InputDecoration(
+                            hintText: 'ค้นหาด้วย รหัส หรือ ชื่อ',
+                            prefixIcon: const Icon(Icons.search),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            filled: true,
+                            fillColor: Colors.grey.shade50,
+                            suffixIcon: _searchController.text.isNotEmpty
+                                ? IconButton(
+                                    icon: const Icon(Icons.clear),
+                                    onPressed: () {
+                                      _searchController.clear();
+                                      _searchKeyword = '';
+                                      _currentPage = 0;
+                                      _loadData();
+                                    },
+                                  )
+                                : null,
                           ),
-                          filled: true,
-                          fillColor: Colors.grey.shade50,
-                          suffixIcon: _searchController.text.isNotEmpty
-                              ? IconButton(
-                                  icon: const Icon(Icons.clear),
-                                  onPressed: () {
-                                    _searchController.clear();
-                                    _searchKeyword = '';
-                                    _currentPage = 0;
-                                    _loadData();
-                                  },
-                                )
-                              : null,
+                          onSubmitted: (value) {
+                            setState(() {
+                              _searchKeyword = value.trim();
+                              _currentPage = 0;
+                            });
+                            _loadData();
+                          },
                         ),
-                        onSubmitted: (value) {
+                      ),
+                      const SizedBox(width: 12),
+                      ElevatedButton(
+                        onPressed: () {
                           setState(() {
-                            _searchKeyword = value.trim();
+                            _searchKeyword = _searchController.text.trim();
                             _currentPage = 0;
                           });
                           _loadData();
                         },
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    ElevatedButton(
-                      onPressed: () {
-                        setState(() {
-                          _searchKeyword = _searchController.text.trim();
-                          _currentPage = 0;
-                        });
-                        _loadData();
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.primaryColor,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 20,
-                          vertical: 16,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppTheme.primaryColor,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 16,
+                          ),
                         ),
+                        child: const Text('ค้นหา'),
                       ),
-                      child: const Text('ค้นหา'),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
 
-              // Table
-              Expanded(
-                child: _isLoading
-                    ? const Center(child: CircularProgressIndicator())
-                    : _error != null
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.error,
-                              size: 64,
-                              color: Colors.red.shade300,
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              _error!,
-                              style: const TextStyle(
-                                fontSize: 16,
-                                color: Colors.grey,
+                // Table
+                Expanded(
+                  child: _isLoading
+                      ? const Center(child: CircularProgressIndicator())
+                      : _error != null
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.error,
+                                size: 64,
+                                color: Colors.red.shade300,
                               ),
-                              textAlign: TextAlign.center,
+                              const SizedBox(height: 16),
+                              Text(
+                                _error!,
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.grey,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: 16),
+                              ElevatedButton(
+                                onPressed: _loadData,
+                                child: const Text('ลองอีกครั้ง'),
+                              ),
+                            ],
+                          ),
+                        )
+                      : _statusChecks.isEmpty
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.inbox,
+                                size: 64,
+                                color: Colors.grey.shade400,
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                _searchKeyword.isEmpty
+                                    ? 'ไม่มีข้อมูลสถานะห้องพัก'
+                                    : 'ไม่พบข้อมูลที่ค้นหา',
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.grey,
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      : Column(
+                          children: [
+                            // Table Header
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 12,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppTheme.primaryColor,
+                                borderRadius: const BorderRadius.only(
+                                  topLeft: Radius.circular(10),
+                                  topRight: Radius.circular(10),
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  SizedBox(width: 40, child: _headerCheckbox()),
+                                  SizedBox(
+                                    width: isDesktop ? 80 : 60,
+                                    child: const Text(
+                                      'รหัส',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                  Expanded(
+                                    child: const Text(
+                                      'ชื่อสถานะ',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                  SizedBox(
+                                    width: isDesktop ? 160 : 120,
+                                    child: const Text(
+                                      'จัดการ',
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                            const SizedBox(height: 16),
-                            ElevatedButton(
-                              onPressed: _loadData,
-                              child: const Text('ลองอีกครั้ง'),
+
+                            // Table Body
+                            Expanded(
+                              child: ListView.builder(
+                                itemCount: _rows.length,
+                                itemBuilder: (context, index) {
+                                  return _editableRow(_rows[index], isDesktop);
+                                },
+                              ),
+                            ),
+
+                            _rowActionBar(),
+
+                            // Pagination
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 12,
+                              ),
+                              decoration: BoxDecoration(
+                                border: Border(
+                                  top: BorderSide(color: Colors.grey.shade300),
+                                ),
+                              ),
+                              child: AppPagination(
+                                currentPage: _currentPage,
+                                totalPages: _totalPages,
+                                pageSize: _pageSize,
+                                summary: 'ทั้งหมด $_totalItems รายการ',
+                                onPageChanged: (page) async {
+                                  if (!await _confirmDiscard()) return;
+                                  setState(() => _currentPage = page);
+                                  _loadData();
+                                },
+                                onPageSizeChanged: (size) async {
+                                  if (!await _confirmDiscard()) return;
+                                  setState(() {
+                                    _pageSize = size;
+                                    _currentPage = 0;
+                                  });
+                                  _loadData();
+                                },
+                              ),
                             ),
                           ],
                         ),
-                      )
-                    : _statusChecks.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.inbox,
-                              size: 64,
-                              color: Colors.grey.shade400,
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              _searchKeyword.isEmpty
-                                  ? 'ไม่มีข้อมูลสถานะห้องพัก'
-                                  : 'ไม่พบข้อมูลที่ค้นหา',
-                              style: const TextStyle(
-                                fontSize: 16,
-                                color: Colors.grey,
-                              ),
-                            ),
-                          ],
-                        ),
-                      )
-                    : Column(
-                        children: [
-                          // Table Header
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 12,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppTheme.primaryColor,
-                              borderRadius: const BorderRadius.only(
-                                topLeft: Radius.circular(10),
-                                topRight: Radius.circular(10),
-                              ),
-                            ),
-                            child: Row(
-                              children: [
-                                SizedBox(width: 40, child: _headerCheckbox()),
-                                SizedBox(
-                                  width: isDesktop ? 80 : 60,
-                                  child: const Text(
-                                    'รหัส',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                                Expanded(
-                                  child: const Text(
-                                    'ชื่อสถานะ',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                                SizedBox(
-                                  width: isDesktop ? 160 : 120,
-                                  child: const Text(
-                                    'จัดการ',
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-
-                          // Table Body
-                          Expanded(
-                            child: ListView.builder(
-                              itemCount: _rows.length,
-                              itemBuilder: (context, index) {
-                                return _editableRow(_rows[index], isDesktop);
-                              },
-                            ),
-                          ),
-
-                          _rowActionBar(),
-
-                          // Pagination
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 12,
-                            ),
-                            decoration: BoxDecoration(
-                              border: Border(
-                                top: BorderSide(color: Colors.grey.shade300),
-                              ),
-                            ),
-                            child: AppPagination(
-                              currentPage: _currentPage,
-                              totalPages: _totalPages,
-                              pageSize: _pageSize,
-                              summary: 'ทั้งหมด $_totalItems รายการ',
-                              onPageChanged: (page) async {
-                                if (!await _confirmDiscard()) return;
-                                setState(() => _currentPage = page);
-                                _loadData();
-                              },
-                              onPageSizeChanged: (size) async {
-                                if (!await _confirmDiscard()) return;
-                                setState(() {
-                                  _pageSize = size;
-                                  _currentPage = 0;
-                                });
-                                _loadData();
-                              },
-                            ),
-                          ),
-                        ],
-                      ),
-              ),
-            ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
