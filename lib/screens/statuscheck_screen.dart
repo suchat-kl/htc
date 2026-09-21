@@ -1,6 +1,7 @@
 // lib/screens/statuscheck_screen.dart
 import 'package:highway_training/utils/dialog.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../config/theme.dart';
 import '../models/statuscheck.dart';
@@ -32,6 +33,12 @@ class _StatusCheckScreenState extends State<StatusCheckScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _searchKeyword = '';
 
+  /// แถวที่แก้ไขได้ในตาราง — สร้างใหม่ทุกครั้งที่โหลดข้อมูล
+  final List<_EditRow> _rows = [];
+
+  /// กำลังบันทึกอยู่ กันกดซ้ำ
+  bool _isSaving = false;
+
   // Dialog
   StatusCheck? _editingItem;
   final _formKey = GlobalKey<FormState>();
@@ -47,6 +54,9 @@ class _StatusCheckScreenState extends State<StatusCheckScreen> {
   void dispose() {
     _searchController.dispose();
     _nameController.dispose();
+    for (final r in _rows) {
+      r.dispose();
+    }
     super.dispose();
   }
 
@@ -70,6 +80,9 @@ class _StatusCheckScreenState extends State<StatusCheckScreen> {
               .toList();
           _totalItems = response['totalItems'] ?? 0;
           _totalPages = response['totalPages'] ?? 0;
+          // สร้างแถวแก้ไขใหม่ทุกครั้งที่โหลด การแก้ไขค้างจะถูกทิ้งไปพร้อมกัน
+          _rebuildRows();
+          _deletedIds.clear();
           _isLoading = false;
         });
       }
@@ -231,6 +244,302 @@ class _StatusCheckScreenState extends State<StatusCheckScreen> {
           ],
         );
       },
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // แก้ไขในตาราง — แก้หลายแถวแล้วกดบันทึกทีเดียว
+  // ---------------------------------------------------------------------------
+
+  /// สร้างแถวแก้ไขจากข้อมูลที่โหลดมา ทิ้งของเดิมเพื่อไม่ให้ controller ค้าง
+  void _rebuildRows() {
+    for (final r in _rows) {
+      r.dispose();
+    }
+    _rows
+      ..clear()
+      ..addAll(_statusChecks.map(_EditRow.from));
+  }
+
+  /// มีการแก้ไขที่ยังไม่ได้บันทึกหรือไม่
+  bool get _dirty =>
+      _rows.any((r) => r.isNew || r.changed) || _deletedIds.isNotEmpty;
+
+  /// รหัสของแถวที่กดลบออกจากหน้าจอแล้ว แต่ยังไม่ได้ลบในฐานข้อมูล
+  final List<int> _deletedIds = [];
+
+  Widget _headerCheckbox() {
+    final selected = _rows.where((r) => r.selected).length;
+    final value = _rows.isEmpty || selected == 0
+        ? false
+        : (selected == _rows.length ? true : null);
+    return Checkbox(
+      tristate: true,
+      value: value,
+      fillColor: WidgetStateProperty.resolveWith(
+        (states) => states.contains(WidgetState.selected)
+            ? Colors.white
+            : Colors.transparent,
+      ),
+      checkColor: AppTheme.primaryColor,
+      side: const BorderSide(color: Colors.white, width: 2),
+      onChanged: _rows.isEmpty ? null : (_) => _selectAll(),
+    );
+  }
+
+  void _selectAll() {
+    final all = _rows.isNotEmpty && _rows.every((r) => r.selected);
+    setState(() {
+      for (final r in _rows) {
+        r.selected = !all;
+      }
+    });
+  }
+
+  /// เพิ่มแถวว่างท้ายตาราง รหัสกรอกเองได้เฉพาะแถวใหม่
+  void _addRow() {
+    setState(() => _rows.add(_EditRow.empty()));
+  }
+
+  /// ลบออกจากหน้าจอ แถวที่มีอยู่แล้วจะถูกลบจริงตอนกดบันทึก
+  void _deleteSelectedRows() {
+    final selected = _rows.where((r) => r.selected).toList();
+    if (selected.isEmpty) {
+      context.showInfoSnackBar('ยังไม่ได้เลือกรายการที่จะลบ');
+      return;
+    }
+    setState(() {
+      for (final r in selected) {
+        if (!r.isNew) _deletedIds.add(r.originalStatus!);
+        r.dispose();
+        _rows.remove(r);
+      }
+    });
+    context.showInfoSnackBar(
+      'ลบ ${selected.length} รายการออกจากหน้าจอแล้ว กดบันทึกเพื่อยืนยัน',
+    );
+  }
+
+  /// ข้อความแจ้งเตือนเมื่อยังบันทึกไม่ได้ — null แปลว่าผ่าน
+  String? _validateRows() {
+    final codes = <int, int>{};
+    for (var i = 0; i < _rows.length; i++) {
+      final r = _rows[i];
+      final no = i + 1;
+      final code = int.tryParse(r.statusCtrl.text.trim());
+      if (code == null) return 'แถวที่ $no รหัสต้องเป็นตัวเลข';
+      if (r.nameCtrl.text.trim().isEmpty) {
+        return 'แถวที่ $no ยังไม่ได้กรอกชื่อสถานะ';
+      }
+      if (codes.containsKey(code)) {
+        return 'รหัส $code ซ้ำกัน (แถวที่ ${codes[code]! + 1} และ $no)';
+      }
+      codes[code] = i;
+    }
+    return null;
+  }
+
+  /// บันทึกทุกแถวที่แก้ไขในครั้งเดียว
+  ///
+  /// ลบแถวที่เอาออก สร้างแถวใหม่ และอัปเดตแถวที่แก้ชื่อ แล้วโหลดข้อมูลใหม่
+  Future<void> _saveRows() async {
+    if (_isSaving) return;
+    final problem = _validateRows();
+    if (problem != null) {
+      context.showErrorSnackBar(problem);
+      return;
+    }
+    if (!_dirty) {
+      context.showInfoSnackBar('ไม่มีการแก้ไขที่ต้องบันทึก');
+      return;
+    }
+
+    setState(() => _isSaving = true);
+    try {
+      for (final id in _deletedIds) {
+        await widget.apiService.deleteStatusCheck(id);
+      }
+      _deletedIds.clear();
+
+      for (final r in _rows) {
+        final item = StatusCheck(
+          status: int.parse(r.statusCtrl.text.trim()),
+          name: r.nameCtrl.text.trim(),
+        );
+        if (r.isNew) {
+          await widget.apiService.createStatusCheck(item);
+        } else if (r.changed) {
+          await widget.apiService.updateStatusCheck(r.originalStatus!, item);
+        }
+      }
+
+      if (!mounted) return;
+      context.showSuccessSnackBar('บันทึกเรียบร้อยแล้ว');
+      setState(() => _isSaving = false);
+      await _loadData();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isSaving = false);
+      context.showErrorSnackBar(
+        'บันทึกไม่สำเร็จ\n${e.toString().replaceAll('Exception: ', '')}',
+      );
+      // อาจบันทึกสำเร็จไปแล้วบางส่วน จึงโหลดใหม่ให้ตรงของจริง
+      await _loadData();
+    }
+  }
+
+  /// ถามยืนยันเมื่อยังมีการแก้ไขค้างอยู่ — true = ไปต่อได้
+  Future<bool> _confirmDiscard() async {
+    if (!_dirty) return true;
+    final ok = await AppDialog.showConfirm(
+      context,
+      'ยังมีการแก้ไขที่ยังไม่ได้บันทึก ต้องการทิ้งการแก้ไขหรือไม่?',
+      confirmText: 'ทิ้งการแก้ไข',
+    );
+    return ok == true;
+  }
+
+  /// หนึ่งแถวของตารางที่แก้ไขได้
+  ///
+  /// รหัสแก้ได้เฉพาะแถวใหม่ เพราะรหัสเดิมเป็นคีย์ที่ใช้อ้างตอนแก้ไขและลบ
+  /// ถ้าต้องเปลี่ยนรหัสของแถวเดิม ให้ลบแล้วเพิ่มใหม่
+  Widget _editableRow(_EditRow row, bool isDesktop) {
+    return Container(
+      decoration: BoxDecoration(
+        border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Row(
+          children: [
+            SizedBox(
+              width: 40,
+              child: Checkbox(
+                value: row.selected,
+                onChanged: (v) => setState(() => row.selected = v ?? false),
+              ),
+            ),
+            SizedBox(
+              width: isDesktop ? 80 : 60,
+              child: row.isNew
+                  ? TextField(
+                      controller: row.statusCtrl,
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      style: const TextStyle(fontSize: 15),
+                      decoration: _rowInput(),
+                      onChanged: (_) => setState(() {}),
+                    )
+                  : Text(
+                      row.statusCtrl.text,
+                      style: const TextStyle(fontWeight: FontWeight.w500),
+                    ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: TextField(
+                controller: row.nameCtrl,
+                style: const TextStyle(fontSize: 15),
+                decoration: _rowInput(),
+                onChanged: (_) => setState(() {}),
+              ),
+            ),
+            SizedBox(
+              width: isDesktop ? 160 : 120,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  IconButton(
+                    onPressed: row.isNew
+                        ? null
+                        : () => _showAddEditDialog(item: row.toStatusCheck()),
+                    icon: const Icon(Icons.edit, size: 20, color: Colors.blue),
+                    tooltip: 'แก้ไขในหน้าต่าง',
+                  ),
+                  IconButton(
+                    onPressed: row.isNew
+                        ? null
+                        : () => _deleteStatusCheck(row.toStatusCheck()),
+                    icon: const Icon(Icons.delete, size: 20, color: Colors.red),
+                    tooltip: 'ลบทันที',
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  InputDecoration _rowInput() {
+    return InputDecoration(
+      isDense: true,
+      filled: true,
+      fillColor: Colors.white,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
+    );
+  }
+
+  /// แถวปุ่มใต้ตาราง — ลบที่เลือก เลือกทั้งหมด เพิ่ม และบันทึก
+  Widget _rowActionBar() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      decoration: BoxDecoration(
+        border: Border(top: BorderSide(color: Colors.grey.shade300)),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          if (_dirty)
+            Padding(
+              padding: const EdgeInsets.only(right: 12),
+              child: Text(
+                'มีการแก้ไขที่ยังไม่ได้บันทึก',
+                style: TextStyle(fontSize: 13, color: Colors.orange.shade800),
+              ),
+            ),
+          _rowButton('ลบที่เลือก', _deleteSelectedRows),
+          const SizedBox(width: 12),
+          _rowButton('เลือกทั้งหมด', _rows.isEmpty ? null : _selectAll),
+          const SizedBox(width: 4),
+          _rowButton('เพิ่ม', _addRow),
+          const SizedBox(width: 12),
+          ElevatedButton.icon(
+            onPressed: _isSaving ? null : _saveRows,
+            icon: const Icon(Icons.save_outlined, size: 18),
+            label: Text(_isSaving ? 'กำลังบันทึก...' : 'บันทึก'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF43A047),
+              foregroundColor: Colors.white,
+              disabledBackgroundColor: const Color(
+                0xFF43A047,
+              ).withValues(alpha: 0.45),
+              disabledForegroundColor: Colors.white70,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _rowButton(String label, VoidCallback? onTap) {
+    return ElevatedButton(
+      onPressed: onTap,
+      style: ElevatedButton.styleFrom(
+        backgroundColor: AppTheme.primaryColor,
+        foregroundColor: Colors.white,
+        disabledBackgroundColor: Colors.grey.shade300,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+        textStyle: const TextStyle(fontSize: 13),
+      ),
+      child: Text(label),
     );
   }
 
@@ -419,6 +728,7 @@ class _StatusCheckScreenState extends State<StatusCheckScreen> {
                             ),
                             child: Row(
                               children: [
+                                SizedBox(width: 40, child: _headerCheckbox()),
                                 SizedBox(
                                   width: isDesktop ? 80 : 60,
                                   child: const Text(
@@ -456,79 +766,14 @@ class _StatusCheckScreenState extends State<StatusCheckScreen> {
                           // Table Body
                           Expanded(
                             child: ListView.builder(
-                              itemCount: _statusChecks.length,
+                              itemCount: _rows.length,
                               itemBuilder: (context, index) {
-                                final item = _statusChecks[index];
-                                return Container(
-                                  decoration: BoxDecoration(
-                                    border: Border(
-                                      bottom: BorderSide(
-                                        color: Colors.grey.shade200,
-                                      ),
-                                    ),
-                                  ),
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 16,
-                                      vertical: 12,
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        SizedBox(
-                                          width: isDesktop ? 80 : 60,
-                                          child: Text(
-                                            '${item.status}',
-                                            style: const TextStyle(
-                                              fontWeight: FontWeight.w500,
-                                            ),
-                                          ),
-                                        ),
-                                        Expanded(
-                                          child: Text(
-                                            item.name ?? '-',
-                                            style: const TextStyle(
-                                              fontSize: 15,
-                                            ),
-                                          ),
-                                        ),
-                                        SizedBox(
-                                          width: isDesktop ? 160 : 120,
-                                          child: Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.center,
-                                            children: [
-                                              IconButton(
-                                                onPressed: () =>
-                                                    _showAddEditDialog(
-                                                      item: item,
-                                                    ),
-                                                icon: const Icon(
-                                                  Icons.edit,
-                                                  size: 20,
-                                                  color: Colors.blue,
-                                                ),
-                                                tooltip: 'แก้ไข',
-                                              ),
-                                              IconButton(
-                                                onPressed: () =>
-                                                    _deleteStatusCheck(item),
-                                                icon: const Icon(
-                                                  Icons.delete,
-                                                  size: 20,
-                                                  color: Colors.red,
-                                                ),
-                                                tooltip: 'ลบ',
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                );
+                                return _editableRow(_rows[index], isDesktop);
                               },
                             ),
                           ),
+
+                          _rowActionBar(),
 
                           // Pagination
                           Container(
@@ -546,11 +791,13 @@ class _StatusCheckScreenState extends State<StatusCheckScreen> {
                               totalPages: _totalPages,
                               pageSize: _pageSize,
                               summary: 'ทั้งหมด $_totalItems รายการ',
-                              onPageChanged: (page) {
+                              onPageChanged: (page) async {
+                                if (!await _confirmDiscard()) return;
                                 setState(() => _currentPage = page);
                                 _loadData();
                               },
-                              onPageSizeChanged: (size) {
+                              onPageSizeChanged: (size) async {
+                                if (!await _confirmDiscard()) return;
                                 setState(() {
                                   _pageSize = size;
                                   _currentPage = 0;
@@ -567,5 +814,52 @@ class _StatusCheckScreenState extends State<StatusCheckScreen> {
         ),
       ),
     );
+  }
+}
+
+/// หนึ่งแถวที่แก้ไขได้ในตารางสถานะห้องพัก
+class _EditRow {
+  /// รหัสเดิมตอนโหลดมา — null แปลว่าเป็นแถวใหม่ที่ยังไม่มีในฐานข้อมูล
+  final int? originalStatus;
+  final String originalName;
+
+  final TextEditingController statusCtrl;
+  final TextEditingController nameCtrl;
+
+  /// ติ๊กเลือกไว้ (สำหรับปุ่มลบที่เลือก)
+  bool selected = false;
+
+  _EditRow({
+    this.originalStatus,
+    this.originalName = '',
+    required this.statusCtrl,
+    required this.nameCtrl,
+  });
+
+  factory _EditRow.from(StatusCheck s) => _EditRow(
+    originalStatus: s.status,
+    originalName: s.name ?? '',
+    statusCtrl: TextEditingController(text: '${s.status ?? ''}'),
+    nameCtrl: TextEditingController(text: s.name ?? ''),
+  );
+
+  factory _EditRow.empty() => _EditRow(
+    statusCtrl: TextEditingController(),
+    nameCtrl: TextEditingController(),
+  );
+
+  bool get isNew => originalStatus == null;
+
+  /// แถวเดิมที่ถูกแก้ชื่อ (รหัสของแถวเดิมแก้ไม่ได้)
+  bool get changed => !isNew && nameCtrl.text.trim() != originalName.trim();
+
+  StatusCheck toStatusCheck() => StatusCheck(
+    status: originalStatus ?? int.tryParse(statusCtrl.text.trim()),
+    name: nameCtrl.text.trim(),
+  );
+
+  void dispose() {
+    statusCtrl.dispose();
+    nameCtrl.dispose();
   }
 }
