@@ -451,7 +451,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
               4,
               TextField(
                 controller: _remarkCtrl,
-                maxLines: 4,
+                // ช่องหมายเหตุสูงแถวเดียว เหมือนใบแจ้งค่าอาหาร
+                maxLines: 1,
                 style: const TextStyle(fontSize: 14),
                 decoration: _input(),
               ),
