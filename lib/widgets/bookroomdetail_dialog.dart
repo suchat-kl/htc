@@ -313,7 +313,7 @@ class _BookRoomDetailDialogState extends State<BookRoomDetailDialog> {
                 : const Icon(Icons.save_outlined, size: 18),
             label: const Text('บันทึก'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF43A047),
+              backgroundColor: AppTheme.successColor,
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
               shape: RoundedRectangleBorder(
@@ -350,7 +350,7 @@ class _BookRoomDetailDialogState extends State<BookRoomDetailDialog> {
         borderSide: const BorderSide(color: AppTheme.primaryColor, width: 1.6),
       ),
       filled: true,
-      fillColor: Colors.grey.shade50,
+      fillColor: AppTheme.fieldFillColor,
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       isDense: true,
     );
@@ -397,7 +397,7 @@ class _BookRoomDetailDialogState extends State<BookRoomDetailDialog> {
             decoration: BoxDecoration(
               border: Border.all(color: Colors.grey.shade300),
               borderRadius: BorderRadius.circular(10),
-              color: Colors.grey.shade50,
+              color: AppTheme.fieldFillColor,
             ),
             child: Row(
               children: [

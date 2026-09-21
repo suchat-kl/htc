@@ -171,7 +171,7 @@ class CustomHeader extends StatelessWidget implements PreferredSizeWidget {
               // ScaffoldMessenger.of(context).showSnackBar(
               //   const SnackBar(
               //     content: Text('ออกจากระบบเรียบร้อย'),
-              //     backgroundColor: Colors.green,
+              //     backgroundColor: AppTheme.successColor,
               //     behavior: SnackBarBehavior.floating,
               //     duration: Duration(seconds: 3),
               //   ),
@@ -291,11 +291,11 @@ class CustomHeader extends StatelessWidget implements PreferredSizeWidget {
             value: 'logout',
             child: Row(
               children: [
-                Icon(Icons.logout, color: Colors.red.shade600, size: 20),
+                Icon(Icons.logout, color: AppTheme.dangerColor, size: 20),
                 const SizedBox(width: 12),
                 Text(
                   'ออกจากระบบ',
-                  style: TextStyle(color: Colors.red.shade600),
+                  style: TextStyle(color: AppTheme.dangerColor),
                 ),
               ],
             ),
@@ -392,7 +392,7 @@ class CustomHeader extends StatelessWidget implements PreferredSizeWidget {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('ยินดีต้อนรับ คุณ${authProvider.displayName}'),
-          backgroundColor: Colors.green,
+          backgroundColor: AppTheme.successColor,
           behavior: SnackBarBehavior.floating,
           duration: const Duration(seconds: 3),
         ),

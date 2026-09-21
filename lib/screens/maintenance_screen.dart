@@ -227,7 +227,7 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
                           borderRadius: BorderRadius.circular(10),
                         ),
                         filled: true,
-                        fillColor: Colors.grey.shade50,
+                        fillColor: AppTheme.fieldFillColor,
                         isDense: true,
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: 10,
@@ -253,7 +253,7 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
                           borderRadius: BorderRadius.circular(10),
                         ),
                         filled: true,
-                        fillColor: Colors.grey.shade50,
+                        fillColor: AppTheme.fieldFillColor,
                         isDense: true,
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: 10,

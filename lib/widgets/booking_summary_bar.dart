@@ -270,7 +270,7 @@ class _BookingSummaryBarState extends State<BookingSummaryBar> {
               ),
             ),
             filled: true,
-            fillColor: Colors.grey.shade50,
+            fillColor: AppTheme.fieldFillColor,
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 14,
               vertical: 12,
@@ -301,21 +301,21 @@ class _BookingSummaryBarState extends State<BookingSummaryBar> {
         _actionButton(
           label: 'บันทึก',
           icon: Icons.save_outlined,
-          color: const Color(0xFF43A047),
+          color: AppTheme.successColor,
           busy: _isSaving,
           onPressed: busy ? null : _save,
         ),
         _actionButton(
           label: 'ลบ',
           icon: Icons.delete_outline,
-          color: const Color(0xFFE53935),
+          color: AppTheme.dangerColor,
           busy: _isDeleting,
           onPressed: busy ? null : _delete,
         ),
         _actionButton(
           label: 'กลับ',
           icon: Icons.arrow_back,
-          color: const Color(0xFF00ACC1),
+          color: AppTheme.infoColor,
           busy: false,
           // ส่ง _hasSaved กลับไป หน้ารายการจะรีเฟรชเฉพาะตอนที่ข้อมูลถูกแก้จริง
           onPressed: busy ? null : () => Navigator.pop(context, _hasSaved),

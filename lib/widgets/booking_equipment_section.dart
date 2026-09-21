@@ -219,7 +219,7 @@ class _BookingEquipmentSectionState extends State<BookingEquipmentSection> {
                 icon: const Icon(Icons.add, size: 18),
                 label: const Text('เพิ่มรายการ'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF43A047),
+                  backgroundColor: AppTheme.successColor,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 18,
@@ -308,7 +308,7 @@ class _BookingEquipmentSectionState extends State<BookingEquipmentSection> {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 34),
       decoration: BoxDecoration(
-        color: Colors.grey.shade50,
+        color: AppTheme.fieldFillColor,
         borderRadius: BorderRadius.circular(10),
         border: Border.all(color: Colors.grey.shade200),
       ),

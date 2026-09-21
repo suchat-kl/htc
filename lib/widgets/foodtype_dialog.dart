@@ -256,7 +256,7 @@ class _FoodtypeDialogState extends State<FoodtypeDialog> {
         decoration: InputDecoration(
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
           filled: true,
-          fillColor: Colors.grey.shade50,
+          fillColor: AppTheme.fieldFillColor,
           contentPadding: const EdgeInsets.symmetric(
             horizontal: 12,
             vertical: 10,
@@ -286,7 +286,7 @@ class _FoodtypeDialogState extends State<FoodtypeDialog> {
         decoration: InputDecoration(
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
           filled: true,
-          fillColor: Colors.grey.shade50,
+          fillColor: AppTheme.fieldFillColor,
           contentPadding: const EdgeInsets.symmetric(
             horizontal: 12,
             vertical: 10,

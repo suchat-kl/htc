@@ -237,7 +237,7 @@ class _EquipmentScreenState extends State<EquipmentScreen> {
                           borderRadius: BorderRadius.circular(10),
                         ),
                         filled: true,
-                        fillColor: Colors.grey.shade50,
+                        fillColor: AppTheme.fieldFillColor,
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: 10,
                           vertical: 8,
@@ -284,7 +284,7 @@ class _EquipmentScreenState extends State<EquipmentScreen> {
                           borderRadius: BorderRadius.circular(10),
                         ),
                         filled: true,
-                        fillColor: Colors.grey.shade50,
+                        fillColor: AppTheme.fieldFillColor,
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: 10,
                           vertical: 8,

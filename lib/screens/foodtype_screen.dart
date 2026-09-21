@@ -337,7 +337,7 @@ class _FoodtypeScreenState extends State<FoodtypeScreen> {
               row.isNew ? 'ใหม่' : '${row.originalId}',
               style: TextStyle(
                 fontSize: bf - 1,
-                color: row.isNew ? Colors.orange.shade800 : null,
+                color: row.isNew ? AppTheme.warningColor : null,
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -467,7 +467,7 @@ class _FoodtypeScreenState extends State<FoodtypeScreen> {
           if (_dirty)
             Text(
               'มีการแก้ไขที่ยังไม่ได้บันทึก',
-              style: TextStyle(fontSize: 13, color: Colors.orange.shade800),
+              style: TextStyle(fontSize: 13, color: AppTheme.warningColor),
             ),
           _rowButton('ลบที่เลือก', _deleteSelectedRows),
           _rowButton('เลือกทั้งหมด', _rows.isEmpty ? null : _selectAll),
@@ -477,7 +477,7 @@ class _FoodtypeScreenState extends State<FoodtypeScreen> {
             icon: const Icon(Icons.save_outlined, size: 18),
             label: Text(_isSaving ? 'กำลังบันทึก...' : 'บันทึก'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF43A047),
+              backgroundColor: AppTheme.successColor,
               foregroundColor: Colors.white,
               disabledBackgroundColor: const Color(
                 0xFF43A047,
@@ -592,7 +592,7 @@ class _FoodtypeScreenState extends State<FoodtypeScreen> {
                             borderRadius: BorderRadius.circular(10),
                           ),
                           filled: true,
-                          fillColor: Colors.grey.shade50,
+                          fillColor: AppTheme.fieldFillColor,
                           isDense: true,
                           contentPadding: const EdgeInsets.symmetric(
                             horizontal: 10,
@@ -640,7 +640,7 @@ class _FoodtypeScreenState extends State<FoodtypeScreen> {
                             borderRadius: BorderRadius.circular(10),
                           ),
                           filled: true,
-                          fillColor: Colors.grey.shade50,
+                          fillColor: AppTheme.fieldFillColor,
                           isDense: true,
                           contentPadding: const EdgeInsets.symmetric(
                             horizontal: 10,

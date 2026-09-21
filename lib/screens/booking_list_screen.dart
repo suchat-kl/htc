@@ -250,7 +250,7 @@ class _BookingListScreenState extends State<BookingListScreen> {
   Widget _buildSearchPanel(bool isDesktop) {
     return Container(
       padding: EdgeInsets.all(isDesktop ? 20 : 12),
-      color: Colors.grey.shade50,
+      color: AppTheme.fieldFillColor,
       child: Column(
         children: [
           // Row 1

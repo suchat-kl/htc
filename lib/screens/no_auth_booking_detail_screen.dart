@@ -211,7 +211,9 @@ class _NoAuthBookingDetailScreenState extends State<NoAuthBookingDetailScreen>
                     decoration: BoxDecoration(
                       color: Colors.blue.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: Colors.blue.withValues(alpha: 0.2)),
+                      border: Border.all(
+                        color: Colors.blue.withValues(alpha: 0.2),
+                      ),
                     ),
                     child: Row(
                       children: [
@@ -665,7 +667,9 @@ class _NoAuthBookingDetailScreenState extends State<NoAuthBookingDetailScreen>
                     decoration: BoxDecoration(
                       color: Colors.amber.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: Colors.amber.withValues(alpha: 0.2)),
+                      border: Border.all(
+                        color: Colors.amber.withValues(alpha: 0.2),
+                      ),
                     ),
                     child: Row(
                       children: [
@@ -700,7 +704,7 @@ class _NoAuthBookingDetailScreenState extends State<NoAuthBookingDetailScreen>
                     width: double.infinity,
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.grey.shade50,
+                      color: AppTheme.fieldFillColor,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: Colors.grey.shade200),
                     ),
@@ -809,7 +813,9 @@ class _NoAuthBookingDetailScreenState extends State<NoAuthBookingDetailScreen>
                     decoration: BoxDecoration(
                       color: Colors.purple.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: Colors.purple.withValues(alpha: 0.2)),
+                      border: Border.all(
+                        color: Colors.purple.withValues(alpha: 0.2),
+                      ),
                     ),
                     child: Row(
                       children: [
@@ -940,7 +946,9 @@ class _NoAuthBookingDetailScreenState extends State<NoAuthBookingDetailScreen>
                     decoration: BoxDecoration(
                       color: Colors.orange.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: Colors.orange.withValues(alpha: 0.2)),
+                      border: Border.all(
+                        color: Colors.orange.withValues(alpha: 0.2),
+                      ),
                     ),
                     child: Row(
                       children: [
@@ -976,7 +984,7 @@ class _NoAuthBookingDetailScreenState extends State<NoAuthBookingDetailScreen>
                     width: double.infinity,
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.grey.shade50,
+                      color: AppTheme.fieldFillColor,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: Colors.grey.shade200),
                     ),
@@ -1034,7 +1042,7 @@ class _NoAuthBookingDetailScreenState extends State<NoAuthBookingDetailScreen>
   }
 
   // ✅ Widget สำหรับแสดงข้อมูลแบบการ์ดขนาดเล็ก
- /*
+  /*
   Widget _buildInfoCardSmall({
     required IconData icon,
     required String label,
@@ -1240,7 +1248,7 @@ class _NoAuthBookingDetailScreenState extends State<NoAuthBookingDetailScreen>
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.grey.shade50,
+                    color: AppTheme.fieldFillColor,
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: Colors.grey.shade200),
                   ),
@@ -1383,7 +1391,7 @@ class _NoAuthBookingDetailScreenState extends State<NoAuthBookingDetailScreen>
   }
 
   // ✅ Helper: สร้าง Section Header
- /* Widget _buildSectionHeader(String title, IconData icon) {
+  /* Widget _buildSectionHeader(String title, IconData icon) {
     return Row(
       children: [
         Icon(icon, color: AppTheme.primaryColor, size: 20),
@@ -1401,7 +1409,7 @@ class _NoAuthBookingDetailScreenState extends State<NoAuthBookingDetailScreen>
   }
 */
   // ✅ Helper: สร้าง Info Row
- /* Widget _buildInfoRow(String label, String value) {
+  /* Widget _buildInfoRow(String label, String value) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(

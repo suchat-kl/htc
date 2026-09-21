@@ -313,7 +313,7 @@ class _ActivityScheduleScreenState extends State<ActivityScheduleScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 34),
       decoration: BoxDecoration(
-        color: Colors.grey.shade50,
+        color: AppTheme.fieldFillColor,
         borderRadius: BorderRadius.circular(10),
         border: Border.all(color: Colors.grey.shade200),
       ),

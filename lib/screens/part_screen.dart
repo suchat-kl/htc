@@ -407,7 +407,7 @@ class _PartScreenState extends State<PartScreen> {
       key: ValueKey(row.uid),
       width: _tableWidth,
       decoration: BoxDecoration(
-        color: index % 2 == 0 ? Colors.white : Colors.grey.shade50,
+        color: index % 2 == 0 ? Colors.white : AppTheme.fieldFillColor,
         border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -562,7 +562,7 @@ class _PartScreenState extends State<PartScreen> {
               padding: const EdgeInsets.only(right: 12),
               child: Text(
                 'มีการแก้ไขที่ยังไม่ได้บันทึก',
-                style: TextStyle(fontSize: 13, color: Colors.orange.shade800),
+                style: TextStyle(fontSize: 13, color: AppTheme.warningColor),
               ),
             ),
           _rowButton('ลบที่เลือก', _deleteSelectedRows),
@@ -576,7 +576,7 @@ class _PartScreenState extends State<PartScreen> {
             icon: const Icon(Icons.save_outlined, size: 18),
             label: Text(_isSaving ? 'กำลังบันทึก...' : 'บันทึก'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF43A047),
+              backgroundColor: AppTheme.successColor,
               foregroundColor: Colors.white,
               disabledBackgroundColor: const Color(
                 0xFF43A047,
@@ -705,7 +705,7 @@ class _PartScreenState extends State<PartScreen> {
                             borderRadius: BorderRadius.circular(12),
                           ),
                           filled: true,
-                          fillColor: Colors.grey.shade50,
+                          fillColor: AppTheme.fieldFillColor,
                           contentPadding: EdgeInsets.symmetric(
                             horizontal: 12,
                             vertical: isDesktop ? 14 : 12,
@@ -768,7 +768,7 @@ class _PartScreenState extends State<PartScreen> {
                             borderRadius: BorderRadius.circular(12),
                           ),
                           filled: true,
-                          fillColor: Colors.grey.shade50,
+                          fillColor: AppTheme.fieldFillColor,
                           contentPadding: EdgeInsets.symmetric(
                             horizontal: 12,
                             vertical: isDesktop ? 14 : 12,
@@ -817,7 +817,7 @@ class _PartScreenState extends State<PartScreen> {
                             borderRadius: BorderRadius.circular(12),
                           ),
                           filled: true,
-                          fillColor: Colors.grey.shade50,
+                          fillColor: AppTheme.fieldFillColor,
                           contentPadding: EdgeInsets.symmetric(
                             horizontal: 12,
                             vertical: isDesktop ? 14 : 12,

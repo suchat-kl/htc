@@ -372,7 +372,7 @@ class _EquipmentDialogState extends State<EquipmentDialog> {
           decoration: InputDecoration(
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
             filled: true,
-            fillColor: Colors.grey.shade50,
+            fillColor: AppTheme.fieldFillColor,
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 12,
               vertical: 10,
@@ -409,7 +409,7 @@ class _EquipmentDialogState extends State<EquipmentDialog> {
           decoration: InputDecoration(
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
             filled: true,
-            fillColor: Colors.grey.shade50,
+            fillColor: AppTheme.fieldFillColor,
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 12,
               vertical: 10,
@@ -440,14 +440,14 @@ class _EquipmentDialogState extends State<EquipmentDialog> {
           decoration: BoxDecoration(
             border: Border.all(color: Colors.grey.shade400),
             borderRadius: BorderRadius.circular(10),
-            color: Colors.grey.shade50,
+            color: AppTheme.fieldFillColor,
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
                 Icons.calendar_today,
-                size:  18,
+                size: 18,
                 color: AppTheme.primaryColor,
               ),
               const SizedBox(width: 10),

@@ -31,8 +31,8 @@ class _RegisterUserDialogState extends State<RegisterUserDialog> {
   bool _obscurePassword = true;
   String? _errorMessage;
   List<Map<String, String>> _availableRoles = [];
-   List<String> _selectedRoles = ['USER']; // Default role
-// _selectedRoles.add("USER");
+  List<String> _selectedRoles = ['USER']; // Default role
+  // _selectedRoles.add("USER");
   // Password validation
   bool _hasMinLength = false;
   bool _hasUppercase = false;
@@ -110,7 +110,7 @@ class _RegisterUserDialogState extends State<RegisterUserDialog> {
     });
 
     try {
-     final result = await widget.apiService.registerUser(
+      final result = await widget.apiService.registerUser(
         fullName: _fullNameController.text.trim(),
         username: _usernameController.text.trim(),
         email: _emailController.text.trim(),
@@ -124,7 +124,7 @@ class _RegisterUserDialogState extends State<RegisterUserDialog> {
       if (mounted) {
         Navigator.of(context).pop(true);
         context.showSuccessSnackBar('สร้างผู้ใช้งานสำเร็จ');
-         // Show success dialog with user details
+        // Show success dialog with user details
         _showSuccessDialog(result);
         _resetForm();
       }
@@ -138,7 +138,8 @@ class _RegisterUserDialogState extends State<RegisterUserDialog> {
       }
     }
   }
-void _resetForm() {
+
+  void _resetForm() {
     _formKey.currentState?.reset();
     _fullNameController.clear();
     _usernameController.clear();
@@ -157,6 +158,7 @@ void _resetForm() {
       _hasSpecialChar = false;
     });
   }
+
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
@@ -401,7 +403,7 @@ void _resetForm() {
               ),
             ),
             filled: true,
-            fillColor: Colors.grey.shade50,
+            fillColor: AppTheme.fieldFillColor,
           ),
           style: TextStyle(fontSize: isDesktop ? 16 : 14),
         ),
@@ -576,7 +578,7 @@ void _resetForm() {
           decoration: BoxDecoration(
             border: Border.all(color: Colors.grey.shade300),
             borderRadius: BorderRadius.circular(12),
-            color: Colors.grey.shade50,
+            color: AppTheme.fieldFillColor,
           ),
           child: Column(
             children: [
@@ -701,7 +703,7 @@ void _resetForm() {
               ),
             ),
             filled: true,
-            fillColor: Colors.grey.shade50,
+            fillColor: AppTheme.fieldFillColor,
           ),
           style: TextStyle(fontSize: isDesktop ? 16 : 14),
           validator: validator,
@@ -781,6 +783,7 @@ void _resetForm() {
       ],
     );
   }
+
   // Add this method to RegisterUserDialog class
   void _showSuccessDialog(Map<String, dynamic> result) {
     final username = result['username'] ?? '';

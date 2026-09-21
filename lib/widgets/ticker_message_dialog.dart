@@ -20,7 +20,7 @@ class _TickerMessageDialogState extends State<TickerMessageDialog> {
   bool _isSaving = false;
   String? _errorMessage;
   List<TickerMessage> _messages = [];
-// Available font sizes
+  // Available font sizes
   final List<double> _fontSizes = [12, 14, 16, 18, 20, 24, 28, 32];
   // Available icons
   final List<Map<String, String>> _availableIcons = [
@@ -42,7 +42,7 @@ class _TickerMessageDialogState extends State<TickerMessageDialog> {
     {'emoji': '💬', 'name': 'พูดคุย'},
     {'emoji': '🔄', 'name': 'อัปเดต'},
     {'emoji': '📋', 'name': 'รายการ'},
-     {'emoji': '📞', 'name': 'โทรศัพท์'}, // ✅ Telephone
+    {'emoji': '📞', 'name': 'โทรศัพท์'}, // ✅ Telephone
     {'emoji': '📱', 'name': 'มือถือ'}, // ✅ Mobile phone
     {'emoji': '☎️', 'name': 'เบอร์โทร'}, // ✅ Phone number
     {'emoji': '📧', 'name': 'อีเมล'}, // ✅ Email
@@ -63,7 +63,8 @@ class _TickerMessageDialogState extends State<TickerMessageDialog> {
     });
 
     try {
-      final messages = await _apiService.getActiveTickerMessages();//    getAllTickerMessages();
+      final messages = await _apiService
+          .getActiveTickerMessages(); //    getAllTickerMessages();
       if (mounted) {
         setState(() {
           _messages = messages;
@@ -83,7 +84,12 @@ class _TickerMessageDialogState extends State<TickerMessageDialog> {
   void _addNewMessage() {
     setState(() {
       _messages.add(
-        TickerMessage(icon: '', message: '', sortOrder: _messages.length,fontSize: 20),
+        TickerMessage(
+          icon: '',
+          message: '',
+          sortOrder: _messages.length,
+          fontSize: 20,
+        ),
       );
     });
   }
@@ -274,7 +280,7 @@ class _TickerMessageDialogState extends State<TickerMessageDialog> {
     );
   }
 
- // Update the message card widget
+  // Update the message card widget
   Widget _buildMessageCard(int index, bool isDesktop) {
     final message = _messages[index];
 
@@ -373,7 +379,7 @@ class _TickerMessageDialogState extends State<TickerMessageDialog> {
                 width: double.infinity,
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade50,
+                  color: AppTheme.fieldFillColor,
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Row(
@@ -407,8 +413,8 @@ class _TickerMessageDialogState extends State<TickerMessageDialog> {
       ),
     );
   }
- 
-// ✅ Font size selector widget
+
+  // ✅ Font size selector widget
   Widget _buildFontSizeSelector(int messageIndex, bool isDesktop) {
     final currentFontSize = _messages[messageIndex].fontSize ?? 14;
 
@@ -474,7 +480,11 @@ class _TickerMessageDialogState extends State<TickerMessageDialog> {
                 ),
                 if (isSelected) ...[
                   const Spacer(),
-                  const Icon(Icons.check, size: 18, color: AppTheme.primaryColor),
+                  const Icon(
+                    Icons.check,
+                    size: 18,
+                    color: AppTheme.primaryColor,
+                  ),
                 ],
               ],
             ),
@@ -547,7 +557,11 @@ class _TickerMessageDialogState extends State<TickerMessageDialog> {
                 ),
                 if (isSelected) ...[
                   const Spacer(),
-                  const Icon(Icons.check, size: 18, color: AppTheme.primaryColor),
+                  const Icon(
+                    Icons.check,
+                    size: 18,
+                    color: AppTheme.primaryColor,
+                  ),
                 ],
               ],
             ),

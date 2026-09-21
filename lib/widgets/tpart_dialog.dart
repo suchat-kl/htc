@@ -236,21 +236,10 @@ class _TpartDialogState extends State<TpartDialog> {
                         (v) => setState(() => _selectedPartid = v),
                       ),
                       const SizedBox(height: 10),
-                      _dd(
-                        'รับ/จ่าย',
-                        _selectedType,
-                        [
-                          const DropdownMenuItem(
-                            value: 'D',
-                            child: Text('รับ'),
-                          ),
-                          const DropdownMenuItem(
-                            value: 'C',
-                            child: Text('จ่าย'),
-                          ),
-                        ],
-                        (v) => setState(() => _selectedType = v!),
-                      ),
+                      _dd('รับ/จ่าย', _selectedType, [
+                        const DropdownMenuItem(value: 'D', child: Text('รับ')),
+                        const DropdownMenuItem(value: 'C', child: Text('จ่าย')),
+                      ], (v) => setState(() => _selectedType = v!)),
                       const SizedBox(height: 10),
                       _fld('จำนวน', _qtyCtrl, inputType: TextInputType.number),
                       const SizedBox(height: 10),
@@ -402,7 +391,7 @@ class _TpartDialogState extends State<TpartDialog> {
         decoration: InputDecoration(
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
           filled: true,
-          fillColor: Colors.grey.shade50,
+          fillColor: AppTheme.fieldFillColor,
           contentPadding: const EdgeInsets.symmetric(
             horizontal: 12,
             vertical: 10,
@@ -432,7 +421,7 @@ class _TpartDialogState extends State<TpartDialog> {
         decoration: InputDecoration(
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
           filled: true,
-          fillColor: Colors.grey.shade50,
+          fillColor: AppTheme.fieldFillColor,
           contentPadding: const EdgeInsets.symmetric(
             horizontal: 12,
             vertical: 10,
@@ -461,7 +450,7 @@ class _TpartDialogState extends State<TpartDialog> {
           decoration: BoxDecoration(
             border: Border.all(color: Colors.grey.shade400),
             borderRadius: BorderRadius.circular(10),
-            color: Colors.grey.shade50,
+            color: AppTheme.fieldFillColor,
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,

@@ -36,9 +36,8 @@ class _PartDialogState extends State<PartDialog> {
       _unitController.text = widget.part!.unit ?? '';
       _selectedType = widget.part!.type;
       _selectedStatus = widget.part!.status;
-    }
-    else {
-      _stockLevelController.text ="0";
+    } else {
+      _stockLevelController.text = "0";
     }
   }
 
@@ -177,21 +176,16 @@ class _PartDialogState extends State<PartDialog> {
                       const SizedBox(height: 14),
                       _buildField('รายการ', _nameController, isDesktop),
                       const SizedBox(height: 14),
-                      _buildDropdown(
-                        'ประเภท',
-                        _selectedType,
-                        [
-                          const DropdownMenuItem(
-                            value: 'S',
-                            child: Text('Stock'),
-                          ),
-                          const DropdownMenuItem(
-                            value: 'N',
-                            child: Text('Empty'),
-                          ),
-                        ],
-                        (v) => setState(() => _selectedType = v!),
-                      ),
+                      _buildDropdown('ประเภท', _selectedType, [
+                        const DropdownMenuItem(
+                          value: 'S',
+                          child: Text('Stock'),
+                        ),
+                        const DropdownMenuItem(
+                          value: 'N',
+                          child: Text('Empty'),
+                        ),
+                      ], (v) => setState(() => _selectedType = v!)),
                       const SizedBox(height: 14),
                       _buildField(
                         'จำนวน',
@@ -203,21 +197,16 @@ class _PartDialogState extends State<PartDialog> {
                       const SizedBox(height: 14),
                       _buildField('หน่วย', _unitController, isDesktop),
                       const SizedBox(height: 14),
-                      _buildDropdown(
-                        'สถานะ',
-                        _selectedStatus,
-                        [
-                          const DropdownMenuItem(
-                            value: '1',
-                            child: Text('ใช้งาน'),
-                          ),
-                          const DropdownMenuItem(
-                            value: '2',
-                            child: Text('ไม่ใช้งาน'),
-                          ),
-                        ],
-                        (v) => setState(() => _selectedStatus = v!),
-                      ),
+                      _buildDropdown('สถานะ', _selectedStatus, [
+                        const DropdownMenuItem(
+                          value: '1',
+                          child: Text('ใช้งาน'),
+                        ),
+                        const DropdownMenuItem(
+                          value: '2',
+                          child: Text('ไม่ใช้งาน'),
+                        ),
+                      ], (v) => setState(() => _selectedStatus = v!)),
                       const SizedBox(height: 24),
                       // Buttons
                       Row(
@@ -302,7 +291,7 @@ class _PartDialogState extends State<PartDialog> {
           decoration: InputDecoration(
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
             filled: true,
-            fillColor: Colors.grey.shade50,
+            fillColor: AppTheme.fieldFillColor,
           ),
           style: TextStyle(fontSize: isDesktop ? 15 : 14),
         ),
@@ -329,7 +318,7 @@ class _PartDialogState extends State<PartDialog> {
           decoration: InputDecoration(
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
             filled: true,
-            fillColor: Colors.grey.shade50,
+            fillColor: AppTheme.fieldFillColor,
           ),
           items: items,
           onChanged: onChanged,

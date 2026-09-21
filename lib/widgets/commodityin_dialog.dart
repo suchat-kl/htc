@@ -234,21 +234,10 @@ class _CommodityInDialogState extends State<CommodityInDialog> {
                         (v) => setState(() => _selectedCommodityID = v),
                       ),
                       const SizedBox(height: 14),
-                      _buildDropdown(
-                        'รับ/จ่าย',
-                        _selectedType,
-                        [
-                          const DropdownMenuItem(
-                            value: 'D',
-                            child: Text('รับ'),
-                          ),
-                          const DropdownMenuItem(
-                            value: 'C',
-                            child: Text('จ่าย'),
-                          ),
-                        ],
-                        (v) => setState(() => _selectedType = v!),
-                      ),
+                      _buildDropdown('รับ/จ่าย', _selectedType, [
+                        const DropdownMenuItem(value: 'D', child: Text('รับ')),
+                        const DropdownMenuItem(value: 'C', child: Text('จ่าย')),
+                      ], (v) => setState(() => _selectedType = v!)),
                       const SizedBox(height: 14),
                       _buildField(
                         'จำนวน',
@@ -361,7 +350,7 @@ class _CommodityInDialogState extends State<CommodityInDialog> {
           decoration: InputDecoration(
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
             filled: true,
-            fillColor: Colors.grey.shade50,
+            fillColor: AppTheme.fieldFillColor,
           ),
           style: TextStyle(fontSize: isDesktop ? 15 : 14),
         ),
@@ -388,7 +377,7 @@ class _CommodityInDialogState extends State<CommodityInDialog> {
           decoration: InputDecoration(
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
             filled: true,
-            fillColor: Colors.grey.shade50,
+            fillColor: AppTheme.fieldFillColor,
           ),
           items: items,
           onChanged: onChanged,
@@ -437,7 +426,7 @@ class _CommodityInDialogState extends State<CommodityInDialog> {
             decoration: BoxDecoration(
               border: Border.all(color: Colors.grey.shade400),
               borderRadius: BorderRadius.circular(12),
-              color: Colors.grey.shade50,
+              color: AppTheme.fieldFillColor,
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,

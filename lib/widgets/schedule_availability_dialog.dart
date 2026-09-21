@@ -69,13 +69,13 @@ class ScheduleAvailabilityDialog extends StatefulWidget {
 
 class _ScheduleAvailabilityDialogState
     extends State<ScheduleAvailabilityDialog> {
-  static const Color _usedColor = Color(0xFF7A6FCB); // ม่วง = ใช้งานอยู่
-  static const Color _freeColor = Color(0xFF34D3AE); // เขียว = ว่าง
+  static const Color _usedColor = AppTheme.roomUsedColor; // ม่วง = ใช้งานอยู่
+  static const Color _freeColor = AppTheme.roomFreeColor; // เขียว = ว่าง
 
   /// ส้ม = ช่วงเวลาที่ผู้ใช้เลือกไว้
   ///
   /// เลี่ยงเขียวและม่วงเพราะสองสีนั้นสื่อสถานะของช่วงเวลาอยู่แล้ว
-  static const Color _selectedColor = Color(0xFFF57C00);
+  static const Color _selectedColor = AppTheme.roomSelectedColor;
 
   static const TextStyle _cellLabel = TextStyle(
     color: Colors.white,
@@ -347,7 +347,7 @@ class _ScheduleAvailabilityDialogState
       context.showOverlayMessage(
         'บันทึกกำหนดห้องกิจกรรมแล้ว ${slots.length} ช่วงเวลา (ลำดับ $sequence)',
         icon: Icons.check_circle_outline,
-        background: const Color(0xFF43A047),
+        background: AppTheme.successColor,
       );
 
       // โหลดใหม่เพื่อให้ช่วงเวลาที่เพิ่งบันทึกกลายเป็นสีม่วง และล้างการเลือก
@@ -705,7 +705,7 @@ class _ScheduleAvailabilityDialogState
                             : 'บันทึก (${_selected.length})'),
                 ),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF43A047),
+                  backgroundColor: AppTheme.successColor,
                   foregroundColor: Colors.white,
                   disabledBackgroundColor: const Color(
                     0xFF43A047,
@@ -728,7 +728,7 @@ class _ScheduleAvailabilityDialogState
             icon: const Icon(Icons.close, size: 18),
             label: const Text('ปิด'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFE53935),
+              backgroundColor: AppTheme.dangerColor,
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 14),
               shape: RoundedRectangleBorder(

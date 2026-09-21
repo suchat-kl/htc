@@ -383,7 +383,7 @@ class _MaintenanceEditScreenState extends State<MaintenanceEditScreen> {
                   Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: Colors.grey.shade50,
+                      color: AppTheme.fieldFillColor,
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: const Center(
@@ -566,7 +566,7 @@ class _MaintenanceEditScreenState extends State<MaintenanceEditScreen> {
           }
         }),
 
-         _dateField('วันที่ปิดงาน', _stopDate, () async {
+        _dateField('วันที่ปิดงาน', _stopDate, () async {
           final DateTime picked = await Util.dateFieldPicker(
             context, // ✅ Pass context
             _stopDate, // Christian year DateTime
@@ -577,7 +577,7 @@ class _MaintenanceEditScreenState extends State<MaintenanceEditScreen> {
           }
         }),
 
-/*
+        /*
         _dateField('วันที่รับงาน', _startDate, () async {
           int y = _startDate.year + 543;
           int m = _startDate.month;
@@ -699,15 +699,10 @@ class _MaintenanceEditScreenState extends State<MaintenanceEditScreen> {
           const DropdownMenuItem(value: 'B', child: Text('อาคารสถานที่')),
         ], (v) => setState(() => _worktype = v!)),
         _fld('การแก้ไข', _workdetailCtrl, maxLines: 2),
-        _dd(
-          'ลักษณะการดำเนินงาน',
-          _resolutiontype,
-          [
-            const DropdownMenuItem(value: 'C', child: Text('ซ่อม')),
-            const DropdownMenuItem(value: 'O', child: Text('จ้างซ่อม')),
-          ],
-          (v) => setState(() => _resolutiontype = v!),
-        ),
+        _dd('ลักษณะการดำเนินงาน', _resolutiontype, [
+          const DropdownMenuItem(value: 'C', child: Text('ซ่อม')),
+          const DropdownMenuItem(value: 'O', child: Text('จ้างซ่อม')),
+        ], (v) => setState(() => _resolutiontype = v!)),
         _fld('ราคา', _priceCtrl, inputType: TextInputType.number),
         _fld('อื่นๆ', _workremarkCtrl, maxLines: 2),
       ],
@@ -749,7 +744,7 @@ class _MaintenanceEditScreenState extends State<MaintenanceEditScreen> {
           decoration: InputDecoration(
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
             filled: true,
-            fillColor: Colors.grey.shade50,
+            fillColor: AppTheme.fieldFillColor,
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 12,
               vertical: 10,
@@ -782,7 +777,7 @@ class _MaintenanceEditScreenState extends State<MaintenanceEditScreen> {
           decoration: InputDecoration(
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
             filled: true,
-            fillColor: Colors.grey.shade50,
+            fillColor: AppTheme.fieldFillColor,
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 12,
               vertical: 10,
@@ -814,7 +809,7 @@ class _MaintenanceEditScreenState extends State<MaintenanceEditScreen> {
             decoration: BoxDecoration(
               border: Border.all(color: Colors.grey.shade400),
               borderRadius: BorderRadius.circular(8),
-              color: Colors.grey.shade50,
+              color: AppTheme.fieldFillColor,
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,

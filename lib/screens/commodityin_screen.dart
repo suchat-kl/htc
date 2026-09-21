@@ -265,7 +265,7 @@ class _CommodityInScreenState extends State<CommodityInScreen> {
                           borderRadius: BorderRadius.circular(10),
                         ),
                         filled: true,
-                        fillColor: Colors.grey.shade50,
+                        fillColor: AppTheme.fieldFillColor,
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: 10,
                           vertical: 8,
@@ -315,7 +315,7 @@ class _CommodityInScreenState extends State<CommodityInScreen> {
                           borderRadius: BorderRadius.circular(10),
                         ),
                         filled: true,
-                        fillColor: Colors.grey.shade50,
+                        fillColor: AppTheme.fieldFillColor,
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: 10,
                           vertical: 8,

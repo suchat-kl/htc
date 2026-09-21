@@ -764,7 +764,7 @@ class _RoomtypeCommodityFormDialogState
                             borderRadius: BorderRadius.circular(12),
                           ),
                           filled: true,
-                          fillColor: Colors.grey.shade50,
+                          fillColor: AppTheme.fieldFillColor,
                         ),
                         items: uniqueList
                             .map(
@@ -801,7 +801,7 @@ class _RoomtypeCommodityFormDialogState
                             borderRadius: BorderRadius.circular(12),
                           ),
                           filled: true,
-                          fillColor: Colors.grey.shade50,
+                          fillColor: AppTheme.fieldFillColor,
                         ),
                         style: TextStyle(fontSize: isDesktop ? 16 : 14),
                       ),
@@ -823,7 +823,7 @@ class _RoomtypeCommodityFormDialogState
                             borderRadius: BorderRadius.circular(12),
                           ),
                           filled: true,
-                          fillColor: Colors.grey.shade50,
+                          fillColor: AppTheme.fieldFillColor,
                         ),
                         style: TextStyle(fontSize: isDesktop ? 16 : 14),
                       ),

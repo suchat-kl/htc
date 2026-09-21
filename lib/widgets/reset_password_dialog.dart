@@ -5,8 +5,8 @@ import '../services/api_service.dart';
 import '../utils/snackbar_helper.dart';
 
 class ResetPasswordDialog extends StatefulWidget {
-   final String username;
-   final ApiService apiService;
+  final String username;
+  final ApiService apiService;
 
   const ResetPasswordDialog({
     super.key,
@@ -158,7 +158,7 @@ class _ChangePasswordDialogState extends State<ResetPasswordDialog> {
                       _buildNewPasswordField(isDesktop),
                       const SizedBox(height: 16),
 
-                      // Confirm Password Field                     
+                      // Confirm Password Field
                       // _buildConfirmPasswordField(isDesktop),
                       const SizedBox(height: 20),
 
@@ -308,7 +308,8 @@ class _ChangePasswordDialogState extends State<ResetPasswordDialog> {
       ],
     );
   }
-/*
+
+  /*
   Widget _buildOldPasswordField(bool isDesktop) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -351,7 +352,7 @@ class _ChangePasswordDialogState extends State<ResetPasswordDialog> {
               ),
             ),
             filled: true,
-            fillColor: Colors.grey.shade50,
+            fillColor: AppTheme.fieldFillColor,
           ),
           style: TextStyle(fontSize: isDesktop ? 16 : 14),
           validator: (value) {
@@ -417,7 +418,7 @@ class _ChangePasswordDialogState extends State<ResetPasswordDialog> {
               ),
             ),
             filled: true,
-            fillColor: Colors.grey.shade50,
+            fillColor: AppTheme.fieldFillColor,
           ),
           style: TextStyle(fontSize: isDesktop ? 16 : 14),
           validator: (value) {
@@ -433,7 +434,8 @@ class _ChangePasswordDialogState extends State<ResetPasswordDialog> {
       ],
     );
   }
-/*
+
+  /*
   Widget _buildConfirmPasswordField(bool isDesktop) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -480,7 +482,7 @@ class _ChangePasswordDialogState extends State<ResetPasswordDialog> {
               ),
             ),
             filled: true,
-            fillColor: Colors.grey.shade50,
+            fillColor: AppTheme.fieldFillColor,
           ),
           style: TextStyle(fontSize: isDesktop ? 16 : 14),
           validator: (value) {

@@ -1,9 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import '../config/theme.dart';
 
 extension SnackBarHelper on BuildContext {
-  
   void showSuccessSnackBar(String message) {
     if (!mounted) return;
     ScaffoldMessenger.of(this).showSnackBar(
@@ -15,7 +15,7 @@ extension SnackBarHelper on BuildContext {
             Expanded(child: Text(message)),
           ],
         ),
-        backgroundColor: Colors.green,
+        backgroundColor: AppTheme.successColor,
         behavior: SnackBarBehavior.floating,
         duration: const Duration(seconds: 3),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -34,7 +34,7 @@ extension SnackBarHelper on BuildContext {
             Expanded(child: Text(message)),
           ],
         ),
-        backgroundColor: Colors.red,
+        backgroundColor: AppTheme.dangerColor,
         behavior: SnackBarBehavior.floating,
         duration: const Duration(seconds: 3),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -53,7 +53,7 @@ extension SnackBarHelper on BuildContext {
             Expanded(child: Text(message)),
           ],
         ),
-        backgroundColor: Colors.blue,
+        backgroundColor: AppTheme.infoColor,
         behavior: SnackBarBehavior.floating,
         duration: const Duration(seconds: 3),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -72,7 +72,7 @@ extension SnackBarHelper on BuildContext {
   void showOverlayMessage(
     String message, {
     IconData icon = Icons.info_outline,
-    Color background = Colors.blue,
+    Color background = AppTheme.primaryColor,
     Duration duration = const Duration(seconds: 3),
   }) {
     final overlay = Overlay.maybeOf(this, rootOverlay: true);

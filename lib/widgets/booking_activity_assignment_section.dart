@@ -388,7 +388,7 @@ class _BookingActivityAssignmentSectionState
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 34),
       decoration: BoxDecoration(
-        color: Colors.grey.shade50,
+        color: AppTheme.fieldFillColor,
         borderRadius: BorderRadius.circular(10),
         border: Border.all(color: Colors.grey.shade200),
       ),
@@ -522,7 +522,7 @@ class _BookingActivityAssignmentSectionState
           : const Icon(Icons.save_outlined, size: 16),
       label: Text(_savingBulk ? 'กำลังบันทึก...' : 'บันทึก'),
       style: ElevatedButton.styleFrom(
-        backgroundColor: const Color(0xFF43A047),
+        backgroundColor: AppTheme.successColor,
         foregroundColor: Colors.white,
         disabledBackgroundColor: Colors.grey.shade300,
         disabledForegroundColor: Colors.grey.shade600,
@@ -546,7 +546,7 @@ class _BookingActivityAssignmentSectionState
       name ?? '$pending',
       style: TextStyle(
         fontSize: 14,
-        color: Colors.orange.shade800,
+        color: AppTheme.warningColor,
         fontWeight: FontWeight.bold,
       ),
     );
@@ -572,7 +572,7 @@ class _BookingActivityAssignmentSectionState
           Icon(
             Icons.warning_amber_rounded,
             size: 16,
-            color: Colors.orange.shade800,
+            color: AppTheme.warningColor,
           ),
           const SizedBox(width: 4),
           Text(
@@ -580,7 +580,7 @@ class _BookingActivityAssignmentSectionState
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.bold,
-              color: Colors.orange.shade800,
+              color: AppTheme.warningColor,
             ),
           ),
         ],

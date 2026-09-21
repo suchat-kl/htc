@@ -351,7 +351,7 @@ class _ChangePasswordDialogState extends State<ChangePasswordDialog> {
               ),
             ),
             filled: true,
-            fillColor: Colors.grey.shade50,
+            fillColor: AppTheme.fieldFillColor,
           ),
           style: TextStyle(fontSize: isDesktop ? 16 : 14),
           validator: (value) {
@@ -417,7 +417,7 @@ class _ChangePasswordDialogState extends State<ChangePasswordDialog> {
               ),
             ),
             filled: true,
-            fillColor: Colors.grey.shade50,
+            fillColor: AppTheme.fieldFillColor,
           ),
           style: TextStyle(fontSize: isDesktop ? 16 : 14),
           validator: (value) {
@@ -480,7 +480,7 @@ class _ChangePasswordDialogState extends State<ChangePasswordDialog> {
               ),
             ),
             filled: true,
-            fillColor: Colors.grey.shade50,
+            fillColor: AppTheme.fieldFillColor,
           ),
           style: TextStyle(fontSize: isDesktop ? 16 : 14),
           validator: (value) {
@@ -690,5 +690,4 @@ class _ChangePasswordDialogState extends State<ChangePasswordDialog> {
       ],
     );
   }
-  
 }

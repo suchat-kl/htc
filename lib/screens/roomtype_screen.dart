@@ -472,7 +472,7 @@ class _RoomtypeScreenState extends State<RoomtypeScreen> {
     return Container(
       key: ObjectKey(row),
       decoration: BoxDecoration(
-        color: index.isEven ? Colors.white : Colors.grey.shade50,
+        color: index.isEven ? Colors.white : AppTheme.fieldFillColor,
         border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -684,7 +684,7 @@ class _RoomtypeScreenState extends State<RoomtypeScreen> {
           if (_dirty)
             Text(
               'มีการแก้ไขที่ยังไม่ได้บันทึก',
-              style: TextStyle(fontSize: 13, color: Colors.orange.shade800),
+              style: TextStyle(fontSize: 13, color: AppTheme.warningColor),
             ),
           _rowButton('ลบที่เลือก', _deleteSelectedRows),
           _rowButton('เลือกทั้งหมด', _rows.isEmpty ? null : _selectAll),
@@ -694,7 +694,7 @@ class _RoomtypeScreenState extends State<RoomtypeScreen> {
             icon: const Icon(Icons.save_outlined, size: 18),
             label: Text(_isSaving ? 'กำลังบันทึก...' : 'บันทึก'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF43A047),
+              backgroundColor: AppTheme.successColor,
               foregroundColor: Colors.white,
               disabledBackgroundColor: const Color(
                 0xFF43A047,
@@ -822,7 +822,7 @@ class _RoomtypeScreenState extends State<RoomtypeScreen> {
                             borderRadius: BorderRadius.circular(12),
                           ),
                           filled: true,
-                          fillColor: Colors.grey.shade50,
+                          fillColor: AppTheme.fieldFillColor,
                           contentPadding: EdgeInsets.symmetric(
                             horizontal: 16,
                             vertical: isDesktop ? 14 : 10,
@@ -870,7 +870,7 @@ class _RoomtypeScreenState extends State<RoomtypeScreen> {
                             borderRadius: BorderRadius.circular(12),
                           ),
                           filled: true,
-                          fillColor: Colors.grey.shade50,
+                          fillColor: AppTheme.fieldFillColor,
                           contentPadding: EdgeInsets.symmetric(
                             horizontal: 12,
                             vertical: isDesktop ? 14 : 10,
@@ -922,7 +922,7 @@ class _RoomtypeScreenState extends State<RoomtypeScreen> {
                             borderRadius: BorderRadius.circular(12),
                           ),
                           filled: true,
-                          fillColor: Colors.grey.shade50,
+                          fillColor: AppTheme.fieldFillColor,
                           contentPadding: EdgeInsets.symmetric(
                             horizontal: 12,
                             vertical: isDesktop ? 14 : 10,

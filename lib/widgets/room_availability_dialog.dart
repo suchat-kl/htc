@@ -78,14 +78,14 @@ class RoomAvailabilityDialog extends StatefulWidget {
 }
 
 class _RoomAvailabilityDialogState extends State<RoomAvailabilityDialog> {
-  static const Color _usedColor = Color(0xFF7A6FCB); // ม่วง = ใช้งานอยู่
-  static const Color _freeColor = Color(0xFF34D3AE); // เขียว = ว่าง
+  static const Color _usedColor = AppTheme.roomUsedColor; // ม่วง = ใช้งานอยู่
+  static const Color _freeColor = AppTheme.roomFreeColor; // เขียว = ว่าง
 
   /// ส้ม = ห้องว่างที่ผู้ใช้เลือกไว้
   ///
   /// เลี่ยงเขียวและม่วงเพราะสองสีนั้นสื่อสถานะของห้องอยู่แล้ว
   /// การเลือกจึงต้องเป็นสีที่สามที่แยกออกจากกันได้ชัด
-  static const Color _selectedColor = Color(0xFFF57C00);
+  static const Color _selectedColor = AppTheme.roomSelectedColor;
 
   List<String> _totalRoom = [];
   List<String> _useRoom = [];
@@ -691,7 +691,7 @@ class _RoomAvailabilityDialogState extends State<RoomAvailabilityDialog> {
         '(ลำดับ $nextSequence-${nextSequence + rooms.length - 1})'
         '$scheduleNote',
         icon: Icons.check_circle_outline,
-        background: const Color(0xFF43A047),
+        background: AppTheme.successColor,
       );
 
       // โหลดใหม่เพื่อให้ห้องที่เพิ่งบันทึกกลายเป็นสีม่วง และล้างการเลือก
@@ -749,7 +749,7 @@ class _RoomAvailabilityDialogState extends State<RoomAvailabilityDialog> {
                             : 'บันทึก (${_selected.length})'),
                 ),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF43A047),
+                  backgroundColor: AppTheme.successColor,
                   foregroundColor: Colors.white,
                   disabledBackgroundColor: const Color(
                     0xFF43A047,
@@ -772,7 +772,7 @@ class _RoomAvailabilityDialogState extends State<RoomAvailabilityDialog> {
             icon: const Icon(Icons.close, size: 18),
             label: const Text('ปิด'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFE53935),
+              backgroundColor: AppTheme.dangerColor,
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 14),
               shape: RoundedRectangleBorder(

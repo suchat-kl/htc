@@ -423,7 +423,7 @@ class _SectionScreenState extends State<SectionScreen> {
     return Container(
       key: ObjectKey(row),
       decoration: BoxDecoration(
-        color: index.isEven ? Colors.white : Colors.grey.shade50,
+        color: index.isEven ? Colors.white : AppTheme.fieldFillColor,
         border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -444,7 +444,7 @@ class _SectionScreenState extends State<SectionScreen> {
               style: TextStyle(
                 fontSize: bodyFontSize,
                 fontWeight: FontWeight.w500,
-                color: row.isNew ? Colors.orange.shade800 : null,
+                color: row.isNew ? AppTheme.warningColor : null,
               ),
             ),
           ),
@@ -558,7 +558,7 @@ class _SectionScreenState extends State<SectionScreen> {
           if (_dirty)
             Text(
               'มีการแก้ไขที่ยังไม่ได้บันทึก',
-              style: TextStyle(fontSize: 13, color: Colors.orange.shade800),
+              style: TextStyle(fontSize: 13, color: AppTheme.warningColor),
             ),
           _rowButton('ลบที่เลือก', _deleteSelectedRows),
           _rowButton('เลือกทั้งหมด', _rows.isEmpty ? null : _selectAll),
@@ -568,7 +568,7 @@ class _SectionScreenState extends State<SectionScreen> {
             icon: const Icon(Icons.save_outlined, size: 18),
             label: Text(_isSaving ? 'กำลังบันทึก...' : 'บันทึก'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF43A047),
+              backgroundColor: AppTheme.successColor,
               foregroundColor: Colors.white,
               disabledBackgroundColor: const Color(
                 0xFF43A047,
@@ -694,7 +694,7 @@ class _SectionScreenState extends State<SectionScreen> {
                             borderRadius: BorderRadius.circular(12),
                           ),
                           filled: true,
-                          fillColor: Colors.grey.shade50,
+                          fillColor: AppTheme.fieldFillColor,
                           contentPadding: EdgeInsets.symmetric(
                             horizontal: 12,
                             vertical: isDesktop ? 12 : 8,
@@ -742,7 +742,7 @@ class _SectionScreenState extends State<SectionScreen> {
                             borderRadius: BorderRadius.circular(12),
                           ),
                           filled: true,
-                          fillColor: Colors.grey.shade50,
+                          fillColor: AppTheme.fieldFillColor,
                           contentPadding: EdgeInsets.symmetric(
                             horizontal: 8,
                             vertical: isDesktop ? 12 : 8,
@@ -1209,7 +1209,7 @@ class _SectionDialogState extends State<_SectionDialog> {
           decoration: InputDecoration(
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
             filled: true,
-            fillColor: Colors.grey.shade50,
+            fillColor: AppTheme.fieldFillColor,
           ),
           style: TextStyle(fontSize: isDesktop ? 15 : 14),
         ),
@@ -1236,7 +1236,7 @@ class _SectionDialogState extends State<_SectionDialog> {
           decoration: InputDecoration(
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
             filled: true,
-            fillColor: Colors.grey.shade50,
+            fillColor: AppTheme.fieldFillColor,
           ),
           items: items,
           onChanged: onChanged,

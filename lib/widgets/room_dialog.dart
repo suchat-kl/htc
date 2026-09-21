@@ -195,17 +195,12 @@ class _RoomDialogState extends State<RoomDialog> {
                       const SizedBox(height: 14),
 
                       // Room Number
-                      _buildField(
-                        'หมายเลขห้อง',
-                        _roomNOController,
-                        isDesktop,
-                        
-                      ),
+                      _buildField('หมายเลขห้อง', _roomNOController, isDesktop),
                       const SizedBox(height: 14),
 
                       // Room Type Dropdown
                       Column(
-                         crossAxisAlignment: CrossAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           _buildLabel('ประเภท'),
                           const SizedBox(height: 6),
@@ -216,7 +211,7 @@ class _RoomDialogState extends State<RoomDialog> {
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               filled: true,
-                              fillColor: Colors.grey.shade50,
+                              fillColor: AppTheme.fieldFillColor,
                             ),
                             items: widget.roomtypes
                                 .where((t) => t.roomtypeID != null)
@@ -256,7 +251,6 @@ class _RoomDialogState extends State<RoomDialog> {
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-
                           _buildLabel('สถานะ'),
                           const SizedBox(height: 6),
                           DropdownButtonFormField<String>(
@@ -266,16 +260,20 @@ class _RoomDialogState extends State<RoomDialog> {
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               filled: true,
-                              fillColor: Colors.grey.shade50,
+                              fillColor: AppTheme.fieldFillColor,
                             ),
                             items: const [
-                              DropdownMenuItem(value: '1', child: Text('ใช้งาน')),
+                              DropdownMenuItem(
+                                value: '1',
+                                child: Text('ใช้งาน'),
+                              ),
                               DropdownMenuItem(
                                 value: '2',
                                 child: Text('ไม่ใช้งาน'),
                               ),
                             ],
-                            onChanged: (v) => setState(() => _selectedStatus = v!),
+                            onChanged: (v) =>
+                                setState(() => _selectedStatus = v!),
                           ),
                         ],
                       ),
@@ -370,7 +368,7 @@ class _RoomDialogState extends State<RoomDialog> {
           decoration: InputDecoration(
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
             filled: true,
-            fillColor: Colors.grey.shade50,
+            fillColor: AppTheme.fieldFillColor,
           ),
           style: TextStyle(fontSize: isDesktop ? 15 : 14),
         ),

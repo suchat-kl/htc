@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../config/theme.dart';
 
 class AppDialog {
   // Success Dialog
@@ -28,7 +29,7 @@ class AppDialog {
                 child: _buildDialogWithIcon(
                   context,
                   icon: Icons.check_circle,
-                  iconColor: Colors.green,
+                  iconColor: AppTheme.successColor,
                   title: 'สำเร็จ!',
                   message: message,
                   buttonText: 'ตกลง',
@@ -67,7 +68,7 @@ class AppDialog {
                 child: _buildDialogWithIcon(
                   context,
                   icon: Icons.error,
-                  iconColor: Colors.red,
+                  iconColor: AppTheme.dangerColor,
                   title: 'ข้อผิดพลาด',
                   message: message,
                   buttonText: 'ตกลง',
@@ -106,7 +107,7 @@ class AppDialog {
                 child: _buildDialogWithIcon(
                   context,
                   icon: Icons.info,
-                  iconColor: Colors.blue,
+                  iconColor: AppTheme.infoColor,
                   title: 'แจ้งเตือน',
                   message: message,
                   buttonText: 'ตกลง',
@@ -145,7 +146,7 @@ class AppDialog {
                 child: _buildDialogWithIcon(
                   context,
                   icon: Icons.warning,
-                  iconColor: Colors.orange,
+                  iconColor: AppTheme.warningColor,
                   title: 'คำเตือน',
                   message: message,
                   buttonText: 'ตกลง',
@@ -239,7 +240,7 @@ class AppDialog {
             style: const TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
-              color: Colors.black87,
+              color: AppTheme.textPrimary,
             ),
           ),
           const SizedBox(height: 8),
@@ -247,7 +248,7 @@ class AppDialog {
           Text(
             message,
             textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 16, color: Colors.grey),
+            style: const TextStyle(fontSize: 16, color: AppTheme.textSecondary),
           ),
           const SizedBox(height: 24),
           // ปุ่ม
@@ -309,13 +310,13 @@ class AppDialog {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.blue.shade50,
+              color: AppTheme.primaryPale,
               shape: BoxShape.circle,
             ),
             child: const Icon(
               Icons.question_mark,
               size: 64,
-              color: Colors.blue,
+              color: AppTheme.primaryColor,
             ),
           ),
           const SizedBox(height: 16),
@@ -325,7 +326,7 @@ class AppDialog {
             style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
-              color: Colors.black87,
+              color: AppTheme.textPrimary,
             ),
           ),
           const SizedBox(height: 8),
@@ -333,7 +334,7 @@ class AppDialog {
           Text(
             message,
             textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 16, color: Colors.grey),
+            style: const TextStyle(fontSize: 16, color: AppTheme.textSecondary),
           ),
           const SizedBox(height: 24),
           // ปุ่ม
@@ -365,7 +366,7 @@ class AppDialog {
                 child: ElevatedButton(
                   onPressed: () => Navigator.pop(context, true),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue.shade700,
+                    backgroundColor: AppTheme.primaryColor,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(

@@ -306,7 +306,7 @@ class _RoomAssignmentDialogState extends State<RoomAssignmentDialog> {
   }
 
   Widget _dupWarning(List<RoomAssignment> dups) {
-    final color = Colors.orange.shade800;
+    final color = AppTheme.warningColor;
     return Row(
       children: [
         Icon(Icons.warning_amber_rounded, size: 18, color: color),
@@ -351,7 +351,7 @@ class _RoomAssignmentDialogState extends State<RoomAssignmentDialog> {
         ),
         child: Row(
           children: [
-            Icon(Icons.info_outline, color: Colors.orange.shade800, size: 20),
+            Icon(Icons.info_outline, color: AppTheme.warningColor, size: 20),
             const SizedBox(width: 8),
             Expanded(
               child: Text(
@@ -439,7 +439,7 @@ class _RoomAssignmentDialogState extends State<RoomAssignmentDialog> {
                 : const Icon(Icons.save_outlined, size: 18),
             label: Text(_saving ? 'กำลังบันทึก...' : 'บันทึก'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF43A047),
+              backgroundColor: AppTheme.successColor,
               foregroundColor: Colors.white,
               disabledBackgroundColor: const Color(
                 0xFF43A047,
@@ -457,7 +457,7 @@ class _RoomAssignmentDialogState extends State<RoomAssignmentDialog> {
             icon: const Icon(Icons.close, size: 18),
             label: const Text('ยกเลิก'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFE53935),
+              backgroundColor: AppTheme.dangerColor,
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 14),
               shape: RoundedRectangleBorder(

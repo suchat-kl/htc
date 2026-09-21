@@ -291,7 +291,7 @@ class _RoomScheduleScreenState extends State<RoomScheduleScreen> {
   List<Widget> _missingNightsWarning() {
     final n = _nights;
     if (n == null || n <= 0 || _all.length == n) return const [];
-    final color = Colors.orange.shade800;
+    final color = AppTheme.warningColor;
     return [
       const SizedBox(height: 12),
       Row(
@@ -334,7 +334,7 @@ class _RoomScheduleScreenState extends State<RoomScheduleScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 34),
       decoration: BoxDecoration(
-        color: Colors.grey.shade50,
+        color: AppTheme.fieldFillColor,
         borderRadius: BorderRadius.circular(10),
         border: Border.all(color: Colors.grey.shade200),
       ),

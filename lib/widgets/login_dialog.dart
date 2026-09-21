@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:highway_training/providers/auth_provider.dart';
 import '../config/theme.dart';
 import '../services/api_service.dart';
+
 // Add this import at the top
 // import '../widgets/debug_panel.dart';
 
@@ -35,7 +36,6 @@ class _LoginDialogState extends State<LoginDialog> {
 
   Future<void> _handleLogin() async {
     if (!_formKey.currentState!.validate()) return;
-    
 
     setState(() {
       _isLoading = true;
@@ -246,7 +246,7 @@ class _LoginDialogState extends State<LoginDialog> {
                             ),
                           ),
                           filled: true,
-                          fillColor: Colors.grey.shade50,
+                          fillColor: AppTheme.fieldFillColor,
                         ),
                         style: const TextStyle(fontSize: 16),
                         validator: (value) {
@@ -295,7 +295,7 @@ class _LoginDialogState extends State<LoginDialog> {
                             ),
                           ),
                           filled: true,
-                          fillColor: Colors.grey.shade50,
+                          fillColor: AppTheme.fieldFillColor,
                         ),
                         style: const TextStyle(fontSize: 16),
                         validator: (value) {

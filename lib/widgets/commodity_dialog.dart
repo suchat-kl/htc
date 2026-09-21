@@ -39,9 +39,8 @@ class _CommodityDialogState extends State<CommodityDialog> {
       _stockLevelController.text = widget.commodity!.stockLevel.toString();
       _selectedType = widget.commodity!.type;
       _selectedStatus = widget.commodity!.status;
-    }
-    else {
-      _stockLevelController.text ="0";
+    } else {
+      _stockLevelController.text = "0";
     }
   }
 
@@ -248,7 +247,7 @@ class _CommodityDialogState extends State<CommodityDialog> {
                             borderRadius: BorderRadius.circular(12),
                           ),
                           filled: true,
-                          fillColor: Colors.grey.shade50,
+                          fillColor: AppTheme.fieldFillColor,
                         ),
                         items: const [
                           DropdownMenuItem(
@@ -283,7 +282,7 @@ class _CommodityDialogState extends State<CommodityDialog> {
                         controller: _stockLevelController,
                         isDesktop: isDesktop,
                         keyboardType: TextInputType.number,
-                        readOnly:true,
+                        readOnly: true,
                       ),
                       const SizedBox(height: 16),
                       // Status dropdown
@@ -302,7 +301,7 @@ class _CommodityDialogState extends State<CommodityDialog> {
                             borderRadius: BorderRadius.circular(12),
                           ),
                           filled: true,
-                          fillColor: Colors.grey.shade50,
+                          fillColor: AppTheme.fieldFillColor,
                         ),
                         items: const [
                           DropdownMenuItem(value: '1', child: Text('ใช้งาน')),
@@ -379,7 +378,7 @@ class _CommodityDialogState extends State<CommodityDialog> {
     String? Function(String?)? validator,
     TextInputType? keyboardType,
     int maxLines = 1,
-    bool readOnly =false,
+    bool readOnly = false,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -401,7 +400,7 @@ class _CommodityDialogState extends State<CommodityDialog> {
             hintText: hint,
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
             filled: true,
-            fillColor: Colors.grey.shade50,
+            fillColor: AppTheme.fieldFillColor,
           ),
           style: TextStyle(fontSize: isDesktop ? 16 : 14),
           validator: validator,

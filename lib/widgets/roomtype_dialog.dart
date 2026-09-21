@@ -331,7 +331,7 @@ class _RoomtypeDialogState extends State<RoomtypeDialog> {
             hintText: hint,
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
             filled: true,
-            fillColor: Colors.grey.shade50,
+            fillColor: AppTheme.fieldFillColor,
           ),
           style: TextStyle(fontSize: isDesktop ? 16 : 14),
           validator: validator,
@@ -363,7 +363,7 @@ class _RoomtypeDialogState extends State<RoomtypeDialog> {
           decoration: InputDecoration(
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
             filled: true,
-            fillColor: Colors.grey.shade50,
+            fillColor: AppTheme.fieldFillColor,
           ),
           items: items
               .map(

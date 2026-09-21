@@ -209,7 +209,9 @@ class _BookingEditScreenState extends State<BookingEditScreen> {
       }
     } catch (e) {
       setState(() {
-        if (AppLogger.on) AppLogger.d('Error: $e'); // ← เปลี่ยนจาก AppLogger.d(e.toString())
+        if (AppLogger.on) {
+          AppLogger.d('Error: $e');
+        }
         _error = e.toString().replaceAll('Exception: ', '');
         _isSaving = false;
       });
@@ -307,7 +309,7 @@ class _BookingEditScreenState extends State<BookingEditScreen> {
     }
   }
 */
-/*
+  /*
   Future<void> _deleteTfood(Tfood t) async {
     if (t.id == null || _currentBooking == null) return;
     final ok = await showDialog<bool>(
@@ -339,7 +341,7 @@ class _BookingEditScreenState extends State<BookingEditScreen> {
     }
   }
 */
-Future<void> _deleteTfood(Tfood t) async {
+  Future<void> _deleteTfood(Tfood t) async {
     if (t.id == null || _currentBooking == null) return;
 
     // ✅ ใช้ Confirm Dialog
@@ -356,7 +358,7 @@ Future<void> _deleteTfood(Tfood t) async {
         await _loadTfoods();
         if (mounted) {
           // await AppDialog.showSuccess(context, 'ลบรายการอาหารสำเร็จ');
-           context.showSuccessSnackBar('ลบรายการอาหารสำเร็จ');
+          context.showSuccessSnackBar('ลบรายการอาหารสำเร็จ');
         }
       } catch (e) {
         if (mounted) {
@@ -366,6 +368,7 @@ Future<void> _deleteTfood(Tfood t) async {
       }
     }
   }
+
   /// ความกว้างสูงสุดของฟอร์ม — กันไม่ให้ช่องกรอกยืดเต็มจอ 1920px
   /// ซึ่งอ่านยากเพราะสายตาต้องกวาดไกลระหว่าง label กับค่าที่กรอก
   static const double _maxFormWidth = 1040;
@@ -482,24 +485,32 @@ Future<void> _deleteTfood(Tfood t) async {
                               // เพราะช่องวันที่ยาวเกินความจำเป็นแล้วดูโหว่
                               _twoCol(
                                 isWide,
-                                _dateField('วันที่เริ่มต้น', _startDate, () async {
-                                  final p = await Util.dateFieldPicker(
-                                    context,
-                                    _startDate,
-                                  );
-                                  if (p != _startDate) {
-                                    setState(() => _startDate = p);
-                                  }
-                                }),
-                                _dateField('วันที่สิ้นสุด', _stopDate, () async {
-                                  final p = await Util.dateFieldPicker(
-                                    context,
-                                    _stopDate,
-                                  );
-                                  if (p != _stopDate) {
-                                    setState(() => _stopDate = p);
-                                  }
-                                }),
+                                _dateField(
+                                  'วันที่เริ่มต้น',
+                                  _startDate,
+                                  () async {
+                                    final p = await Util.dateFieldPicker(
+                                      context,
+                                      _startDate,
+                                    );
+                                    if (p != _startDate) {
+                                      setState(() => _startDate = p);
+                                    }
+                                  },
+                                ),
+                                _dateField(
+                                  'วันที่สิ้นสุด',
+                                  _stopDate,
+                                  () async {
+                                    final p = await Util.dateFieldPicker(
+                                      context,
+                                      _stopDate,
+                                    );
+                                    if (p != _stopDate) {
+                                      setState(() => _stopDate = p);
+                                    }
+                                  },
+                                ),
                               ),
                               const SizedBox(height: 18),
 
@@ -535,7 +546,10 @@ Future<void> _deleteTfood(Tfood t) async {
                               ),
                               const SizedBox(height: 18),
 
-                              _fld('ชื่อหลักสูตร/โครงการ/เรื่อง', _booktitleCtrl),
+                              _fld(
+                                'ชื่อหลักสูตร/โครงการ/เรื่อง',
+                                _booktitleCtrl,
+                              ),
                               const SizedBox(height: 18),
 
                               _twoCol(
@@ -561,7 +575,9 @@ Future<void> _deleteTfood(Tfood t) async {
                                     if (cleaned.length != 13) {
                                       return 'เลขบัตรประชาชนต้องมี 13 หลัก';
                                     }
-                                    if (!RegExp(r'^[0-9]+$').hasMatch(cleaned)) {
+                                    if (!RegExp(
+                                      r'^[0-9]+$',
+                                    ).hasMatch(cleaned)) {
                                       return 'กรุณากรอกเฉพาะตัวเลขเท่านั้น';
                                     }
                                     return null; // ผ่านการตรวจสอบ
@@ -673,7 +689,7 @@ Future<void> _deleteTfood(Tfood t) async {
                                       vertical: 24,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: Colors.grey.shade50,
+                                      color: AppTheme.fieldFillColor,
                                       borderRadius: BorderRadius.circular(10),
                                       border: Border.all(
                                         color: Colors.grey.shade200,
@@ -859,7 +875,7 @@ Future<void> _deleteTfood(Tfood t) async {
             ),
           ),
           filled: true,
-          fillColor: Colors.grey.shade50,
+          fillColor: AppTheme.fieldFillColor,
           suffixText: suffix,
           suffixStyle: TextStyle(fontSize: 13, color: Colors.grey.shade600),
           contentPadding: const EdgeInsets.symmetric(
@@ -892,7 +908,7 @@ Future<void> _deleteTfood(Tfood t) async {
         decoration: InputDecoration(
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
           filled: true,
-          fillColor: Colors.grey.shade50,
+          fillColor: AppTheme.fieldFillColor,
           contentPadding: const EdgeInsets.symmetric(
             horizontal: 12,
             vertical: 10,
@@ -923,7 +939,7 @@ Future<void> _deleteTfood(Tfood t) async {
             decoration: BoxDecoration(
               border: Border.all(color: Colors.grey.shade400),
               borderRadius: BorderRadius.circular(10),
-              color: Colors.grey.shade50,
+              color: AppTheme.fieldFillColor,
             ),
             child: Text(
               Util.formatThaiDate(d), // ✅ แสดงวันที่ไทย
@@ -1084,7 +1100,7 @@ class _AddTfoodDialogState extends State<_AddTfoodDialog> {
             decoration: BoxDecoration(
               border: Border.all(color: Colors.grey.shade400),
               borderRadius: BorderRadius.circular(10),
-              color: Colors.grey.shade50,
+              color: AppTheme.fieldFillColor,
             ),
             child: Text(
               Util.formatThaiDate(date),
@@ -1225,10 +1241,7 @@ class _CheckOption extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Checkbox(
-              value: value,
-              onChanged: (v) => onChanged(v ?? false),
-            ),
+            Checkbox(value: value, onChanged: (v) => onChanged(v ?? false)),
             Text(label, style: const TextStyle(fontSize: 14)),
           ],
         ),

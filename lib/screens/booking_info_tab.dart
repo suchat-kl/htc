@@ -569,8 +569,9 @@ class _BookingInfoTabState extends State<BookingInfoTab> {
         const SizedBox(height: 6),
         DropdownButtonFormField<int>(
           // กันกรณี statusId ที่ได้มาไม่มีอยู่ในรายการ ไม่งั้น dropdown จะ assert
-          initialValue:
-              _statusList.any((s) => s.statusId == _statusId) ? _statusId : null,
+          initialValue: _statusList.any((s) => s.statusId == _statusId)
+              ? _statusId
+              : null,
           isExpanded: true,
           decoration: InputDecoration(
             hintText: _statusList.isEmpty
@@ -592,7 +593,7 @@ class _BookingInfoTabState extends State<BookingInfoTab> {
               ),
             ),
             filled: true,
-            fillColor: Colors.grey.shade50,
+            fillColor: AppTheme.fieldFillColor,
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 14,
               vertical: 12,
@@ -623,21 +624,21 @@ class _BookingInfoTabState extends State<BookingInfoTab> {
         _actionButton(
           label: 'บันทึก',
           icon: Icons.save_outlined,
-          color: const Color(0xFF43A047),
+          color: AppTheme.successColor,
           busy: _isSaving,
           onPressed: busy ? null : _saveBooking,
         ),
         _actionButton(
           label: 'ลบ',
           icon: Icons.delete_outline,
-          color: const Color(0xFFE53935),
+          color: AppTheme.dangerColor,
           busy: _isDeleting,
           onPressed: busy ? null : _deleteBooking,
         ),
         _actionButton(
           label: 'กลับ',
           icon: Icons.arrow_back,
-          color: const Color(0xFF00ACC1),
+          color: AppTheme.infoColor,
           busy: false,
           // ส่ง _hasSaved กลับไป หน้ารายการจะรีเฟรชเฉพาะตอนที่ข้อมูลถูกแก้จริง
           onPressed: busy ? null : () => Navigator.pop(context, _hasSaved),
@@ -693,9 +694,7 @@ class _BookingInfoTabState extends State<BookingInfoTab> {
         disabledForegroundColor: Colors.white70,
         elevation: 1,
         padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
     );
   }
@@ -708,11 +707,7 @@ class _BookingInfoTabState extends State<BookingInfoTab> {
       child: Center(
         child: Column(
           children: [
-            Icon(
-              Icons.search_off,
-              size: 56,
-              color: Colors.grey.shade400,
-            ),
+            Icon(Icons.search_off, size: 56, color: Colors.grey.shade400),
             const SizedBox(height: 12),
             Text(
               'ไม่พบข้อมูลการจองเลขที่ ${widget.bookId}',
@@ -937,7 +932,7 @@ class _BookingInfoTabState extends State<BookingInfoTab> {
             ),
           ),
           filled: true,
-          fillColor: Colors.grey.shade50,
+          fillColor: AppTheme.fieldFillColor,
           suffixText: suffix,
           suffixStyle: TextStyle(fontSize: 13, color: Colors.grey.shade600),
           contentPadding: const EdgeInsets.symmetric(
@@ -966,7 +961,7 @@ class _BookingInfoTabState extends State<BookingInfoTab> {
             decoration: BoxDecoration(
               border: Border.all(color: Colors.grey.shade300),
               borderRadius: BorderRadius.circular(10),
-              color: Colors.grey.shade50,
+              color: AppTheme.fieldFillColor,
             ),
             child: Row(
               children: [
@@ -1009,9 +1004,7 @@ class _RadioOption extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Radio<String>(value: value),
-            Flexible(
-              child: Text(label, style: const TextStyle(fontSize: 14)),
-            ),
+            Flexible(child: Text(label, style: const TextStyle(fontSize: 14))),
           ],
         ),
       ),

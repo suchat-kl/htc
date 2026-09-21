@@ -124,7 +124,7 @@ class AppPagination extends StatelessWidget {
           isDense: true,
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
           filled: true,
-          fillColor: Colors.grey.shade50,
+          fillColor: AppTheme.fieldFillColor,
           contentPadding: const EdgeInsets.symmetric(
             horizontal: 12,
             vertical: 12,

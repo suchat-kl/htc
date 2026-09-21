@@ -9,7 +9,7 @@ import 'package:highway_training/utils/logger.dart';
 
 class FacilityDialog extends StatefulWidget {
   final Facility? facility;
-  
+
   final ApiService apiService;
 
   const FacilityDialog({super.key, this.facility, required this.apiService});
@@ -260,7 +260,7 @@ class _FacilityDialogState extends State<FacilityDialog> {
                       //       borderRadius: BorderRadius.circular(12),
                       //     ),
                       //     filled: true,
-                      //     fillColor: Colors.grey.shade50,
+                      //     fillColor: AppTheme.fieldFillColor,
                       //   ),
                       //   items: const [
                       //     DropdownMenuItem(
@@ -313,7 +313,7 @@ class _FacilityDialogState extends State<FacilityDialog> {
                             borderRadius: BorderRadius.circular(12),
                           ),
                           filled: true,
-                          fillColor: Colors.grey.shade50,
+                          fillColor: AppTheme.fieldFillColor,
                         ),
                         items: const [
                           DropdownMenuItem(value: '1', child: Text('ใช้งาน')),
@@ -410,7 +410,7 @@ class _FacilityDialogState extends State<FacilityDialog> {
             hintText: hint,
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
             filled: true,
-            fillColor: Colors.grey.shade50,
+            fillColor: AppTheme.fieldFillColor,
           ),
           style: TextStyle(fontSize: isDesktop ? 16 : 14),
           validator: validator,

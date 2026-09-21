@@ -436,7 +436,7 @@ class _DocumentStatusScreenState extends State<DocumentStatusScreen> {
                 row.isNew ? 'ใหม่' : '${row.originalId}',
                 style: TextStyle(
                   fontWeight: FontWeight.w500,
-                  color: row.isNew ? Colors.orange.shade800 : null,
+                  color: row.isNew ? AppTheme.warningColor : null,
                 ),
               ),
             ),
@@ -503,7 +503,7 @@ class _DocumentStatusScreenState extends State<DocumentStatusScreen> {
               padding: const EdgeInsets.only(right: 12),
               child: Text(
                 'มีการแก้ไขที่ยังไม่ได้บันทึก',
-                style: TextStyle(fontSize: 13, color: Colors.orange.shade800),
+                style: TextStyle(fontSize: 13, color: AppTheme.warningColor),
               ),
             ),
           _rowButton('ลบที่เลือก', _deleteSelectedRows),
@@ -517,7 +517,7 @@ class _DocumentStatusScreenState extends State<DocumentStatusScreen> {
             icon: const Icon(Icons.save_outlined, size: 18),
             label: Text(_isSaving ? 'กำลังบันทึก...' : 'บันทึก'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF43A047),
+              backgroundColor: AppTheme.successColor,
               foregroundColor: Colors.white,
               disabledBackgroundColor: const Color(
                 0xFF43A047,
@@ -596,7 +596,7 @@ class _DocumentStatusScreenState extends State<DocumentStatusScreen> {
           isDense: true,
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
           filled: true,
-          fillColor: Colors.grey.shade50,
+          fillColor: AppTheme.fieldFillColor,
         ),
         onSubmitted: (_) => _runSearch(),
       ),

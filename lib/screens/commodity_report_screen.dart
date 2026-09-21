@@ -173,13 +173,12 @@ class _CommodityReportScreenState extends State<CommodityReportScreen> {
   }
 
   // ✅ Date picker already works
-// late DateTime dateNow ;//= DateTime.now();
+  // late DateTime dateNow ;//= DateTime.now();
   Future<void> _selectDate() async {
-    
     // AppLogger.d("dateNow $dateNow");
     // int y = dateNow.year;
     final DateTime? picked; //=
-    picked = await Util.dateFieldPicker(context,  _selectedDate);
+    picked = await Util.dateFieldPicker(context, _selectedDate);
     if (picked != _selectedDate) {
       setState(() => _selectedDate = picked!);
     }
@@ -324,7 +323,7 @@ class _CommodityReportScreenState extends State<CommodityReportScreen> {
                       decoration: BoxDecoration(
                         border: Border.all(color: Colors.grey.shade300),
                         borderRadius: BorderRadius.circular(12),
-                        color: Colors.grey.shade50,
+                        color: AppTheme.fieldFillColor,
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -360,7 +359,7 @@ class _CommodityReportScreenState extends State<CommodityReportScreen> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                         filled: true,
-                        fillColor: Colors.grey.shade50,
+                        fillColor: AppTheme.fieldFillColor,
                         contentPadding: EdgeInsets.symmetric(
                           horizontal: 16,
                           vertical: isDesktop ? 14 : 10,
@@ -560,9 +559,9 @@ class _CommodityReportScreenState extends State<CommodityReportScreen> {
       ),
     );
   }
+
   @override
   void initState() {
-    
     super.initState();
     //  dateNow = DateTime.now();
   }

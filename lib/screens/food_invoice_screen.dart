@@ -821,7 +821,7 @@ class _FoodInvoiceScreenState extends State<FoodInvoiceScreen> {
               padding: const EdgeInsets.only(right: 12),
               child: Text(
                 'มีการแก้ไขที่ยังไม่ได้บันทึก',
-                style: TextStyle(fontSize: 13, color: Colors.orange.shade800),
+                style: TextStyle(fontSize: 13, color: AppTheme.warningColor),
               ),
             ),
           _actionButton(
@@ -834,7 +834,7 @@ class _FoodInvoiceScreenState extends State<FoodInvoiceScreen> {
           _actionButton(
             _saving ? 'กำลังบันทึก...' : 'บันทึก',
             Icons.save_outlined,
-            const Color(0xFF43A047),
+            AppTheme.successColor,
             _saving ? null : _save,
           ),
           const SizedBox(width: 8),

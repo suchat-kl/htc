@@ -69,8 +69,10 @@ class _TfoodDialogState extends State<TfoodDialog> {
     super.initState();
 
     final t = widget.tfood;
-    _startDate = _parse(t?.startdate) ?? widget.defaultStartDate ?? DateTime.now();
-    _stopDate = _parse(t?.stopdate) ??
+    _startDate =
+        _parse(t?.startdate) ?? widget.defaultStartDate ?? DateTime.now();
+    _stopDate =
+        _parse(t?.stopdate) ??
         widget.defaultStopDate ??
         DateTime.now().add(const Duration(days: 1));
 
@@ -250,8 +252,10 @@ class _TfoodDialogState extends State<TfoodDialog> {
                       _numField('มื้อ', _timesCtrl, suffix: 'มื้อ'),
                       const SizedBox(height: 18),
                       _dateField('วันที่เริ่มต้น', _startDate, () async {
-                        final p =
-                            await Util.dateFieldPicker(context, _startDate);
+                        final p = await Util.dateFieldPicker(
+                          context,
+                          _startDate,
+                        );
                         if (p != _startDate) {
                           setState(() {
                             _startDate = p;
@@ -261,7 +265,10 @@ class _TfoodDialogState extends State<TfoodDialog> {
                       }),
                       const SizedBox(height: 18),
                       _dateField('วันที่สิ้นสุด', _stopDate, () async {
-                        final p = await Util.dateFieldPicker(context, _stopDate);
+                        final p = await Util.dateFieldPicker(
+                          context,
+                          _stopDate,
+                        );
                         if (p != _stopDate) {
                           setState(() {
                             _stopDate = p;
@@ -368,7 +375,7 @@ class _TfoodDialogState extends State<TfoodDialog> {
                 : const Icon(Icons.save_outlined, size: 18),
             label: const Text('บันทึก'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF43A047),
+              backgroundColor: AppTheme.successColor,
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
               shape: RoundedRectangleBorder(
@@ -425,7 +432,7 @@ class _TfoodDialogState extends State<TfoodDialog> {
         borderSide: const BorderSide(color: AppTheme.primaryColor, width: 1.6),
       ),
       filled: true,
-      fillColor: Colors.grey.shade50,
+      fillColor: AppTheme.fieldFillColor,
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       isDense: true,
     );
@@ -451,9 +458,8 @@ class _TfoodDialogState extends State<TfoodDialog> {
           // อัปเดตยอดรวมทันทีที่พิมพ์
           onChanged: (_) => setState(() {}),
           validator: required
-              ? (v) => (v == null || v.trim().isEmpty)
-                    ? 'กรุณากรอก$label'
-                    : null
+              ? (v) =>
+                    (v == null || v.trim().isEmpty) ? 'กรุณากรอก$label' : null
               : null,
         ),
       ],
@@ -475,7 +481,7 @@ class _TfoodDialogState extends State<TfoodDialog> {
             decoration: BoxDecoration(
               border: Border.all(color: Colors.grey.shade300),
               borderRadius: BorderRadius.circular(10),
-              color: Colors.grey.shade50,
+              color: AppTheme.fieldFillColor,
             ),
             child: Row(
               children: [

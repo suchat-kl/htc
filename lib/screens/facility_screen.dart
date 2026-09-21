@@ -345,7 +345,7 @@ class _FacilityScreenState extends State<FacilityScreen> {
         if (states.contains(WidgetState.hovered)) {
           return AppTheme.primaryColor.withValues(alpha: 0.05);
         }
-        return isEvenRow ? Colors.white : Colors.grey.shade50;
+        return isEvenRow ? Colors.white : AppTheme.fieldFillColor;
       }),
       cells: [
         DataCell(
@@ -506,7 +506,7 @@ class _FacilityScreenState extends State<FacilityScreen> {
           if (_dirty)
             Text(
               'มีการแก้ไขที่ยังไม่ได้บันทึก',
-              style: TextStyle(fontSize: 13, color: Colors.orange.shade800),
+              style: TextStyle(fontSize: 13, color: AppTheme.warningColor),
             ),
           _rowButton('ลบที่เลือก', _deleteSelectedRows),
           _rowButton('เลือกทั้งหมด', _rows.isEmpty ? null : _selectAll),
@@ -516,7 +516,7 @@ class _FacilityScreenState extends State<FacilityScreen> {
             icon: const Icon(Icons.save_outlined, size: 18),
             label: Text(_isSaving ? 'กำลังบันทึก...' : 'บันทึก'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF43A047),
+              backgroundColor: AppTheme.successColor,
               foregroundColor: Colors.white,
               disabledBackgroundColor: const Color(
                 0xFF43A047,
@@ -671,7 +671,7 @@ class _FacilityScreenState extends State<FacilityScreen> {
                             borderRadius: BorderRadius.circular(12),
                           ),
                           filled: true,
-                          fillColor: Colors.grey.shade50,
+                          fillColor: AppTheme.fieldFillColor,
                           contentPadding: EdgeInsets.symmetric(
                             horizontal: 16,
                             vertical: isDesktop ? 14 : 10,
@@ -724,7 +724,7 @@ class _FacilityScreenState extends State<FacilityScreen> {
                             borderRadius: BorderRadius.circular(12),
                           ),
                           filled: true,
-                          fillColor: Colors.grey.shade50,
+                          fillColor: AppTheme.fieldFillColor,
                           contentPadding: EdgeInsets.symmetric(
                             horizontal: 16,
                             vertical: isDesktop ? 14 : 10,
@@ -847,7 +847,7 @@ class _FacilityScreenState extends State<FacilityScreen> {
                       ),
                     )
                   : Container(
-                      color: Colors.grey.shade50,
+                      color: AppTheme.fieldFillColor,
                       child: SingleChildScrollView(
                         padding: EdgeInsets.all(tablePadding),
                         child: Card(
