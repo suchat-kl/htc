@@ -553,7 +553,8 @@ class _FoodInvoiceScreenState extends State<FoodInvoiceScreen> {
               4,
               TextField(
                 controller: _remarkCtrl,
-                maxLines: 4,
+                // ช่องหมายเหตุสูงแถวเดียว
+                maxLines: 1,
                 style: const TextStyle(fontSize: 14),
                 decoration: _input(),
                 onChanged: (_) => setState(() {}),
