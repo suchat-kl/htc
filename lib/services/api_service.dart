@@ -26,6 +26,7 @@ import 'package:highway_training/models/section.dart';
 import 'package:highway_training/models/payment_activity.dart';
 import 'package:highway_training/models/payment_lodging.dart';
 import 'package:highway_training/models/payment_room_summary.dart';
+import 'package:highway_training/models/invoice.dart';
 import 'package:highway_training/models/room_search_result.dart';
 import 'package:highway_training/models/room_type_option.dart';
 import 'package:highway_training/models/statuscheck.dart';
@@ -2424,6 +2425,68 @@ class ApiService {
   Future<void> deleteTfood(int id) async {
     try {
       final r = await publicDio.delete('/api/auth/tfoods/$id');
+      if (r.statusCode != 200 || r.data['success'] != true) {
+        throw Exception(r.data['message'] ?? 'ลบไม่สำเร็จ');
+      }
+    } on DioException catch (e) {
+      if (e.response?.data is Map) {
+        throw Exception(e.response!.data['message'] ?? 'เกิดข้อผิดพลาด');
+      }
+      throw Exception('เกิดข้อผิดพลาดในการเชื่อมต่อ');
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // ค่าบริการอื่นๆ ของใบจอง (t_invoice) — ใช้ในหน้ารับชำระเงิน
+  // ---------------------------------------------------------------------------
+
+  /// รายการค่าบริการอื่นๆ ของใบจองหนึ่ง เรียงตามลำดับที่ตั้งไว้
+  Future<List<Invoice>> getInvoices(int bookId) async {
+    final r = await publicDio.get(
+      '/api/auth/invoices',
+      queryParameters: {'bookid': bookId},
+    );
+    if (r.statusCode == 200 && r.data['invoices'] != null) {
+      return (r.data['invoices'] as List)
+          .map((j) => Invoice.fromJson(j as Map<String, dynamic>))
+          .toList();
+    }
+    return [];
+  }
+
+  Future<Invoice> createInvoice(Invoice d) async {
+    try {
+      final r = await publicDio.post('/api/auth/invoices', data: d.toJson());
+      if (r.statusCode == 200 && r.data['success'] == true) {
+        return Invoice.fromJson(r.data['invoice']);
+      }
+      throw Exception(r.data['message'] ?? 'บันทึกไม่สำเร็จ');
+    } on DioException catch (e) {
+      if (e.response?.data is Map) {
+        throw Exception(e.response!.data['message'] ?? 'เกิดข้อผิดพลาด');
+      }
+      throw Exception('เกิดข้อผิดพลาดในการเชื่อมต่อ');
+    }
+  }
+
+  Future<Invoice> updateInvoice(int id, Invoice d) async {
+    try {
+      final r = await publicDio.put('/api/auth/invoices/$id', data: d.toJson());
+      if (r.statusCode == 200 && r.data['success'] == true) {
+        return Invoice.fromJson(r.data['invoice']);
+      }
+      throw Exception(r.data['message'] ?? 'บันทึกไม่สำเร็จ');
+    } on DioException catch (e) {
+      if (e.response?.data is Map) {
+        throw Exception(e.response!.data['message'] ?? 'เกิดข้อผิดพลาด');
+      }
+      throw Exception('เกิดข้อผิดพลาดในการเชื่อมต่อ');
+    }
+  }
+
+  Future<void> deleteInvoice(int id) async {
+    try {
+      final r = await publicDio.delete('/api/auth/invoices/$id');
       if (r.statusCode != 200 || r.data['success'] != true) {
         throw Exception(r.data['message'] ?? 'ลบไม่สำเร็จ');
       }

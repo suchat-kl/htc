@@ -1,5 +1,6 @@
 // lib/screens/payment_screen.dart
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
 import '../config/theme.dart';
@@ -9,8 +10,10 @@ import '../models/employee.dart';
 import '../models/tfood.dart';
 import '../providers/auth_provider.dart';
 import '../services/api_service.dart';
+import '../utils/dialog.dart';
 import '../utils/logger.dart';
 import '../utils/snackbar_helper.dart';
+import '../models/invoice.dart';
 import '../utils/util.dart';
 import 'food_invoice_screen.dart';
 
@@ -37,17 +40,60 @@ class PaymentLine {
   });
 }
 
-/// หนึ่งแถวของค่าบริการอื่นๆ
-class OtherServiceLine {
-  final String serviceType;
-  final String detail;
-  final double amount;
+/// หนึ่งแถวของค่าบริการอื่นๆ ที่แก้ไขในตารางได้
+///
+/// เก็บลงตาราง t_invoice ผ่าน [Invoice] — แถวใหม่ id เป็น null จนกว่าจะบันทึก
+class _OtherRow {
+  final int? id;
+  final TextEditingController typeCtrl;
+  final TextEditingController detailCtrl;
+  final TextEditingController priceCtrl;
+  bool selected = false;
 
-  const OtherServiceLine({
-    required this.serviceType,
-    required this.detail,
-    required this.amount,
-  });
+  /// ค่าตอนโหลดมา ใช้เทียบว่าแถวถูกแก้ไขหรือยัง
+  late String saved;
+
+  _OtherRow.from(Invoice inv)
+    : id = inv.id,
+      typeCtrl = TextEditingController(text: inv.servicetype ?? ''),
+      detailCtrl = TextEditingController(text: inv.description ?? ''),
+      priceCtrl = TextEditingController(
+        text: inv.price == 0 ? '' : inv.price.toStringAsFixed(2),
+      ) {
+    saved = signature;
+  }
+
+  _OtherRow.empty()
+    : id = null,
+      typeCtrl = TextEditingController(),
+      detailCtrl = TextEditingController(),
+      priceCtrl = TextEditingController() {
+    saved = '';
+  }
+
+  String get signature =>
+      '${typeCtrl.text}|${detailCtrl.text}|${priceCtrl.text}';
+
+  /// แถวใหม่ถือว่าต้องบันทึกเสมอ แถวเดิมบันทึกเฉพาะตอนที่ค่าเปลี่ยน
+  bool get isDirty => id == null || signature != saved;
+
+  double get amount =>
+      double.tryParse(priceCtrl.text.replaceAll(',', '').trim()) ?? 0;
+
+  Invoice toInvoice(int bookId, int sequence) => Invoice(
+    id: id,
+    bookid: bookId,
+    servicetype: typeCtrl.text.trim(),
+    description: detailCtrl.text.trim(),
+    price: amount,
+    sequence: sequence,
+  );
+
+  void dispose() {
+    typeCtrl.dispose();
+    detailCtrl.dispose();
+    priceCtrl.dispose();
+  }
 }
 
 /// หน้ารับชำระเงิน — สรุปค่าบริการของใบจองหนึ่ง
@@ -102,7 +148,13 @@ class _PaymentScreenState extends State<PaymentScreen> {
   List<PaymentLine> _lodgingLines = [];
   List<PaymentLine> _activityLines = [];
   double _foodAmount = 0;
-  List<OtherServiceLine> _otherServices = [];
+
+  /// ค่าบริการอื่นๆ — แก้ไขในตารางแล้วกดบันทึกทีเดียว
+  List<_OtherRow> _otherRows = [];
+
+  /// รหัสแถวที่ถูกลบออกจากตาราง รอลบจริงตอนกดบันทึก
+  final List<int> _deletedOtherIds = [];
+  bool _savingOther = false;
 
   // ---------- ข้อมูลใบเสร็จ (เติมจากใบจองตอนโหลด) ----------
   final _remarkCtrl = TextEditingController();
@@ -127,11 +179,14 @@ class _PaymentScreenState extends State<PaymentScreen> {
     _remarkCtrl.dispose();
     _receiptBookCtrl.dispose();
     _receiptNoCtrl.dispose();
+    for (final r in _otherRows) {
+      r.dispose();
+    }
     super.dispose();
   }
 
   double get _otherAmount =>
-      _otherServices.fold<double>(0, (sum, s) => sum + s.amount);
+      _otherRows.fold<double>(0, (sum, r) => sum + r.amount);
 
   double get _total =>
       _lodgingLines.fold<double>(0, (sum, l) => sum + (l.amount ?? 0)) +
@@ -185,7 +240,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
       // ตัวเดียวกับที่แสดงในใบแจ้งค่าอาหาร
       final foodAmount = await _loadFoodAmount();
 
-      // TODO: ค่าบริการอื่นๆ รอสเปกว่าดึงจากตารางไหน แล้วเติม _otherServices
+      // ค่าบริการอื่นๆ: รายการในตาราง t_invoice ของใบจองนี้
+      final others = await widget.apiService.getInvoices(widget.bookId);
 
       if (!mounted) return;
       setState(() {
@@ -216,7 +272,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
         _recorderEmpId = recorder.empId;
         _recorderName = recorder.name;
         _foodAmount = foodAmount;
-        _otherServices = const [];
+        _otherRows = others.map(_OtherRow.from).toList();
         _loading = false;
       });
     } catch (e) {
@@ -555,7 +611,108 @@ class _PaymentScreenState extends State<PaymentScreen> {
     ];
   }
 
-  /// ตารางย่อยค่าบริการอื่นๆ — รายละเอียดการเลือก/เพิ่ม/ลบ ผู้ใช้จะแจ้งเพิ่ม
+  // ---------------------------------------------------------------------------
+  // ค่าบริการอื่นๆ — แก้ไขในตารางแล้วกดบันทึกทีเดียว เก็บลง t_invoice
+  // ---------------------------------------------------------------------------
+
+  /// มีแถวใหม่ แถวที่ถูกแก้ หรือแถวที่รอลบอยู่หรือไม่
+  bool get _otherDirty =>
+      _deletedOtherIds.isNotEmpty || _otherRows.any((r) => r.isDirty);
+
+  void _addOtherRow() {
+    setState(() => _otherRows.add(_OtherRow.empty()));
+  }
+
+  void _selectAllOther() {
+    final selectAll = _otherRows.any((r) => !r.selected);
+    setState(() {
+      for (final r in _otherRows) {
+        r.selected = selectAll;
+      }
+    });
+  }
+
+  Future<void> _deleteSelectedOther() async {
+    final selected = _otherRows.where((r) => r.selected).toList();
+    if (selected.isEmpty) {
+      context.showInfoSnackBar('ยังไม่ได้เลือกรายการที่จะลบ');
+      return;
+    }
+    final ok = await AppDialog.showConfirm(
+      context,
+      'ต้องการลบค่าบริการที่เลือก ${selected.length} รายการหรือไม่',
+      confirmText: 'ลบ',
+    );
+    if (ok != true) return;
+    setState(() {
+      for (final r in selected) {
+        if (r.id != null) _deletedOtherIds.add(r.id!);
+        _otherRows.remove(r);
+        r.dispose();
+      }
+    });
+  }
+
+  /// บันทึกทั้งตาราง — ลบก่อน แล้วเพิ่ม/แก้ไข จากนั้นโหลดใหม่ให้ได้ id จริง
+  Future<void> _saveOtherServices() async {
+    for (final r in _otherRows) {
+      if (r.typeCtrl.text.trim().isEmpty) {
+        context.showErrorSnackBar('กรุณากรอกประเภทบริการให้ครบทุกแถว');
+        return;
+      }
+      final text = r.priceCtrl.text.replaceAll(',', '').trim();
+      if (text.isNotEmpty && double.tryParse(text) == null) {
+        context.showErrorSnackBar(
+          'จำนวนเงินของ "${r.typeCtrl.text.trim()}" ไม่ถูกต้อง',
+        );
+        return;
+      }
+      if (r.amount < 0) {
+        context.showErrorSnackBar('จำนวนเงินต้องไม่ติดลบ');
+        return;
+      }
+    }
+
+    setState(() => _savingOther = true);
+    try {
+      for (final id in _deletedOtherIds) {
+        await widget.apiService.deleteInvoice(id);
+      }
+      for (var i = 0; i < _otherRows.length; i++) {
+        final row = _otherRows[i];
+        if (row.id == null) {
+          await widget.apiService.createInvoice(
+            row.toInvoice(widget.bookId, i + 1),
+          );
+        } else if (row.isDirty) {
+          await widget.apiService.updateInvoice(
+            row.id!,
+            row.toInvoice(widget.bookId, i + 1),
+          );
+        }
+      }
+      _deletedOtherIds.clear();
+
+      final fresh = await widget.apiService.getInvoices(widget.bookId);
+      if (!mounted) return;
+      setState(() {
+        for (final r in _otherRows) {
+          r.dispose();
+        }
+        _otherRows = fresh.map(_OtherRow.from).toList();
+        _savingOther = false;
+      });
+      if (mounted) {
+        context.showSuccessSnackBar('บันทึกค่าบริการอื่นๆ เรียบร้อย');
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _savingOther = false);
+      context.showErrorSnackBar(e.toString().replaceAll('Exception: ', ''));
+    }
+  }
+
+  /// ตารางย่อยค่าบริการอื่นๆ
   Widget _otherServiceBox() {
     return Container(
       padding: const EdgeInsets.all(8),
@@ -584,9 +741,10 @@ class _PaymentScreenState extends State<PaymentScreen> {
               children: [
                 Row(
                   children: [
-                    Expanded(flex: 2, child: _subHead('ประเภทบริการ')),
+                    SizedBox(width: 36, child: _otherHeaderCheckbox()),
+                    Expanded(flex: 3, child: _subHead('ประเภทบริการ')),
                     Expanded(
-                      flex: 5,
+                      flex: 4,
                       child: _subHead('รายละเอียด', center: true),
                     ),
                     Expanded(
@@ -595,21 +753,21 @@ class _PaymentScreenState extends State<PaymentScreen> {
                     ),
                   ],
                 ),
-                for (final s in _otherServices) ...[
-                  const Divider(height: 14),
-                  Row(
-                    children: [
-                      Expanded(flex: 2, child: _text(s.serviceType)),
-                      Expanded(flex: 5, child: _text(s.detail)),
-                      Expanded(
-                        flex: 2,
-                        child: Align(
-                          alignment: Alignment.centerRight,
-                          child: _amount(s.amount),
-                        ),
+                if (_otherRows.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    child: Text(
+                      'ยังไม่มีรายการค่าบริการอื่นๆ',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.grey.shade600,
                       ),
-                    ],
+                    ),
                   ),
+                for (final row in _otherRows) ...[
+                  const Divider(height: 14),
+                  _otherRow(row),
                 ],
               ],
             ),
@@ -618,23 +776,106 @@ class _PaymentScreenState extends State<PaymentScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
+              if (_otherDirty)
+                Padding(
+                  padding: const EdgeInsets.only(right: 12),
+                  child: Text(
+                    'มีการแก้ไขที่ยังไม่ได้บันทึก',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: AppTheme.warningColor,
+                    ),
+                  ),
+                ),
               _smallButton(
                 'ลบที่เลือก',
-                () => _notReady('ลบที่เลือก'),
+                _savingOther ? () {} : _deleteSelectedOther,
                 color: AppTheme.deleteColor,
               ),
               const SizedBox(width: 12),
-              _smallButton('เลือกทั้งหมด', () => _notReady('เลือกทั้งหมด')),
+              _smallButton(
+                'เลือกทั้งหมด',
+                _otherRows.isEmpty ? () {} : _selectAllOther,
+              ),
               const SizedBox(width: 4),
               _smallButton(
                 'เพิ่ม',
-                () => _notReady('เพิ่มค่าบริการ'),
+                _savingOther ? () {} : _addOtherRow,
                 color: AppTheme.addColor,
+              ),
+              const SizedBox(width: 12),
+              _smallButton(
+                _savingOther ? 'กำลังบันทึก...' : 'บันทึก',
+                _savingOther ? () {} : _saveOtherServices,
+                color: AppTheme.saveColor,
               ),
             ],
           ),
         ],
       ),
+    );
+  }
+
+  /// ช่องเลือกหัวตาราง — ความหมายเดียวกับปุ่มเลือกทั้งหมด
+  Widget _otherHeaderCheckbox() {
+    final total = _otherRows.length;
+    final picked = _otherRows.where((r) => r.selected).length;
+    return Checkbox(
+      value: total == 0 ? false : (picked == total ? true : null),
+      tristate: true,
+      visualDensity: VisualDensity.compact,
+      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      onChanged: total == 0 ? null : (_) => _selectAllOther(),
+    );
+  }
+
+  Widget _otherRow(_OtherRow row) {
+    return Row(
+      children: [
+        SizedBox(
+          width: 36,
+          child: Checkbox(
+            value: row.selected,
+            visualDensity: VisualDensity.compact,
+            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            onChanged: (v) => setState(() => row.selected = v ?? false),
+          ),
+        ),
+        Expanded(
+          flex: 3,
+          child: TextField(
+            controller: row.typeCtrl,
+            style: const TextStyle(fontSize: 14),
+            decoration: _input().copyWith(hintText: 'เช่น ค่าคาราโอเกะ'),
+            onChanged: (_) => setState(() {}),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          flex: 4,
+          child: TextField(
+            controller: row.detailCtrl,
+            style: const TextStyle(fontSize: 14),
+            decoration: _input(),
+            onChanged: (_) => setState(() {}),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          flex: 2,
+          child: TextField(
+            controller: row.priceCtrl,
+            textAlign: TextAlign.right,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            inputFormatters: [
+              FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+            ],
+            style: const TextStyle(fontSize: 14),
+            decoration: _input(),
+            onChanged: (_) => setState(() {}),
+          ),
+        ),
+      ],
     );
   }
 
