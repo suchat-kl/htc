@@ -105,9 +105,10 @@ class _OtherRow {
 /// ข้อมูลใบเสร็จ (เล่มที่ เลขที่ วันที่) — ทั้งหมดจากใบจองชุดเดียวกัน
 /// ค่าห้องพัก (getPaymentLodging) และค่าห้องกิจกรรม (getPaymentActivity)
 /// ผู้บันทึก (ผู้ใช้ที่ล็อกอิน)
-/// ข้อมูลที่รอสเปก: ค่าอาหาร ค่าบริการอื่นๆ และการพิมพ์/บันทึก
-/// — โครงสร้างข้อมูลเตรียมไว้แล้วใน [OtherServiceLine] เมื่อได้ที่มาของข้อมูล
-/// ให้เติมใน [_load]
+/// ค่าอาหาร (t_food) และค่าบริการอื่นๆ (t_invoice)
+///
+/// ปุ่มบันทึกเก็บทั้งตารางค่าบริการอื่นๆ และฟิลด์บนใบจองในครั้งเดียว
+/// ส่วนที่ยังไม่ได้ทำคือปุ่มพิมพ์ใบแจ้งค่าบริการ
 class PaymentScreen extends StatefulWidget {
   final ApiService apiService;
 
@@ -154,7 +155,16 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
   /// รหัสแถวที่ถูกลบออกจากตาราง รอลบจริงตอนกดบันทึก
   final List<int> _deletedOtherIds = [];
-  bool _savingOther = false;
+
+  /// กำลังบันทึกทั้งหน้า ระหว่างนี้กดปุ่มซ้ำไม่ได้
+  bool _saving = false;
+
+  // ค่าตอนโหลดมา ใช้เทียบว่าผู้ใช้แก้อะไรไปแล้วบ้าง
+  String _originalRemark = '';
+  String _originalReceiptBook = '';
+  String _originalReceiptNo = '';
+  DateTime? _originalReceiptDate;
+  int? _originalStatusId;
 
   // ---------- ข้อมูลใบเสร็จ (เติมจากใบจองตอนโหลด) ----------
   final _remarkCtrl = TextEditingController();
@@ -275,6 +285,11 @@ class _PaymentScreenState extends State<PaymentScreen> {
         _recorderName = recorder.name;
         _foodAmount = foodAmount;
         _otherRows = others.map(_OtherRow.from).toList();
+        _originalRemark = _remarkCtrl.text;
+        _originalReceiptBook = _receiptBookCtrl.text;
+        _originalReceiptNo = _receiptNoCtrl.text;
+        _originalReceiptDate = receiptDate;
+        _originalStatusId = booking.statusId;
         _loading = false;
       });
     } catch (e) {
@@ -350,18 +365,102 @@ class _PaymentScreenState extends State<PaymentScreen> {
     await _load();
   }
 
-  /// บันทึกการรับชำระ — ตอนนี้ตรวจแค่ว่ามีผู้บันทึก ส่วนการบันทึกจริงรอสเปก
+  /// มีอะไรที่แก้แล้วยังไม่ได้บันทึกหรือไม่
+  bool get _pageDirty =>
+      _otherDirty ||
+      _remarkCtrl.text != _originalRemark ||
+      _receiptBookCtrl.text != _originalReceiptBook ||
+      _receiptNoCtrl.text != _originalReceiptNo ||
+      _receiptDate != _originalReceiptDate ||
+      _statusId != _originalStatusId;
+
+  /// บันทึกทั้งหน้า — ตารางค่าบริการอื่นๆ แล้วตามด้วยข้อมูลบนใบจอง
   ///
-  /// ต้องมี [_recorderEmpId] เพราะจะบันทึกรหัสพนักงานผู้รับชำระลงฐานข้อมูล
-  /// ผู้ใช้ที่ไม่มีรหัสพนักงานผูกกับบัญชีจึงบันทึกไม่ได้
-  void _save() {
+  /// ข้อมูลใบจองที่บันทึก: สถานะการจอง หมายเหตุ และเล่มที่/เลขที่/วันที่ใบเสร็จ
+  /// ส่งค่าเดิมของใบจองกลับไปครบ เปลี่ยนเฉพาะฟิลด์ของหน้านี้ ค่าอื่นจึงไม่หาย
+  ///
+  /// ต้องมี [_recorderEmpId] เพราะผู้บันทึกต้องผูกกับรหัสพนักงาน
+  Future<void> _save() async {
     if (_recorderEmpId == null) {
       context.showErrorSnackBar(
         'ไม่พบรหัสพนักงานของผู้ใช้ที่ล็อกอิน จึงบันทึกการรับชำระไม่ได้',
       );
       return;
     }
-    _notReady('บันทึก');
+    final booking = _booking;
+    if (booking == null) return;
+    if (!_validateOtherRows()) return;
+
+    // เล่มที่และเลขที่ใบเสร็จเก็บเป็นตัวเลขในฐานข้อมูล
+    final bookNo = _receiptBookCtrl.text.trim();
+    final receiptNo = _receiptNoCtrl.text.trim();
+    if (bookNo.isNotEmpty && int.tryParse(bookNo) == null) {
+      context.showErrorSnackBar('เล่มที่ใบเสร็จต้องเป็นตัวเลข');
+      return;
+    }
+    if (receiptNo.isNotEmpty && int.tryParse(receiptNo) == null) {
+      context.showErrorSnackBar('เลขที่ใบเสร็จต้องเป็นตัวเลข');
+      return;
+    }
+
+    setState(() => _saving = true);
+    try {
+      await _persistOtherServices();
+
+      final payload = Bookroom.fromJson({
+        ...booking.toJson(),
+        'bookremark': _remarkCtrl.text.trim(),
+        'receivebook': bookNo.isEmpty ? null : int.parse(bookNo),
+        'receiveno': receiptNo.isEmpty ? null : int.parse(receiptNo),
+        'receivedate': _receiptDate == null
+            ? null
+            : Util.formatChristianDate(_receiptDate!),
+        'statusId': _statusId,
+      });
+      final updated = await widget.apiService.updateBooking(
+        widget.bookId,
+        payload,
+      );
+
+      final fresh = await widget.apiService.getInvoices(widget.bookId);
+      if (!mounted) return;
+      setState(() {
+        _booking = updated;
+        for (final r in _otherRows) {
+          r.dispose();
+        }
+        _otherRows = fresh.map(_OtherRow.from).toList();
+        _originalRemark = _remarkCtrl.text;
+        _originalReceiptBook = _receiptBookCtrl.text;
+        _originalReceiptNo = _receiptNoCtrl.text;
+        _originalReceiptDate = _receiptDate;
+        _originalStatusId = _statusId;
+        _saving = false;
+      });
+      if (mounted) {
+        context.showSuccessSnackBar('บันทึกการรับชำระเรียบร้อย');
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _saving = false);
+      context.showErrorSnackBar(e.toString().replaceAll('Exception: ', ''));
+    }
+  }
+
+  /// ถามยืนยันเมื่อยังมีการแก้ไขค้างอยู่ — true = ออกได้
+  Future<bool> _confirmLeave() async {
+    if (!_pageDirty) return true;
+    final ok = await AppDialog.showConfirm(
+      context,
+      'ยังมีการแก้ไขที่ยังไม่ได้บันทึก ต้องการออกจากหน้านี้หรือไม่?',
+      confirmText: 'ออกโดยไม่บันทึก',
+    );
+    return ok == true;
+  }
+
+  Future<void> _close() async {
+    if (!await _confirmLeave()) return;
+    if (mounted) Navigator.pop(context);
   }
 
   /// ปุ่มที่ยังไม่ได้ทำ — แจ้งผู้ใช้แทนการกดแล้วเงียบ
@@ -377,39 +476,49 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.close, size: 28),
-          tooltip: 'ปิด',
-          onPressed: () => Navigator.pop(context),
+    return PopScope(
+      // ปิดด้วยปุ่มย้อนกลับของเบราว์เซอร์ก็ต้องถามก่อนเหมือนกัน
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        if (await _confirmLeave() && context.mounted) {
+          if (context.mounted) Navigator.pop(context);
+        }
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          leading: IconButton(
+            icon: const Icon(Icons.close, size: 28),
+            tooltip: 'ปิด',
+            onPressed: _close,
+          ),
+          title: Text(
+            'รับชำระเงิน เลขที่จอง ${widget.bookId}',
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          ),
+          backgroundColor: AppTheme.primaryColor,
+          foregroundColor: Colors.white,
+          elevation: 4,
         ),
-        title: Text(
-          'รับชำระเงิน เลขที่จอง ${widget.bookId}',
-          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-        ),
-        backgroundColor: AppTheme.primaryColor,
-        foregroundColor: Colors.white,
-        elevation: 4,
+        body: _loading
+            ? const Center(child: CircularProgressIndicator())
+            : _error != null
+            ? _errorView(_error!)
+            : LayoutBuilder(
+                builder: (context, c) {
+                  final width = c.maxWidth < _minTableWidth + 32
+                      ? _minTableWidth
+                      : c.maxWidth - 32;
+                  return SingleChildScrollView(
+                    padding: const EdgeInsets.all(16),
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: SizedBox(width: width, child: _summaryTable()),
+                    ),
+                  );
+                },
+              ),
       ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : _error != null
-          ? _errorView(_error!)
-          : LayoutBuilder(
-              builder: (context, c) {
-                final width = c.maxWidth < _minTableWidth + 32
-                    ? _minTableWidth
-                    : c.maxWidth - 32;
-                return SingleChildScrollView(
-                  padding: const EdgeInsets.all(16),
-                  child: SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: SizedBox(width: width, child: _summaryTable()),
-                  ),
-                );
-              },
-            ),
     );
   }
 
@@ -656,62 +765,47 @@ class _PaymentScreenState extends State<PaymentScreen> {
   }
 
   /// บันทึกทั้งตาราง — ลบก่อน แล้วเพิ่ม/แก้ไข จากนั้นโหลดใหม่ให้ได้ id จริง
-  Future<void> _saveOtherServices() async {
+  /// ตรวจค่าในตารางค่าบริการอื่นๆ — false = ไม่ผ่าน และแจ้งผู้ใช้ไปแล้ว
+  bool _validateOtherRows() {
     for (final r in _otherRows) {
       if (r.typeCtrl.text.trim().isEmpty) {
         context.showErrorSnackBar('กรุณากรอกประเภทบริการให้ครบทุกแถว');
-        return;
+        return false;
       }
       final text = r.priceCtrl.text.replaceAll(',', '').trim();
       if (text.isNotEmpty && double.tryParse(text) == null) {
         context.showErrorSnackBar(
           'จำนวนเงินของ "${r.typeCtrl.text.trim()}" ไม่ถูกต้อง',
         );
-        return;
+        return false;
       }
       if (r.amount < 0) {
         context.showErrorSnackBar('จำนวนเงินต้องไม่ติดลบ');
-        return;
+        return false;
       }
     }
+    return true;
+  }
 
-    setState(() => _savingOther = true);
-    try {
-      for (final id in _deletedOtherIds) {
-        await widget.apiService.deleteInvoice(id);
-      }
-      for (var i = 0; i < _otherRows.length; i++) {
-        final row = _otherRows[i];
-        if (row.id == null) {
-          await widget.apiService.createInvoice(
-            row.toInvoice(widget.bookId, i + 1),
-          );
-        } else if (row.isDirty) {
-          await widget.apiService.updateInvoice(
-            row.id!,
-            row.toInvoice(widget.bookId, i + 1),
-          );
-        }
-      }
-      _deletedOtherIds.clear();
-
-      final fresh = await widget.apiService.getInvoices(widget.bookId);
-      if (!mounted) return;
-      setState(() {
-        for (final r in _otherRows) {
-          r.dispose();
-        }
-        _otherRows = fresh.map(_OtherRow.from).toList();
-        _savingOther = false;
-      });
-      if (mounted) {
-        context.showSuccessSnackBar('บันทึกค่าบริการอื่นๆ เรียบร้อย');
-      }
-    } catch (e) {
-      if (!mounted) return;
-      setState(() => _savingOther = false);
-      context.showErrorSnackBar(e.toString().replaceAll('Exception: ', ''));
+  /// เขียนตารางค่าบริการอื่นๆ ลงฐานข้อมูล — ลบก่อน แล้วเพิ่ม/แก้ไข
+  Future<void> _persistOtherServices() async {
+    for (final id in _deletedOtherIds) {
+      await widget.apiService.deleteInvoice(id);
     }
+    for (var i = 0; i < _otherRows.length; i++) {
+      final row = _otherRows[i];
+      if (row.id == null) {
+        await widget.apiService.createInvoice(
+          row.toInvoice(widget.bookId, i + 1),
+        );
+      } else if (row.isDirty) {
+        await widget.apiService.updateInvoice(
+          row.id!,
+          row.toInvoice(widget.bookId, i + 1),
+        );
+      }
+    }
+    _deletedOtherIds.clear();
   }
 
   /// ตารางย่อยค่าบริการอื่นๆ
@@ -791,7 +885,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                 ),
               _smallButton(
                 'ลบที่เลือก',
-                _savingOther ? () {} : _deleteSelectedOther,
+                _saving ? () {} : _deleteSelectedOther,
                 color: AppTheme.deleteColor,
               ),
               const SizedBox(width: 12),
@@ -802,14 +896,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
               const SizedBox(width: 4),
               _smallButton(
                 'เพิ่ม',
-                _savingOther ? () {} : _addOtherRow,
+                _saving ? () {} : _addOtherRow,
                 color: AppTheme.addColor,
-              ),
-              const SizedBox(width: 12),
-              _smallButton(
-                _savingOther ? 'กำลังบันทึก...' : 'บันทึก',
-                _savingOther ? () {} : _saveOtherServices,
-                color: AppTheme.saveColor,
               ),
             ],
           ),
@@ -993,17 +1081,17 @@ class _PaymentScreenState extends State<PaymentScreen> {
           ),
           const SizedBox(width: 8),
           _actionButton(
-            'บันทึก',
+            _saving ? 'กำลังบันทึก...' : 'บันทึก',
             Icons.save_outlined,
             AppTheme.saveColor,
-            _save,
+            _saving ? () {} : _save,
           ),
           const SizedBox(width: 8),
           _actionButton(
             'กลับ',
             Icons.arrow_back,
             AppTheme.neutralColor,
-            () => Navigator.pop(context),
+            _close,
           ),
         ],
       ),
