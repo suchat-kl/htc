@@ -22,6 +22,11 @@ class Bookroom {
   final int? receivebook;
   final int? receiveno;
   final String? receivedate;
+
+  /// ข้อมูลหัวใบแจ้งรายงานการใช้ห้องพัก (Folio)
+  final String? folioname;
+  final String? folioaddress;
+  final String? foliodate;
   final int? statusId;
   final String? statusName;
   // ฟิลด์ที่มีอยู่แล้วใน BookroomDTO ฝั่ง Spring Boot แต่ยังไม่เคยประกาศที่นี่
@@ -55,6 +60,9 @@ class Bookroom {
     this.receivebook,
     this.receiveno,
     this.receivedate,
+    this.folioname,
+    this.folioaddress,
+    this.foliodate,
     this.statusId,
     this.statusName,
     this.bookdate,
@@ -86,6 +94,9 @@ class Bookroom {
       receivebook: json['receivebook'] as int?,
       receiveno: json['receiveno'] as int?,
       receivedate: json['receivedate'] as String?,
+      folioname: json['folioname'] as String?,
+      folioaddress: json['folioaddress'] as String?,
+      foliodate: json['foliodate'] as String?,
       statusId: json['statusId'] as int?,
       statusName: json['statusName'] as String?,
       bookdate: json['bookdate'] as String?,
@@ -118,6 +129,9 @@ class Bookroom {
       'receivebook': receivebook,
       'receiveno': receiveno,
       'receivedate': receivedate,
+      'folioname': folioname,
+      'folioaddress': folioaddress,
+      'foliodate': foliodate,
       'statusId': statusId,
       'statusName': statusName,
       'bookdate': bookdate,

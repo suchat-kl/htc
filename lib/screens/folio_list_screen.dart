@@ -1,7 +1,7 @@
-// lib/screens/food_list_screen.dart
+// lib/screens/folio_list_screen.dart
 import 'package:flutter/material.dart';
 import 'package:highway_training/providers/auth_provider.dart';
-import 'package:highway_training/screens/food_invoice_screen.dart';
+import 'package:highway_training/screens/folio_screen.dart';
 import 'package:intl/intl.dart';
 import '../config/theme.dart';
 import '../models/bookroom.dart';
@@ -12,24 +12,24 @@ import '../utils/util.dart';
 import '../widgets/app_pagination.dart';
 import 'package:highway_training/utils/logger.dart';
 
-/// เมนูห้องพัก/ห้องกิจกรรม > ใบแจ้งค่าอาหาร
+/// เมนูห้องพัก/ห้องกิจกรรม > Folio
 ///
 /// โครงหน้าจอเดียวกับหน้ารายการรับชำระเงิน ([PaymentListScreen])
-/// ต่างกันที่ปุ่มท้ายแถวเปิดใบแจ้งค่าอาหารแทนหน้ารับชำระเงิน
-class FoodListScreen extends StatefulWidget {
+/// ต่างกันที่ปุ่มท้ายแถวเปิดใบแจ้งรายงานการใช้ห้องพัก (Folio)
+class FolioListScreen extends StatefulWidget {
   final AuthProvider authProvider;
   final ApiService apiService;
-  const FoodListScreen({
+  const FolioListScreen({
     super.key,
     required this.authProvider,
     required this.apiService,
   });
 
   @override
-  State<FoodListScreen> createState() => _FoodListScreenState();
+  State<FolioListScreen> createState() => _FolioListScreenState();
 }
 
-class _FoodListScreenState extends State<FoodListScreen> {
+class _FolioListScreenState extends State<FolioListScreen> {
   // Pagination
   int _currentPage = 0;
   int _pageSize = 5;
@@ -193,7 +193,7 @@ class _FoodListScreenState extends State<FoodListScreen> {
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
-          'รายการอาหาร',
+          'Folio',
           style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
         ),
         backgroundColor: AppTheme.primaryColor,
@@ -567,7 +567,7 @@ class _FoodListScreenState extends State<FoodListScreen> {
                             width: 90,
                             child: ElevatedButton(
                               onPressed: () {
-                                _showFoodInvoice(item.bookID!);
+                                _showFolio(item.bookID!);
                               },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: AppTheme.editColor,
@@ -707,13 +707,12 @@ class _FoodListScreenState extends State<FoodListScreen> {
   ///
   /// ตอนนี้เป็นหน้าว่างไว้ก่อนตามที่กำหนด เมื่อทำหน้ารับชำระจริงแล้วให้กลับมา
   /// จัดการค่าที่ส่งกลับ (เช่นโหลดรายการใหม่หลังบันทึกการชำระเงิน)
-  /// เปิดใบแจ้งค่าอาหารของใบจองนั้น กลับมาแล้วโหลดรายการใหม่
-  /// เผื่อยอดค่าอาหารหรือสถานะเปลี่ยนไป
-  Future<void> _showFoodInvoice(int bookId) async {
+  /// เปิดใบแจ้งรายงานการใช้ห้องพักของใบจองนั้น กลับมาแล้วโหลดรายการใหม่
+  Future<void> _showFolio(int bookId) async {
     await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => FoodInvoiceScreen(
+        builder: (_) => FolioScreen(
           apiService: widget.apiService,
           authProvider: widget.authProvider,
           bookId: bookId,

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:highway_training/screens/activity_room_search_screen.dart';
 import 'package:highway_training/screens/booking_edit_screen.dart';
 import 'package:highway_training/screens/lodging_room_search_screen.dart';
+import 'package:highway_training/screens/folio_list_screen.dart';
 import 'package:highway_training/screens/food_list_screen.dart';
 import 'package:highway_training/screens/payment_list_screen.dart';
 import 'package:highway_training/screens/booking_list_screen.dart';
@@ -414,12 +415,28 @@ class _SidebarMenuState extends State<SidebarMenu> {
                         ),
                       );
                     }),
-                    _SubMenuItemData(Icons.restaurant_menu, 'ใบแจ้งค่าอาหาร', () {
+                    _SubMenuItemData(
+                      Icons.restaurant_menu,
+                      'ใบแจ้งค่าอาหาร',
+                      () {
+                        Navigator.pop(context);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => FoodListScreen(
+                              apiService: ApiService(),
+                              authProvider: widget.authProvider,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                    _SubMenuItemData(Icons.receipt_long, 'Folio', () {
                       Navigator.pop(context);
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => FoodListScreen(
+                          builder: (_) => FolioListScreen(
                             apiService: ApiService(),
                             authProvider: widget.authProvider,
                           ),

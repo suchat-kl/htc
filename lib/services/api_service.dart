@@ -2504,6 +2504,24 @@ class ApiService {
   // ---------------------------------------------------------------------------
 
   /// รายการค่าบริการอื่นๆ ของใบจองหนึ่ง เรียงตามลำดับที่ตั้งไว้
+  /// แถวห้องพักของใบจอง สำหรับหน้า Folio (ใบแจ้งรายงานการใช้ห้องพัก)
+  ///
+  /// ต่างจาก getRoomAssignments ตรงที่คืนข้อมูลครบทุกช่อง รวมราคา จำนวนวัน
+  /// และหมายเหตุ Folio ซึ่งหน้า Folio ต้องใช้
+  Future<List<BookDetail>> getFolioRows(int bookId) async {
+    await _ensureToken();
+    final r = await dio.get(
+      '/api/auth/bookdetails/folio',
+      queryParameters: {'bookId': bookId},
+    );
+    if (r.statusCode == 200 && r.data['bookdetails'] != null) {
+      return (r.data['bookdetails'] as List)
+          .map((j) => BookDetail.fromJson(j as Map<String, dynamic>))
+          .toList();
+    }
+    return [];
+  }
+
   Future<List<Invoice>> getInvoices(int bookId) async {
     await _ensureToken();
     final r = await dio.get(
