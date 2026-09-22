@@ -12,7 +12,7 @@ import '../utils/util.dart';
 import '../widgets/app_pagination.dart';
 import 'package:highway_training/utils/logger.dart';
 
-/// เมนูห้องพัก/ห้องกิจกรรม > รายการอาหาร
+/// เมนูห้องพัก/ห้องกิจกรรม > ใบแจ้งค่าอาหาร
 ///
 /// โครงหน้าจอเดียวกับหน้ารายการรับชำระเงิน ([FoodListScreen])
 /// ต่างกันที่ปุ่มท้ายแถวเปิดใบแจ้งค่าอาหารแทนหน้ารับชำระเงิน

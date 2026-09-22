@@ -414,7 +414,7 @@ class _SidebarMenuState extends State<SidebarMenu> {
                         ),
                       );
                     }),
-                    _SubMenuItemData(Icons.restaurant_menu, 'รายการอาหาร', () {
+                    _SubMenuItemData(Icons.restaurant_menu, 'ใบแจ้งค่าอาหาร', () {
                       Navigator.pop(context);
                       Navigator.push(
                         context,
