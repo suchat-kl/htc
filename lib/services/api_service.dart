@@ -1459,6 +1459,34 @@ class ApiService {
     throw Exception('ออกรายงานไม่สำเร็จ (${r.statusCode})');
   }
 
+  /// ดาวน์โหลดใบแจ้งค่าอาหาร อาหารว่าง และเครื่องดื่ม
+  Future<List<int>> downloadFoodInvoiceReport({
+    required int bookId,
+    String format = 'pdf',
+    String? signerName,
+  }) async {
+    await _ensureToken();
+    final params = <String, dynamic>{'bookId': bookId, 'format': format};
+    if (signerName != null && signerName.isNotEmpty) {
+      params['signerName'] = signerName;
+    }
+    final r = await dio.get(
+      '/api/auth/report/food',
+      queryParameters: params,
+      options: Options(
+        responseType: ResponseType.bytes,
+        receiveTimeout: const Duration(seconds: 60),
+        validateStatus: (status) => status! < 500,
+      ),
+    );
+    if (r.statusCode == 200 && r.data is List<int>) {
+      final bytes = r.data as List<int>;
+      if (bytes.isEmpty) throw Exception('ไฟล์รายงานว่างเปล่า');
+      return bytes;
+    }
+    throw Exception('ออกรายงานไม่สำเร็จ (${r.statusCode})');
+  }
+
   Future<List<int>> downloadCommodityReport({
     required String type,
     required String date,
