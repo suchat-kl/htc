@@ -867,19 +867,23 @@ class _FoodInvoiceScreenState extends State<FoodInvoiceScreen> {
   // ---------------------------------------------------------------------------
 
   Widget _row(List<_Cell> cells) {
+    // แถวที่มีช่องเดียวไม่ต้องบังคับให้ทุกช่องสูงเท่ากัน จึงไม่ใช้ IntrinsicHeight
+    // เพราะมันคำนวณความสูงของปุ่มและช่องกรอกได้ไม่ตรง เนื้อหาจะล้นกรอบไม่กี่พิกเซล
+    final single = cells.length == 1;
+    final row = Row(
+      crossAxisAlignment: single
+          ? CrossAxisAlignment.start
+          : CrossAxisAlignment.stretch,
+      children: [
+        for (var i = 0; i < cells.length; i++)
+          _cellBox(cells[i], rightBorder: i < cells.length - 1),
+      ],
+    );
     return Container(
       decoration: BoxDecoration(
         border: Border(bottom: BorderSide(color: _line)),
       ),
-      child: IntrinsicHeight(
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            for (var i = 0; i < cells.length; i++)
-              _cellBox(cells[i], rightBorder: i < cells.length - 1),
-          ],
-        ),
-      ),
+      child: single ? row : IntrinsicHeight(child: row),
     );
   }
 
