@@ -869,37 +869,42 @@ class _PaymentScreenState extends State<PaymentScreen> {
             ),
           ),
           const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              if (_otherDirty)
-                Padding(
-                  padding: const EdgeInsets.only(right: 12),
-                  child: Text(
-                    'มีการแก้ไขที่ยังไม่ได้บันทึก',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: AppTheme.warningColor,
+          // กำหนดความสูงให้ชัด เพราะ IntrinsicHeight ของแถวตารางคำนวณความสูง
+          // ของปุ่ม Material ได้ไม่ตรง ทำให้กรอบเตี้ยกว่าปุ่มจริงไม่กี่พิกเซล
+          SizedBox(
+            height: 44,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                if (_otherDirty)
+                  Padding(
+                    padding: const EdgeInsets.only(right: 12),
+                    child: Text(
+                      'มีการแก้ไขที่ยังไม่ได้บันทึก',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: AppTheme.warningColor,
+                      ),
                     ),
                   ),
+                _smallButton(
+                  'ลบที่เลือก',
+                  _saving ? () {} : _deleteSelectedOther,
+                  color: AppTheme.deleteColor,
                 ),
-              _smallButton(
-                'ลบที่เลือก',
-                _saving ? () {} : _deleteSelectedOther,
-                color: AppTheme.deleteColor,
-              ),
-              const SizedBox(width: 12),
-              _smallButton(
-                'เลือกทั้งหมด',
-                _otherRows.isEmpty ? () {} : _selectAllOther,
-              ),
-              const SizedBox(width: 4),
-              _smallButton(
-                'เพิ่ม',
-                _saving ? () {} : _addOtherRow,
-                color: AppTheme.addColor,
-              ),
-            ],
+                const SizedBox(width: 12),
+                _smallButton(
+                  'เลือกทั้งหมด',
+                  _otherRows.isEmpty ? () {} : _selectAllOther,
+                ),
+                const SizedBox(width: 4),
+                _smallButton(
+                  'เพิ่ม',
+                  _saving ? () {} : _addOtherRow,
+                  color: AppTheme.addColor,
+                ),
+              ],
+            ),
           ),
         ],
       ),

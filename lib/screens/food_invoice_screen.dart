@@ -633,19 +633,24 @@ class _FoodInvoiceScreenState extends State<FoodInvoiceScreen> {
             ),
           ),
           const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              _smallButton(
-                'ลบที่เลือก',
-                _deleteSelected,
-                color: AppTheme.deleteColor,
-              ),
-              const SizedBox(width: 12),
-              _smallButton('เลือกทั้งหมด', _selectAll),
-              const SizedBox(width: 4),
-              _smallButton('เพิ่ม', _addLine, color: AppTheme.addColor),
-            ],
+          // กำหนดความสูงให้ชัด เพราะ IntrinsicHeight ของแถวตารางคำนวณความสูง
+          // ของปุ่ม Material ได้ไม่ตรง ทำให้กรอบเตี้ยกว่าปุ่มจริงไม่กี่พิกเซล
+          SizedBox(
+            height: 44,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                _smallButton(
+                  'ลบที่เลือก',
+                  _deleteSelected,
+                  color: AppTheme.deleteColor,
+                ),
+                const SizedBox(width: 12),
+                _smallButton('เลือกทั้งหมด', _selectAll),
+                const SizedBox(width: 4),
+                _smallButton('เพิ่ม', _addLine, color: AppTheme.addColor),
+              ],
+            ),
           ),
         ],
       ),
