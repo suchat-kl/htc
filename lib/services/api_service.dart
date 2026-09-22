@@ -1424,6 +1424,41 @@ class ApiService {
   }
 
   /// Download commodity report as Excel file
+  /// ดาวน์โหลดรายงานสรุปค่าบริการของใบจอง
+  ///
+  /// [format] = 'pdf' (ค่าเริ่มต้น) หรือ 'xlsx'
+  /// ฝั่ง backend จะเก็บไฟล์ไว้ที่เครื่องด้วย แล้วส่งเนื้อไฟล์กลับมาให้ดาวน์โหลด
+  Future<List<int>> downloadPaymentReport({
+    required int bookId,
+    String format = 'pdf',
+    String? signerName,
+    String? signerPosition,
+  }) async {
+    await _ensureToken();
+    final params = <String, dynamic>{'bookId': bookId, 'format': format};
+    if (signerName != null && signerName.isNotEmpty) {
+      params['signerName'] = signerName;
+    }
+    if (signerPosition != null && signerPosition.isNotEmpty) {
+      params['signerPosition'] = signerPosition;
+    }
+    final r = await dio.get(
+      '/api/auth/report/payment',
+      queryParameters: params,
+      options: Options(
+        responseType: ResponseType.bytes,
+        receiveTimeout: const Duration(seconds: 60),
+        validateStatus: (status) => status! < 500,
+      ),
+    );
+    if (r.statusCode == 200 && r.data is List<int>) {
+      final bytes = r.data as List<int>;
+      if (bytes.isEmpty) throw Exception('ไฟล์รายงานว่างเปล่า');
+      return bytes;
+    }
+    throw Exception('ออกรายงานไม่สำเร็จ (${r.statusCode})');
+  }
+
   Future<List<int>> downloadCommodityReport({
     required String type,
     required String date,

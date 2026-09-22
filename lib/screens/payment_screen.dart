@@ -1,6 +1,7 @@
 // lib/screens/payment_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:universal_html/html.dart' as html;
 import 'package:intl/intl.dart';
 
 import '../config/theme.dart';
@@ -158,6 +159,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
   /// กำลังบันทึกทั้งหน้า ระหว่างนี้กดปุ่มซ้ำไม่ได้
   bool _saving = false;
+
+  /// กำลังออกรายงาน
+  bool _printing = false;
 
   // ค่าตอนโหลดมา ใช้เทียบว่าผู้ใช้แก้อะไรไปแล้วบ้าง
   String _originalRemark = '';
@@ -463,9 +467,92 @@ class _PaymentScreenState extends State<PaymentScreen> {
     if (mounted) Navigator.pop(context);
   }
 
-  /// ปุ่มที่ยังไม่ได้ทำ — แจ้งผู้ใช้แทนการกดแล้วเงียบ
-  void _notReady(String what) {
-    context.showInfoSnackBar('$what ยังไม่เปิดใช้งาน');
+  /// ถามรูปแบบไฟล์แล้วออกรายงานสรุปค่าบริการ
+  ///
+  /// ไฟล์ถูกเก็บไว้ที่เครื่องแม่ข่ายด้วย ส่วนที่ส่งกลับมาให้ดาวน์โหลดทันที
+  Future<void> _printReport() async {
+    if (_pageDirty) {
+      final ok = await AppDialog.showConfirm(
+        context,
+        'ยังมีการแก้ไขที่ยังไม่ได้บันทึก รายงานจะใช้ข้อมูลที่บันทึกไว้ล่าสุด '
+        'ต้องการออกรายงานต่อหรือไม่?',
+        confirmText: 'ออกรายงาน',
+      );
+      if (ok != true) return;
+    }
+
+    final format = await _askFormat();
+    if (format == null || !mounted) return;
+
+    setState(() => _printing = true);
+    try {
+      final bytes = await widget.apiService.downloadPaymentReport(
+        bookId: widget.bookId,
+        format: format,
+        signerName: _recorderName,
+      );
+
+      final isPdf = format == 'pdf';
+      final mime = isPdf
+          ? 'application/pdf'
+          : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+      final blob = html.Blob([Uint8List.fromList(bytes)], mime);
+      final url = html.Url.createObjectUrlFromBlob(blob);
+      final anchor = html.document.createElement('a') as html.AnchorElement
+        ..href = url
+        ..style.display = 'none'
+        ..download = 'สรุปค่าบริการ_${widget.bookId}.${isPdf ? 'pdf' : 'xlsx'}';
+      html.document.body!.children.add(anchor);
+      anchor.click();
+      Future.delayed(const Duration(seconds: 1), () {
+        html.document.body!.children.remove(anchor);
+        html.Url.revokeObjectUrl(url);
+      });
+
+      if (!mounted) return;
+      setState(() => _printing = false);
+      context.showSuccessSnackBar('ออกรายงานเรียบร้อย');
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _printing = false);
+      context.showErrorSnackBar(e.toString().replaceAll('Exception: ', ''));
+    }
+  }
+
+  /// เลือกรูปแบบไฟล์ — ค่าเริ่มต้นเป็น PDF
+  Future<String?> _askFormat() {
+    return showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('เลือกรูปแบบไฟล์', style: TextStyle(fontSize: 18)),
+        content: const Text('ต้องการออกรายงานสรุปค่าบริการเป็นไฟล์แบบใด'),
+        actions: [
+          TextButton(
+            style: TextButton.styleFrom(foregroundColor: AppTheme.cancelColor),
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('ยกเลิก'),
+          ),
+          OutlinedButton.icon(
+            onPressed: () => Navigator.pop(ctx, 'xlsx'),
+            icon: const Icon(Icons.table_chart_outlined, size: 18),
+            label: const Text('Excel'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppTheme.addColor,
+              side: const BorderSide(color: AppTheme.addColor),
+            ),
+          ),
+          ElevatedButton.icon(
+            onPressed: () => Navigator.pop(ctx, 'pdf'),
+            icon: const Icon(Icons.picture_as_pdf_outlined, size: 18),
+            label: const Text('PDF'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.printColor,
+              foregroundColor: Colors.white,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _pickReceiptDate() async {
@@ -1082,10 +1169,10 @@ class _PaymentScreenState extends State<PaymentScreen> {
           ),
           const SizedBox(width: 10),
           _actionButton(
-            'พิมพ์',
+            _printing ? 'กำลังออกรายงาน...' : 'พิมพ์',
             Icons.print_outlined,
             AppTheme.printColor,
-            () => _notReady('พิมพ์'),
+            _printing ? () {} : _printReport,
           ),
           const SizedBox(width: 8),
           _actionButton(
