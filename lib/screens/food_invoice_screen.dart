@@ -951,6 +951,8 @@ class _FoodInvoiceScreenState extends State<FoodInvoiceScreen> {
             : Colors.white,
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         minimumSize: const Size(0, 32),
+        // ไม่ให้ Material เผื่อพื้นที่แตะ 48px เพิ่ม ไม่งั้นแถวปุ่มจะล้นกรอบ
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
         textStyle: const TextStyle(fontSize: 13),
       ),
