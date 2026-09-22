@@ -2442,7 +2442,8 @@ class ApiService {
 
   /// รายการค่าบริการอื่นๆ ของใบจองหนึ่ง เรียงตามลำดับที่ตั้งไว้
   Future<List<Invoice>> getInvoices(int bookId) async {
-    final r = await publicDio.get(
+    await _ensureToken();
+    final r = await dio.get(
       '/api/auth/invoices',
       queryParameters: {'bookid': bookId},
     );
@@ -2456,7 +2457,8 @@ class ApiService {
 
   Future<Invoice> createInvoice(Invoice d) async {
     try {
-      final r = await publicDio.post('/api/auth/invoices', data: d.toJson());
+      await _ensureToken();
+      final r = await dio.post('/api/auth/invoices', data: d.toJson());
       if (r.statusCode == 200 && r.data['success'] == true) {
         return Invoice.fromJson(r.data['invoice']);
       }
@@ -2471,7 +2473,8 @@ class ApiService {
 
   Future<Invoice> updateInvoice(int id, Invoice d) async {
     try {
-      final r = await publicDio.put('/api/auth/invoices/$id', data: d.toJson());
+      await _ensureToken();
+      final r = await dio.put('/api/auth/invoices/$id', data: d.toJson());
       if (r.statusCode == 200 && r.data['success'] == true) {
         return Invoice.fromJson(r.data['invoice']);
       }
@@ -2486,7 +2489,8 @@ class ApiService {
 
   Future<void> deleteInvoice(int id) async {
     try {
-      final r = await publicDio.delete('/api/auth/invoices/$id');
+      await _ensureToken();
+      final r = await dio.delete('/api/auth/invoices/$id');
       if (r.statusCode != 200 || r.data['success'] != true) {
         throw Exception(r.data['message'] ?? 'ลบไม่สำเร็จ');
       }
