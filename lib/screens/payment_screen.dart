@@ -219,6 +219,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
       final recorder = await _resolveRecorder();
 
       // หมายเหตุและข้อมูลใบเสร็จมาจากใบจองชุดเดียวกับส่วนหัว
+      // หมายเหตุของหน้านี้ใช้ bookremark ตามที่ผู้ใช้กำหนด ไม่ใช่ invoiceremark
+      // แม้สคีมาจะมีช่อง invoiceremark เตรียมไว้ ก็ไม่ต้องย้าย — ยืนยันแล้ว
       _remarkCtrl.text = booking.bookremark ?? '';
       _receiptBookCtrl.text = booking.receivebook?.toString() ?? '';
       _receiptNoCtrl.text = booking.receiveno?.toString() ?? '';
