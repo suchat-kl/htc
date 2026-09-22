@@ -461,6 +461,125 @@ class _SidebarMenuState extends State<SidebarMenu> {
                     ),
                   ],
                 ),
+                const Divider(indent: 16, endIndent: 16),
+                // เมนูรายงาน — ลำดับตามที่ผู้ใช้กำหนด ใช้อ้างถึงเป็นเมนู 1-14
+                // ตอนนี้มีแต่รายการเมนู หน้าจอรายงานจะทยอยทำตามลำดับที่สั่ง
+                _buildExpandableMenuItem(
+                  context,
+                  icon: Icons.assessment,
+                  title: 'รายงาน',
+                  menuKey: 'reports',
+                  children: [
+                    // 1
+                    _SubMenuItemData(
+                      Icons.event_available,
+                      'รายงานการใช้ห้องกิจกรรม (ค้นหา)',
+                      () => _reportSoon(
+                        context,
+                        'รายงานการใช้ห้องกิจกรรม (ค้นหา)',
+                      ),
+                    ),
+                    // 2
+                    _SubMenuItemData(
+                      Icons.hotel,
+                      'รายงานการใช้ห้องพัก (ค้นหา)',
+                      () => _reportSoon(context, 'รายงานการใช้ห้องพัก (ค้นหา)'),
+                    ),
+                    // 3
+                    _SubMenuItemData(
+                      Icons.calendar_month,
+                      'แผนการใช้ศูนย์',
+                      () => _reportSoon(context, 'แผนการใช้ศูนย์'),
+                    ),
+                    // 4
+                    _SubMenuItemData(
+                      Icons.table_chart,
+                      'ตารางการใช้ห้องพัก (ประจำเดือน)',
+                      () => _reportSoon(
+                        context,
+                        'ตารางการใช้ห้องพัก (ประจำเดือน)',
+                      ),
+                    ),
+                    // 5
+                    _SubMenuItemData(
+                      Icons.summarize,
+                      'สรุปการใช้ห้องพัก (ประจำเดือน)',
+                      () => _reportSoon(
+                        context,
+                        'สรุปการใช้ห้องพัก (ประจำเดือน)',
+                      ),
+                    ),
+                    // 6
+                    _SubMenuItemData(
+                      Icons.meeting_room,
+                      'รายงานการใช้ห้องกิจกรรม (ประจำเดือน)',
+                      () => _reportSoon(
+                        context,
+                        'รายงานการใช้ห้องกิจกรรม (ประจำเดือน)',
+                      ),
+                    ),
+                    // 7
+                    _SubMenuItemData(
+                      Icons.grid_on,
+                      'ตารางการใช้ห้องกิจกรรม (ประจำเดือน)',
+                      () => _reportSoon(
+                        context,
+                        'ตารางการใช้ห้องกิจกรรม (ประจำเดือน)',
+                      ),
+                    ),
+                    // 8
+                    _SubMenuItemData(
+                      Icons.assignment,
+                      'แบบขออนุญาตใช้สถานที่และบริการ',
+                      () => _reportSoon(
+                        context,
+                        'แบบขออนุญาตใช้สถานที่และบริการ',
+                      ),
+                    ),
+                    // 9
+                    _SubMenuItemData(
+                      Icons.assignment_turned_in,
+                      'แบบขออนุญาตใช้สถานที่และบริการ (โครงการ)',
+                      () => _reportSoon(
+                        context,
+                        'แบบขออนุญาตใช้สถานที่และบริการ (โครงการ)',
+                      ),
+                    ),
+                    // 10
+                    _SubMenuItemData(
+                      Icons.headphones,
+                      'สรุปการใช้บริการโสตฯ',
+                      () => _reportSoon(context, 'สรุปการใช้บริการโสตฯ'),
+                    ),
+                    // 11
+                    _SubMenuItemData(
+                      Icons.bed,
+                      'สรุปจำนวนเครื่องนอนและเติมของใช้ประจำเดือน',
+                      () => _reportSoon(
+                        context,
+                        'สรุปจำนวนเครื่องนอนและเติมของใช้ประจำเดือน',
+                      ),
+                    ),
+                    // 12
+                    _SubMenuItemData(
+                      Icons.build,
+                      'สรุปงานซ่อมบำรุง',
+                      () => _reportSoon(context, 'สรุปงานซ่อมบำรุง'),
+                    ),
+                    // 13
+                    _SubMenuItemData(
+                      Icons.home_repair_service,
+                      'รายการซ่อมบำรุง อาคารเรียน',
+                      () => _reportSoon(context, 'รายการซ่อมบำรุง อาคารเรียน'),
+                    ),
+                    // 14
+                    _SubMenuItemData(
+                      Icons.inventory_2,
+                      'ใบรับจ่ายวัสดุ',
+                      () => _reportSoon(context, 'ใบรับจ่ายวัสดุ'),
+                    ),
+                  ],
+                ),
                 //]
                 /*  else //not wide
                 ...[
@@ -1868,6 +1987,30 @@ const Divider(indent: 16, endIndent: 16),
   }
 
   // Expandable menu item with submenu - FIXED
+  /// ปิดเมนูแล้วแจ้งว่ารายงานนี้ยังไม่เปิดใช้งาน
+  ///
+  /// เก็บ ScaffoldMessenger ไว้ก่อนปิดเมนู เพราะหลัง pop แล้ว context
+  /// ของเมนูจะหลุดจากผังวิดเจ็ต เรียก ScaffoldMessenger.of ไม่ได้อีก
+  void _reportSoon(BuildContext context, String title) {
+    final messenger = ScaffoldMessenger.of(context);
+    Navigator.pop(context);
+    messenger.showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.info_outline, color: Colors.white, size: 20),
+            const SizedBox(width: 8),
+            Expanded(child: Text('$title — อยู่ระหว่างพัฒนา')),
+          ],
+        ),
+        backgroundColor: AppTheme.infoColor,
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 3),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+    );
+  }
+
   Widget _buildExpandableMenuItem(
     BuildContext context, {
     required IconData icon,
