@@ -605,7 +605,10 @@ class _PaymentScreenState extends State<PaymentScreen> {
             _cell(3, _label('ค่าบริการอื่นๆ')),
             _cell(1, _amount(_otherAmount), align: Alignment.centerRight),
           ]),
-          _row([_cell(3, _otherServiceBox()), _cell(1, const SizedBox())]),
+          _row([
+            _cell(3, _otherServiceBox()),
+            _cell(1, const SizedBox()),
+          ], intrinsic: false),
           _row([
             _cell(3, _label('รวมเงินทั้งหมด'), align: Alignment.centerRight),
             _cell(
@@ -1108,10 +1111,15 @@ class _PaymentScreenState extends State<PaymentScreen> {
   // ---------------------------------------------------------------------------
 
   /// หนึ่งแถวของตาราง มีเส้นใต้แถวและเส้นคั่นระหว่างช่อง
-  Widget _row(List<_Cell> cells, {bool bottomBorder = true}) {
-    // แถวที่มีช่องเดียวไม่ต้องบังคับให้ทุกช่องสูงเท่ากัน จึงไม่ใช้ IntrinsicHeight
-    // เพราะมันคำนวณความสูงของปุ่มและช่องกรอกได้ไม่ตรง เนื้อหาจะล้นกรอบไม่กี่พิกเซล
-    final single = cells.length == 1;
+  /// [intrinsic] = false สำหรับแถวที่มีปุ่มหรือช่องกรอกอยู่ข้างใน เพราะ
+  /// IntrinsicHeight คำนวณความสูงของ widget พวกนั้นได้ไม่ตรง เนื้อหาจะล้นกรอบ
+  Widget _row(
+    List<_Cell> cells, {
+    bool bottomBorder = true,
+    bool intrinsic = true,
+  }) {
+    // แถวที่มีช่องเดียวไม่ต้องบังคับให้ทุกช่องสูงเท่ากันอยู่แล้ว
+    final single = cells.length == 1 || !intrinsic;
     final row = Row(
       crossAxisAlignment: single
           ? CrossAxisAlignment.start
