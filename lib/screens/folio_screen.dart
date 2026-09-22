@@ -1,5 +1,7 @@
 // lib/screens/folio_screen.dart
 import 'package:flutter/material.dart';
+import 'package:universal_html/html.dart' as html;
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
 import '../config/theme.dart';
@@ -95,6 +97,7 @@ class _FolioScreenState extends State<FolioScreen> {
 
   bool _loading = true;
   bool _saving = false;
+  bool _printing = false;
   String? _error;
 
   Bookroom? _booking;
@@ -222,8 +225,90 @@ class _FolioScreenState extends State<FolioScreen> {
     }
   }
 
-  void _notReady(String what) {
-    context.showInfoSnackBar('$what ยังไม่เปิดใช้งาน');
+  /// ถามรูปแบบไฟล์แล้วออกใบแจ้งรายงานการใช้ห้องพัก
+  Future<void> _printReport() async {
+    if (_dirty) {
+      final ok = await AppDialog.showConfirm(
+        context,
+        'ยังมีการแก้ไขที่ยังไม่ได้บันทึก รายงานจะใช้ข้อมูลที่บันทึกไว้ล่าสุด '
+        'ต้องการออกรายงานต่อหรือไม่?',
+        confirmText: 'ออกรายงาน',
+      );
+      if (ok != true) return;
+    }
+
+    final format = await _askFormat();
+    if (format == null || !mounted) return;
+
+    setState(() => _printing = true);
+    try {
+      final bytes = await widget.apiService.downloadFolioReport(
+        bookId: widget.bookId,
+        format: format,
+        signerName: widget.authProvider.fullName,
+      );
+
+      final isPdf = format == 'pdf';
+      final mime = isPdf
+          ? 'application/pdf'
+          : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+      final blob = html.Blob([Uint8List.fromList(bytes)], mime);
+      final url = html.Url.createObjectUrlFromBlob(blob);
+      final anchor = html.document.createElement('a') as html.AnchorElement
+        ..href = url
+        ..style.display = 'none'
+        ..download = 'Folio_${widget.bookId}.${isPdf ? 'pdf' : 'xlsx'}';
+      html.document.body!.children.add(anchor);
+      anchor.click();
+      Future.delayed(const Duration(seconds: 1), () {
+        html.document.body!.children.remove(anchor);
+        html.Url.revokeObjectUrl(url);
+      });
+
+      if (!mounted) return;
+      setState(() => _printing = false);
+      context.showSuccessSnackBar('ออกรายงานเรียบร้อย');
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _printing = false);
+      context.showErrorSnackBar(e.toString().replaceAll('Exception: ', ''));
+    }
+  }
+
+  /// เลือกรูปแบบไฟล์ — ค่าเริ่มต้นเป็น PDF
+  Future<String?> _askFormat() {
+    return showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('เลือกรูปแบบไฟล์', style: TextStyle(fontSize: 18)),
+        content: const Text('ต้องการออกใบแจ้งรายงานการใช้ห้องพักเป็นไฟล์แบบใด'),
+        actions: [
+          TextButton(
+            style: TextButton.styleFrom(foregroundColor: AppTheme.cancelColor),
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('ยกเลิก'),
+          ),
+          OutlinedButton.icon(
+            onPressed: () => Navigator.pop(ctx, 'xlsx'),
+            icon: const Icon(Icons.table_chart_outlined, size: 18),
+            label: const Text('Excel'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppTheme.addColor,
+              side: const BorderSide(color: AppTheme.addColor),
+            ),
+          ),
+          ElevatedButton.icon(
+            onPressed: () => Navigator.pop(ctx, 'pdf'),
+            icon: const Icon(Icons.picture_as_pdf_outlined, size: 18),
+            label: const Text('PDF'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.printColor,
+              foregroundColor: Colors.white,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _pickDate() async {
@@ -638,13 +723,12 @@ class _FolioScreenState extends State<FolioScreen> {
                 style: TextStyle(fontSize: 13, color: AppTheme.warningColor),
               ),
             ),
-          _button('พิมพ์', Icons.print_outlined, AppTheme.printColor, () {
-            _notReady('พิมพ์');
-          }),
-          const SizedBox(width: 8),
-          _button('พิมพ์สำเนา', Icons.copy_outlined, AppTheme.printColor, () {
-            _notReady('พิมพ์สำเนา');
-          }),
+          _button(
+            _printing ? 'กำลังออกรายงาน...' : 'พิมพ์',
+            Icons.print_outlined,
+            AppTheme.printColor,
+            _printing ? () {} : _printReport,
+          ),
           const SizedBox(width: 8),
           _button(
             _saving ? 'กำลังบันทึก...' : 'บันทึก',
