@@ -7,9 +7,11 @@ import 'package:intl/intl.dart';
 import '../config/theme.dart';
 import '../models/bookdetail.dart';
 import '../models/bookroom.dart';
+import '../models/employee.dart';
 import '../providers/auth_provider.dart';
 import '../services/api_service.dart';
 import '../utils/dialog.dart';
+import '../utils/logger.dart';
 import '../utils/snackbar_helper.dart';
 import '../utils/util.dart';
 
@@ -107,6 +109,9 @@ class _FolioScreenState extends State<FolioScreen> {
   final _addressCtrl = TextEditingController();
   DateTime? _folioDate;
 
+  /// ผู้จัดทำรายงาน — ชื่อไทยของผู้ใช้ที่ล็อกอิน ชุดเดียวกับหน้ารับชำระเงิน
+  String? _recorderName;
+
   // ค่าตอนโหลดมา ใช้เทียบว่ามีการแก้ไขค้างหรือยัง
   String _originalName = '';
   String _originalAddress = '';
@@ -155,6 +160,9 @@ class _FolioScreenState extends State<FolioScreen> {
       final booking = Bookroom.fromJson(list.first as Map<String, dynamic>);
       final rows = await widget.apiService.getFolioRows(widget.bookId);
 
+      // ผู้จัดทำรายงาน: หาชื่อจากรายชื่อพนักงานด้วยรหัสของผู้ใช้ที่ล็อกอิน
+      final recorderName = await _resolveRecorderName();
+
       // นามยังไม่เคยบันทึก ให้ตั้งต้นด้วยชื่อหน่วยงานของใบจอง
       final name = (booking.folioname == null || booking.folioname!.isEmpty)
           ? (booking.departmentname ?? '')
@@ -173,6 +181,7 @@ class _FolioScreenState extends State<FolioScreen> {
         _nameCtrl.text = name;
         _addressCtrl.text = booking.folioaddress ?? '';
         _folioDate = date;
+        _recorderName = recorderName;
         _originalName = _nameCtrl.text;
         _originalAddress = _addressCtrl.text;
         _loading = false;
@@ -184,6 +193,26 @@ class _FolioScreenState extends State<FolioScreen> {
         _loading = false;
       });
     }
+  }
+
+  /// ชื่อผู้จัดทำรายงาน — เทียบรหัสผู้ใช้กับรายชื่อพนักงานให้ได้ชื่อไทยเต็ม
+  /// แบบเดียวกับหน้ารับชำระเงินและใบแจ้งค่าอาหาร ไม่ใช่ชื่อผู้ใช้ตอนล็อกอิน
+  Future<String?> _resolveRecorderName() async {
+    final empId = widget.authProvider.empID;
+    final fallback = widget.authProvider.fullName;
+    if (empId == null) return fallback;
+    try {
+      final List<Employee> emps = await widget.apiService.getEmployeesList();
+      for (final e in emps) {
+        if (e.empID == empId) {
+          final name = '${e.name ?? ''} ${e.lastname ?? ''}'.trim();
+          return name.isEmpty ? fallback : name;
+        }
+      }
+    } catch (e) {
+      if (AppLogger.on) AppLogger.d('Error loading employees: $e');
+    }
+    return fallback;
   }
 
   // ---------------------------------------------------------------------------
@@ -245,7 +274,7 @@ class _FolioScreenState extends State<FolioScreen> {
       final bytes = await widget.apiService.downloadFolioReport(
         bookId: widget.bookId,
         format: format,
-        signerName: widget.authProvider.fullName,
+        signerName: _recorderName ?? widget.authProvider.fullName,
       );
 
       final isPdf = format == 'pdf';
