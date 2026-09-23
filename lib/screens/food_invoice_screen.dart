@@ -5,6 +5,7 @@ import 'package:universal_html/html.dart' as html;
 import 'package:intl/intl.dart';
 
 import '../config/theme.dart';
+import '../utils/permission.dart';
 import '../models/bookroom.dart';
 import '../models/employee.dart';
 import '../models/foodtype.dart';
@@ -930,14 +931,14 @@ class _FoodInvoiceScreenState extends State<FoodInvoiceScreen> {
             _printing ? 'กำลังออกรายงาน...' : 'พิมพ์',
             Icons.print_outlined,
             AppTheme.printColor,
-            _printing ? () {} : _printReport,
+            (_printing || !Perm.print(Perm.foodInvoice)) ? null : _printReport,
           ),
           const SizedBox(width: 8),
           _actionButton(
             _saving ? 'กำลังบันทึก...' : 'บันทึก',
             Icons.save_outlined,
             AppTheme.saveColor,
-            _saving ? null : _save,
+            (_saving || !Perm.edit(Perm.foodInvoice)) ? null : _save,
           ),
           const SizedBox(width: 8),
           _actionButton(
