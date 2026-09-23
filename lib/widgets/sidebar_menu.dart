@@ -11,6 +11,7 @@ import 'package:highway_training/screens/folio_list_screen.dart';
 import 'package:highway_training/screens/food_list_screen.dart';
 import 'package:highway_training/screens/payment_list_screen.dart';
 import 'package:highway_training/screens/booking_list_screen.dart';
+import 'package:highway_training/screens/center_plan_screen.dart';
 import 'package:highway_training/screens/commodity_report_screen.dart';
 import 'package:highway_training/screens/commodity_screen.dart';
 import 'package:highway_training/screens/commodityin_screen.dart';
@@ -507,11 +508,18 @@ class _SidebarMenuState extends State<SidebarMenu> {
                       },
                     ),
                     // 3
-                    _SubMenuItemData(
-                      Icons.calendar_month,
-                      'แผนการใช้ศูนย์',
-                      () => _reportSoon(context, 'แผนการใช้ศูนย์'),
-                    ),
+                    _SubMenuItemData(Icons.calendar_month, 'แผนการใช้ศูนย์', () {
+                      Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => CenterPlanScreen(
+                            apiService: ApiService(),
+                            authProvider: widget.authProvider,
+                          ),
+                        ),
+                      );
+                    }),
                     // 4
                     _SubMenuItemData(
                       Icons.table_chart,

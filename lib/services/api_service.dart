@@ -1507,6 +1507,36 @@ class ApiService {
     throw Exception('ออกรายงานไม่สำเร็จ (${r.statusCode})');
   }
 
+  /// ดาวน์โหลดแผนการใช้ศูนย์ (เมนูรายงาน 3) — ไฟล์ Excel อย่างเดียว
+  ///
+  /// [year] เป็นปี พ.ศ. ส่วนเดือนเป็นเลข 1-12
+  Future<List<int>> downloadCenterPlanReport({
+    required int year,
+    required int fromMonth,
+    required int toMonth,
+  }) async {
+    await _ensureToken();
+    final r = await dio.get(
+      '/api/auth/report/center-plan',
+      queryParameters: {
+        'year': year,
+        'fromMonth': fromMonth,
+        'toMonth': toMonth,
+      },
+      options: Options(
+        responseType: ResponseType.bytes,
+        receiveTimeout: const Duration(seconds: 60),
+        validateStatus: (status) => status! < 500,
+      ),
+    );
+    if (r.statusCode == 200 && r.data is List<int>) {
+      final bytes = r.data as List<int>;
+      if (bytes.isEmpty) throw Exception('ไฟล์รายงานว่างเปล่า');
+      return bytes;
+    }
+    throw Exception('ออกรายงานไม่สำเร็จ (${r.statusCode})');
+  }
+
   /// ดาวน์โหลดแบบรายงานการใช้ห้องพัก (เมนูรายงาน 2)
   ///
   /// เงื่อนไขชุดเดียวกับ [downloadActivityUsageReport] ต่างกันที่ฝั่ง backend
