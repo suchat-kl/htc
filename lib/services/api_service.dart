@@ -1530,6 +1530,29 @@ class ApiService {
     throw Exception('ออกรายงานไม่สำเร็จ (${r.statusCode})');
   }
 
+  /// ดาวน์โหลดสรุปจำนวนเครื่องนอนและเติมของใช้ ประจำเดือน (เมนูรายงาน 11)
+  Future<List<int>> downloadCommoditySummary({
+    required int year,
+    required int month,
+  }) async {
+    await _ensureToken();
+    final r = await dio.get(
+      '/api/auth/report/commodity-summary',
+      queryParameters: {'year': year, 'month': month},
+      options: Options(
+        responseType: ResponseType.bytes,
+        receiveTimeout: const Duration(seconds: 60),
+        validateStatus: (status) => status! < 500,
+      ),
+    );
+    if (r.statusCode == 200 && r.data is List<int>) {
+      final bytes = r.data as List<int>;
+      if (bytes.isEmpty) throw Exception('ไฟล์รายงานว่างเปล่า');
+      return bytes;
+    }
+    throw Exception('ออกรายงานไม่สำเร็จ (${r.statusCode})');
+  }
+
   /// ดาวน์โหลดสรุปการให้บริการโสตทัศนูปกรณ์ ประจำปีงบประมาณ (เมนูรายงาน 10)
   ///
   /// [year] เป็นปีงบประมาณ พ.ศ. ฝั่ง backend จะแปลงเป็นช่วง 1 ต.ค. ถึง 30 ก.ย. ให้
