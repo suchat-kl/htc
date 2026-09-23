@@ -676,10 +676,24 @@ class _SidebarMenuState extends State<SidebarMenu> {
                     _SubMenuItemData(
                       Icons.bed,
                       'สรุปจำนวนเครื่องนอนและเติมของใช้ประจำเดือน',
-                      () => _reportSoon(
-                        context,
-                        'สรุปจำนวนเครื่องนอนและเติมของใช้ประจำเดือน',
-                      ),
+                      () {
+                        Navigator.pop(context);
+                        final api = ApiService();
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => MonthlyReportScreen(
+                              title: 'สรุปเครื่องนอนและเติมของใช้ ประจำเดือน',
+                              fileBaseName: 'สรุปเครื่องนอนและเติมของใช้',
+                              download: (year, month) => api
+                                  .downloadCommoditySummary(
+                                    year: year,
+                                    month: month,
+                                  ),
+                            ),
+                          ),
+                        );
+                      },
                     ),
                     // 12
                     _SubMenuItemData(
