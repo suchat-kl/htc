@@ -4,6 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:highway_training/screens/activity_room_search_screen.dart';
 import 'package:highway_training/screens/activity_usage_report_screen.dart';
+import 'package:highway_training/screens/annual_report_screen.dart';
 import 'package:highway_training/screens/booking_edit_screen.dart';
 import 'package:highway_training/screens/lodging_room_search_screen.dart';
 import 'package:highway_training/screens/lodging_usage_report_screen.dart';
@@ -653,7 +654,23 @@ class _SidebarMenuState extends State<SidebarMenu> {
                     _SubMenuItemData(
                       Icons.headphones,
                       'สรุปการใช้บริการโสตฯ',
-                      () => _reportSoon(context, 'สรุปการใช้บริการโสตฯ'),
+                      () {
+                        Navigator.pop(context);
+                        final api = ApiService();
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => AnnualReportScreen(
+                              title: 'สรุปการให้บริการโสตทัศนูปกรณ์ ประจำปีงบประมาณ',
+                              fileBaseName: 'สรุปการให้บริการโสตทัศนูปกรณ์',
+                              note:
+                                  'ปีงบประมาณ 2569 คือ 1 ต.ค. 2568 ถึง 30 ก.ย. 2569 — ออกเป็นไฟล์ Excel เท่านั้น',
+                              download: (year) =>
+                                  api.downloadAvServiceReport(year: year),
+                            ),
+                          ),
+                        );
+                      },
                     ),
                     // 11
                     _SubMenuItemData(
