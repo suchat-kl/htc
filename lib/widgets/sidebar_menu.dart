@@ -594,10 +594,24 @@ class _SidebarMenuState extends State<SidebarMenu> {
                     _SubMenuItemData(
                       Icons.grid_on,
                       'ตารางการใช้ห้องกิจกรรม (ประจำเดือน)',
-                      () => _reportSoon(
-                        context,
-                        'ตารางการใช้ห้องกิจกรรม (ประจำเดือน)',
-                      ),
+                      () {
+                        Navigator.pop(context);
+                        final api = ApiService();
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => MonthlyReportScreen(
+                              title: 'ตารางการใช้ห้องกิจกรรม ประจำเดือน',
+                              fileBaseName: 'ตารางการใช้ห้องกิจกรรม',
+                              download: (year, month) => api
+                                  .downloadActivityRoomTable(
+                                    year: year,
+                                    month: month,
+                                  ),
+                            ),
+                          ),
+                        );
+                      },
                     ),
                     // 8
                     _SubMenuItemData(
