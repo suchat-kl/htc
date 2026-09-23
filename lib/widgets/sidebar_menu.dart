@@ -10,6 +10,7 @@ import 'package:highway_training/screens/lodging_usage_report_screen.dart';
 import 'package:highway_training/screens/folio_list_screen.dart';
 import 'package:highway_training/screens/food_list_screen.dart';
 import 'package:highway_training/screens/payment_list_screen.dart';
+import 'package:highway_training/screens/place_request_report_screen.dart';
 import 'package:highway_training/screens/booking_list_screen.dart';
 import 'package:highway_training/screens/center_plan_screen.dart';
 import 'package:highway_training/screens/commodity_report_screen.dart';
@@ -617,10 +618,18 @@ class _SidebarMenuState extends State<SidebarMenu> {
                     _SubMenuItemData(
                       Icons.assignment,
                       'แบบขออนุญาตใช้สถานที่และบริการ',
-                      () => _reportSoon(
-                        context,
-                        'แบบขออนุญาตใช้สถานที่และบริการ',
-                      ),
+                      () {
+                        Navigator.pop(context);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => PlaceRequestReportScreen(
+                              apiService: ApiService(),
+                              authProvider: widget.authProvider,
+                            ),
+                          ),
+                        );
+                      },
                     ),
                     // 9
                     _SubMenuItemData(

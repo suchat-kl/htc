@@ -1629,6 +1629,53 @@ class ApiService {
     throw Exception('ออกรายงานไม่สำเร็จ (${r.statusCode})');
   }
 
+  /// ดาวน์โหลดแบบขออนุญาตใช้สถานที่และบริการ (เมนูรายงาน 8)
+  ///
+  /// เงื่อนไขชุดเดียวกับ [downloadActivityUsageReport] หนึ่งบรรทัดคือหนึ่งใบจอง
+  Future<List<int>> downloadPlaceRequestReport({
+    String format = 'pdf',
+    int? bookID,
+    String? startdate,
+    String? stopdate,
+    String? departmentname,
+    String? booktitle,
+    int? status,
+    String? signerName,
+  }) async {
+    await _ensureToken();
+    final params = <String, dynamic>{'format': format};
+    if (bookID != null) params['bookID'] = bookID;
+    if (startdate != null && startdate.isNotEmpty) {
+      params['startdate'] = startdate;
+    }
+    if (stopdate != null && stopdate.isNotEmpty) params['stopdate'] = stopdate;
+    if (departmentname != null && departmentname.isNotEmpty) {
+      params['departmentname'] = departmentname;
+    }
+    if (booktitle != null && booktitle.isNotEmpty) {
+      params['booktitle'] = booktitle;
+    }
+    if (status != null) params['status'] = status;
+    if (signerName != null && signerName.isNotEmpty) {
+      params['signerName'] = signerName;
+    }
+    final r = await dio.get(
+      '/api/auth/report/place-request',
+      queryParameters: params,
+      options: Options(
+        responseType: ResponseType.bytes,
+        receiveTimeout: const Duration(seconds: 60),
+        validateStatus: (status) => status! < 500,
+      ),
+    );
+    if (r.statusCode == 200 && r.data is List<int>) {
+      final bytes = r.data as List<int>;
+      if (bytes.isEmpty) throw Exception('ไฟล์รายงานว่างเปล่า');
+      return bytes;
+    }
+    throw Exception('ออกรายงานไม่สำเร็จ (${r.statusCode})');
+  }
+
   /// ดาวน์โหลดแบบรายงานการใช้ห้องพัก (เมนูรายงาน 2)
   ///
   /// เงื่อนไขชุดเดียวกับ [downloadActivityUsageReport] ต่างกันที่ฝั่ง backend
