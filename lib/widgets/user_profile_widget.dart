@@ -126,7 +126,7 @@ class UserProfileWidget extends StatelessWidget {
               // Navigate to training history
             },
           ),
-          if (authProvider.isAdmin || authProvider.isDirector) ...[
+          if (authProvider.isAdmin || authProvider.canView('USR_CREATE')) ...[
             const Divider(),
             const Text(
               'เมนูผู้ดูแล',
