@@ -6,6 +6,7 @@ import 'package:highway_training/screens/activity_room_search_screen.dart';
 import 'package:highway_training/screens/activity_usage_report_screen.dart';
 import 'package:highway_training/screens/booking_edit_screen.dart';
 import 'package:highway_training/screens/lodging_room_search_screen.dart';
+import 'package:highway_training/screens/lodging_usage_report_screen.dart';
 import 'package:highway_training/screens/folio_list_screen.dart';
 import 'package:highway_training/screens/food_list_screen.dart';
 import 'package:highway_training/screens/payment_list_screen.dart';
@@ -492,7 +493,18 @@ class _SidebarMenuState extends State<SidebarMenu> {
                     _SubMenuItemData(
                       Icons.hotel,
                       'รายงานการใช้ห้องพัก (ค้นหา)',
-                      () => _reportSoon(context, 'รายงานการใช้ห้องพัก (ค้นหา)'),
+                      () {
+                        Navigator.pop(context);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => LodgingUsageReportScreen(
+                              apiService: ApiService(),
+                              authProvider: widget.authProvider,
+                            ),
+                          ),
+                        );
+                      },
                     ),
                     // 3
                     _SubMenuItemData(
