@@ -1459,6 +1459,54 @@ class ApiService {
     throw Exception('ออกรายงานไม่สำเร็จ (${r.statusCode})');
   }
 
+  /// ดาวน์โหลดแบบรายงานการใช้ห้องกิจกรรม (เมนูรายงาน 1)
+  ///
+  /// ส่งเงื่อนไขชุดเดียวกับ [searchBookings] ฝั่ง backend จะค้นใบจองที่เข้าเงื่อนไข
+  /// ทั้งหมดแล้วรวมเป็นรายงานเดียว ไม่ได้จำกัดเฉพาะหน้าที่เปิดอยู่
+  Future<List<int>> downloadActivityUsageReport({
+    String format = 'pdf',
+    int? bookID,
+    String? startdate,
+    String? stopdate,
+    String? departmentname,
+    String? booktitle,
+    int? status,
+    String? signerName,
+  }) async {
+    await _ensureToken();
+    final params = <String, dynamic>{'format': format};
+    if (bookID != null) params['bookID'] = bookID;
+    if (startdate != null && startdate.isNotEmpty) {
+      params['startdate'] = startdate;
+    }
+    if (stopdate != null && stopdate.isNotEmpty) params['stopdate'] = stopdate;
+    if (departmentname != null && departmentname.isNotEmpty) {
+      params['departmentname'] = departmentname;
+    }
+    if (booktitle != null && booktitle.isNotEmpty) {
+      params['booktitle'] = booktitle;
+    }
+    if (status != null) params['status'] = status;
+    if (signerName != null && signerName.isNotEmpty) {
+      params['signerName'] = signerName;
+    }
+    final r = await dio.get(
+      '/api/auth/report/activity-usage',
+      queryParameters: params,
+      options: Options(
+        responseType: ResponseType.bytes,
+        receiveTimeout: const Duration(seconds: 60),
+        validateStatus: (status) => status! < 500,
+      ),
+    );
+    if (r.statusCode == 200 && r.data is List<int>) {
+      final bytes = r.data as List<int>;
+      if (bytes.isEmpty) throw Exception('ไฟล์รายงานว่างเปล่า');
+      return bytes;
+    }
+    throw Exception('ออกรายงานไม่สำเร็จ (${r.statusCode})');
+  }
+
   /// ดาวน์โหลดใบแจ้งรายงานการใช้ห้องพัก (Folio)
   Future<List<int>> downloadFolioReport({
     required int bookId,
