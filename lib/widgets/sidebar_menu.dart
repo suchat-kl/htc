@@ -23,6 +23,7 @@ import 'package:highway_training/screens/facility_screen.dart';
 import 'package:highway_training/screens/facilities_screen.dart';
 import 'package:highway_training/screens/foodtype_screen.dart';
 import 'package:highway_training/screens/maintenance_screen.dart';
+import 'package:highway_training/screens/monthly_report_screen.dart';
 import 'package:highway_training/screens/organization_screen.dart';
 import 'package:highway_training/screens/part_screen.dart';
 import 'package:highway_training/screens/room_rates_screen.dart';
@@ -524,10 +525,24 @@ class _SidebarMenuState extends State<SidebarMenu> {
                     _SubMenuItemData(
                       Icons.table_chart,
                       'ตารางการใช้ห้องพัก (ประจำเดือน)',
-                      () => _reportSoon(
-                        context,
-                        'ตารางการใช้ห้องพัก (ประจำเดือน)',
-                      ),
+                      () {
+                        Navigator.pop(context);
+                        final api = ApiService();
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => MonthlyReportScreen(
+                              title: 'ตารางการใช้ห้องพัก ประจำเดือน',
+                              fileBaseName: 'ตารางการใช้ห้องพัก',
+                              download: (year, month) => api
+                                  .downloadRoomUsageTable(
+                                    year: year,
+                                    month: month,
+                                  ),
+                            ),
+                          ),
+                        );
+                      },
                     ),
                     // 5
                     _SubMenuItemData(
