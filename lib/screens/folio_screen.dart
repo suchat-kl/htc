@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
 import '../config/theme.dart';
+import '../utils/permission.dart';
 import '../models/bookdetail.dart';
 import '../models/bookroom.dart';
 import '../models/employee.dart';
@@ -756,14 +757,14 @@ class _FolioScreenState extends State<FolioScreen> {
             _printing ? 'กำลังออกรายงาน...' : 'พิมพ์',
             Icons.print_outlined,
             AppTheme.printColor,
-            _printing ? () {} : _printReport,
+            (_printing || !Perm.print(Perm.folio)) ? null : _printReport,
           ),
           const SizedBox(width: 8),
           _button(
             _saving ? 'กำลังบันทึก...' : 'บันทึก',
             Icons.save_outlined,
             AppTheme.saveColor,
-            _saving ? () {} : _save,
+            (_saving || !Perm.edit(Perm.folio)) ? null : _save,
           ),
           const SizedBox(width: 8),
           _button('กลับ', Icons.arrow_back, AppTheme.neutralColor, _close),
@@ -772,7 +773,8 @@ class _FolioScreenState extends State<FolioScreen> {
     );
   }
 
-  Widget _button(String label, IconData icon, Color color, VoidCallback onTap) {
+  /// ปุ่มท้ายหน้า ส่ง null แทน callback เมื่อไม่มีสิทธิ์ ปุ่มจะเป็นสีเทากดไม่ได้
+  Widget _button(String label, IconData icon, Color color, VoidCallback? onTap) {
     return ElevatedButton.icon(
       onPressed: onTap,
       icon: Icon(icon, size: 18),

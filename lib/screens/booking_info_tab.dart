@@ -16,6 +16,7 @@ import 'package:highway_training/widgets/booking_room_list_section.dart';
 import 'package:highway_training/widgets/room_availability_dialog.dart';
 import 'package:highway_training/widgets/schedule_availability_dialog.dart';
 import '../config/theme.dart';
+import '../utils/permission.dart';
 
 class BookingInfoTab extends StatefulWidget {
   final Map<String, dynamic>? bookingData;
@@ -600,18 +601,29 @@ class _BookingInfoTabState extends State<BookingInfoTab> {
             ),
             isDense: true,
           ),
-          items: _statusList
-              .map(
-                (s) => DropdownMenuItem<int>(
-                  value: s.statusId,
-                  child: Text(
-                    s.statusName ?? '-',
-                    overflow: TextOverflow.ellipsis,
-                  ),
+          // สถานะที่ผู้ใช้คนนี้ไม่มีสิทธิ์เปลี่ยน จะเลือกไม่ได้แต่ยังเห็นชื่อ
+          // เพื่อให้รู้ว่าลำดับสถานะมีอะไรบ้าง สถานะปัจจุบันของใบจองเลือกได้เสมอ
+          items: _statusList.map((s) {
+            final allowed =
+                s.statusId == _statusId || Perm.bookStatus(s.statusId ?? -1);
+            return DropdownMenuItem<int>(
+              value: s.statusId,
+              enabled: allowed,
+              child: Text(
+                s.statusName ?? '-',
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: allowed ? AppTheme.textPrimary : AppTheme.textSecondary,
                 ),
-              )
-              .toList(),
-          onChanged: busy ? null : (v) => setState(() => _statusId = v),
+              ),
+            );
+          }).toList(),
+          onChanged: (busy || !Perm.edit(Perm.bookList))
+              ? null
+              : (v) {
+                  if (v == null || !Perm.bookStatus(v)) return;
+                  setState(() => _statusId = v);
+                },
           style: const TextStyle(fontSize: 14, color: AppTheme.textPrimary),
         ),
       ],
@@ -626,14 +638,14 @@ class _BookingInfoTabState extends State<BookingInfoTab> {
           icon: Icons.save_outlined,
           color: AppTheme.saveColor,
           busy: _isSaving,
-          onPressed: busy ? null : _saveBooking,
+          onPressed: (busy || !Perm.edit(Perm.bookList)) ? null : _saveBooking,
         ),
         _actionButton(
           label: 'ลบ',
           icon: Icons.delete_outline,
           color: AppTheme.dangerColor,
           busy: _isDeleting,
-          onPressed: busy ? null : _deleteBooking,
+          onPressed: (busy || !Perm.remove(Perm.bookList)) ? null : _deleteBooking,
         ),
         _actionButton(
           label: 'กลับ',

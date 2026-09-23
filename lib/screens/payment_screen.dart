@@ -5,6 +5,7 @@ import 'package:universal_html/html.dart' as html;
 import 'package:intl/intl.dart';
 
 import '../config/theme.dart';
+import '../utils/permission.dart';
 import '../models/bookroom.dart';
 import '../models/documentstatus.dart';
 import '../models/employee.dart';
@@ -1172,14 +1173,14 @@ class _PaymentScreenState extends State<PaymentScreen> {
             _printing ? 'กำลังออกรายงาน...' : 'พิมพ์',
             Icons.print_outlined,
             AppTheme.printColor,
-            _printing ? () {} : _printReport,
+            (_printing || !Perm.print(Perm.payment)) ? null : _printReport,
           ),
           const SizedBox(width: 8),
           _actionButton(
             _saving ? 'กำลังบันทึก...' : 'บันทึก',
             Icons.save_outlined,
             AppTheme.saveColor,
-            _saving ? () {} : _save,
+            (_saving || !Perm.edit(Perm.payment)) ? null : _save,
           ),
           const SizedBox(width: 8),
           _actionButton(
@@ -1313,11 +1314,12 @@ class _PaymentScreenState extends State<PaymentScreen> {
     );
   }
 
+  /// ปุ่มท้ายหน้า ส่ง null เข้ามาแทน callback เมื่อไม่มีสิทธิ์ ปุ่มจะเป็นสีเทากดไม่ได้
   Widget _actionButton(
     String label,
     IconData icon,
     Color color,
-    VoidCallback onTap,
+    VoidCallback? onTap,
   ) {
     return ElevatedButton.icon(
       onPressed: onTap,
