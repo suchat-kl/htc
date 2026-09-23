@@ -20,6 +20,9 @@ class Perm {
   /// เปลี่ยนสถานะการจองเป็นสถานะนี้ได้หรือไม่
   static bool bookStatus(int statusId) => ApiService().canChangeBookStatus(statusId);
 
+  /// บัญชีผู้ดูแลระบบ ใช้กับงานที่สงวนไว้เฉพาะ admin เช่นการลบใบจองจริง
+  static bool get isAdmin => ApiService().hasRole('ADMIN');
+
   /// รหัสหน้าจอที่ใช้บ่อย รวมไว้ที่เดียวกันพิมพ์ผิด
   static const String bookList = 'BOOK_LIST';
   static const String payment = 'RM_PAYMENT';

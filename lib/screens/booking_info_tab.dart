@@ -227,6 +227,52 @@ class _BookingInfoTabState extends State<BookingInfoTab> {
   }
 
   // ===== ลบ =====
+  /// สถานะ "ยกเลิกการจอง" จากรายการสถานะที่โหลดมา คืน null ถ้าไม่มีในตาราง
+  int? get _cancelStatusId {
+    for (final s in _statusList) {
+      if ((s.statusName ?? '').contains('ยกเลิก')) return s.statusId;
+    }
+    return null;
+  }
+
+  bool get _isCancelled =>
+      _cancelStatusId != null && _statusId == _cancelStatusId;
+
+  /// ยกเลิกใบจอง — เปลี่ยนสถานะเป็นยกเลิกการจองแล้วปล่อยห้องคืน
+  ///
+  /// ใช้แทนการลบตามข้อเสนอแนะของ สตภ. ใบจองยังอยู่ให้ตรวจสอบได้
+  /// แต่ห้องที่กำหนดไว้จะถูกปล่อยให้คนอื่นจองได้ทันที
+  Future<void> _cancelBooking() async {
+    final confirmed = await AppDialog.showConfirm(
+      context,
+      'ต้องการยกเลิกการจองเลขที่ $_bookID ใช่หรือไม่?\n\n'
+      'ใบจองจะยังอยู่ในระบบเพื่อให้ตรวจสอบได้ '
+      'แต่ห้องที่กำหนดไว้จะถูกปล่อยคืนให้คนอื่นจองได้',
+      confirmText: 'ยกเลิกการจอง',
+    );
+    if (confirmed != true) return;
+
+    setState(() {
+      _isDeleting = true;
+      _error = null;
+    });
+    try {
+      await widget.apiService.cancelBooking(_bookID);
+      if (!mounted) return;
+      await AppDialog.showSuccess(context, 'ยกเลิกการจองเรียบร้อยแล้ว');
+      if (mounted) Navigator.pop(context, true);
+    } catch (e) {
+      if (AppLogger.on) AppLogger.d('Error cancelling booking: $e');
+      final msg = e.toString().replaceAll('Exception: ', '');
+      if (mounted) {
+        setState(() => _error = msg);
+        context.showErrorSnackBar(msg);
+      }
+    } finally {
+      if (mounted) setState(() => _isDeleting = false);
+    }
+  }
+
   Future<void> _deleteBooking() async {
     final confirmed = await AppDialog.showConfirm(
       context,
@@ -640,13 +686,28 @@ class _BookingInfoTabState extends State<BookingInfoTab> {
           busy: _isSaving,
           onPressed: (busy || !Perm.edit(Perm.bookList)) ? null : _saveBooking,
         ),
-        _actionButton(
-          label: 'ลบ',
-          icon: Icons.delete_outline,
-          color: AppTheme.dangerColor,
-          busy: _isDeleting,
-          onPressed: (busy || !Perm.remove(Perm.bookList)) ? null : _deleteBooking,
-        ),
+        // ยกเลิกการจองใช้แทนการลบ ตามข้อเสนอแนะของ สตภ. ที่ให้เก็บใบจองไว้ทุกใบ
+        // ปุ่มจะปิดเมื่อไม่มีสิทธิ์เปลี่ยนเข้าสถานะยกเลิก หรือใบนี้ยกเลิกไปแล้ว
+        if (_cancelStatusId != null)
+          _actionButton(
+            label: 'ยกเลิกการจอง',
+            icon: Icons.cancel_outlined,
+            color: AppTheme.warningColor,
+            busy: _isDeleting,
+            onPressed:
+                (busy || _isCancelled || !Perm.bookStatus(_cancelStatusId!))
+                ? null
+                : _cancelBooking,
+          ),
+        // ลบจริงเหลือไว้ให้ผู้ดูแลระบบเท่านั้น
+        if (Perm.isAdmin)
+          _actionButton(
+            label: 'ลบ',
+            icon: Icons.delete_outline,
+            color: AppTheme.dangerColor,
+            busy: _isDeleting,
+            onPressed: busy ? null : _deleteBooking,
+          ),
         _actionButton(
           label: 'กลับ',
           icon: Icons.arrow_back,
