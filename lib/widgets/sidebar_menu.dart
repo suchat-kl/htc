@@ -26,6 +26,7 @@ import 'package:highway_training/screens/facility_screen.dart';
 import 'package:highway_training/screens/facilities_screen.dart';
 import 'package:highway_training/screens/foodtype_screen.dart';
 import 'package:highway_training/screens/maintenance_screen.dart';
+import 'package:highway_training/screens/material_ledger_screen.dart';
 import 'package:highway_training/screens/monthly_report_screen.dart';
 import 'package:highway_training/screens/organization_screen.dart';
 import 'package:highway_training/screens/part_screen.dart';
@@ -737,11 +738,18 @@ class _SidebarMenuState extends State<SidebarMenu> {
                       },
                     ),
                     // 14
-                    _SubMenuItemData(
-                      Icons.inventory_2,
-                      'ใบรับจ่ายวัสดุ',
-                      () => _reportSoon(context, 'ใบรับจ่ายวัสดุ'),
-                    ),
+                    _SubMenuItemData(Icons.inventory_2, 'ใบรับจ่ายวัสดุ', () {
+                      Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => MaterialLedgerScreen(
+                            apiService: ApiService(),
+                            authProvider: widget.authProvider,
+                          ),
+                        ),
+                      );
+                    }),
                   ],
                 ),
                 //]
@@ -2151,30 +2159,6 @@ const Divider(indent: 16, endIndent: 16),
   }
 
   // Expandable menu item with submenu - FIXED
-  /// ปิดเมนูแล้วแจ้งว่ารายงานนี้ยังไม่เปิดใช้งาน
-  ///
-  /// เก็บ ScaffoldMessenger ไว้ก่อนปิดเมนู เพราะหลัง pop แล้ว context
-  /// ของเมนูจะหลุดจากผังวิดเจ็ต เรียก ScaffoldMessenger.of ไม่ได้อีก
-  void _reportSoon(BuildContext context, String title) {
-    final messenger = ScaffoldMessenger.of(context);
-    Navigator.pop(context);
-    messenger.showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const Icon(Icons.info_outline, color: Colors.white, size: 20),
-            const SizedBox(width: 8),
-            Expanded(child: Text('$title — อยู่ระหว่างพัฒนา')),
-          ],
-        ),
-        backgroundColor: AppTheme.infoColor,
-        behavior: SnackBarBehavior.floating,
-        duration: const Duration(seconds: 3),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      ),
-    );
-  }
-
   Widget _buildExpandableMenuItem(
     BuildContext context, {
     required IconData icon,
