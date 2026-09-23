@@ -209,7 +209,7 @@ class _SidebarMenuState extends State<SidebarMenu> {
                               StatusCheckScreen(apiService: ApiService()),
                         ),
                       );
-                    }),
+                    }, screenCode: 'MS_ROOM_STATUS'),
                     _SubMenuItemData(Icons.date_range, 'สถานะการจอง', () {
                       Navigator.pop(context);
                       Navigator.push(
@@ -219,7 +219,7 @@ class _SidebarMenuState extends State<SidebarMenu> {
                               DocumentStatusScreen(apiService: ApiService()),
                         ),
                       );
-                    }),
+                    }, screenCode: 'MS_DOC_STATUS'),
                     _SubMenuItemData(Icons.restaurant, 'กลุ่มรายการอาหาร', () {
                       Navigator.pop(context);
                       Navigator.push(
@@ -229,7 +229,7 @@ class _SidebarMenuState extends State<SidebarMenu> {
                               FoodtypeScreen(apiService: ApiService()),
                         ),
                       );
-                    }),
+                    }, screenCode: 'MS_FOOD_GROUP'),
                     _SubMenuItemData(Icons.bed, 'เครื่องนอน-ของใช้', () {
                       Navigator.pop(context);
                       Navigator.push(
@@ -239,7 +239,7 @@ class _SidebarMenuState extends State<SidebarMenu> {
                               CommodityScreen(apiService: ApiService()),
                         ),
                       );
-                    }),
+                    }, screenCode: 'MS_COMMODITY'),
                     _SubMenuItemData(Icons.bed, 'สิ่งอำนวยความสะดวก', () {
                       Navigator.pop(context);
                       Navigator.push(
@@ -249,7 +249,7 @@ class _SidebarMenuState extends State<SidebarMenu> {
                               FacilityScreen(apiService: ApiService()),
                         ),
                       );
-                    }),
+                    }, screenCode: 'MS_FACILITY'),
                     _SubMenuItemData(Icons.bed, 'ประเภทห้อง', () {
                       Navigator.pop(context);
                       Navigator.push(
@@ -259,7 +259,7 @@ class _SidebarMenuState extends State<SidebarMenu> {
                               RoomtypeScreen(apiService: ApiService()),
                         ),
                       );
-                    }),
+                    }, screenCode: 'MS_ROOMTYPE'),
                     _SubMenuItemData(Icons.bed, 'ห้อง', () {
                       Navigator.pop(context);
                       Navigator.push(
@@ -268,7 +268,7 @@ class _SidebarMenuState extends State<SidebarMenu> {
                           builder: (_) => RoomScreen(apiService: ApiService()),
                         ),
                       );
-                    }),
+                    }, screenCode: 'MS_ROOM'),
                     _SubMenuItemData(Icons.build, 'วัสดุซ่อมบำรุง', () {
                       Navigator.pop(context);
                       Navigator.push(
@@ -277,7 +277,7 @@ class _SidebarMenuState extends State<SidebarMenu> {
                           builder: (_) => PartScreen(apiService: ApiService()),
                         ),
                       );
-                    }),
+                    }, screenCode: 'MS_PART'),
                     _SubMenuItemData(Icons.business, 'รหัสหน่วยงาน', () {
                       Navigator.pop(context);
                       Navigator.push(
@@ -287,7 +287,7 @@ class _SidebarMenuState extends State<SidebarMenu> {
                               OrganizationScreen(apiService: ApiService()),
                         ),
                       );
-                    }),
+                    }, screenCode: 'MS_ORG'),
                     _SubMenuItemData(Icons.group, 'กลุ่ม', () {
                       Navigator.pop(context);
                       Navigator.push(
@@ -297,7 +297,7 @@ class _SidebarMenuState extends State<SidebarMenu> {
                               SectionScreen(apiService: ApiService()),
                         ),
                       );
-                    }),
+                    }, screenCode: 'MS_SECTION'),
                     _SubMenuItemData(Icons.people, 'บุคลากร', () {
                       Navigator.pop(context);
                       Navigator.push(
@@ -307,7 +307,7 @@ class _SidebarMenuState extends State<SidebarMenu> {
                               EmployeeScreen(apiService: ApiService()),
                         ),
                       );
-                    }),
+                    }, screenCode: 'MS_EMPLOYEE'),
                   ], //master
                 ),
 
@@ -331,7 +331,7 @@ class _SidebarMenuState extends State<SidebarMenu> {
                               CommodityReportScreen(apiService: ApiService()),
                         ),
                       );
-                    }),
+                    }, screenCode: 'OP_BEDDING'),
                     _SubMenuItemData(
                       Icons.receipt_long,
                       'บันทึกรับจ่ายของใช้',
@@ -346,7 +346,7 @@ class _SidebarMenuState extends State<SidebarMenu> {
                             ),
                           ),
                         );
-                      },
+                      }, screenCode: 'OP_SUPPLY_IO',
                     ),
                     _SubMenuItemData(Icons.build_circle, 'แจ้งซ่อม', () {
                       Navigator.pop(context);
@@ -359,7 +359,7 @@ class _SidebarMenuState extends State<SidebarMenu> {
                           ),
                         ),
                       );
-                    }),
+                    }, screenCode: 'OP_MAINTENANCE'),
                     _SubMenuItemData(
                       Icons.handyman,
                       'บันทึกรับจ่ายวัสดุซ่อมบำรุง',
@@ -374,7 +374,7 @@ class _SidebarMenuState extends State<SidebarMenu> {
                             ),
                           ),
                         );
-                      },
+                      }, screenCode: 'OP_PART_IO',
                     ),
                     _SubMenuItemData(Icons.headset_mic, 'รายการขอใช้โสตฯ', () {
                       Navigator.pop(context);
@@ -385,11 +385,11 @@ class _SidebarMenuState extends State<SidebarMenu> {
                               EquipmentScreen(apiService: ApiService()),
                         ),
                       );
-                    }),
+                    }, screenCode: 'OP_AV_REQUEST'),
                     _SubMenuItemData(Icons.campaign, 'ข้อความวิ่ง', () {
                       Navigator.pop(context);
                       _showTickerMessageDialog(context);
-                    }),
+                    }, screenCode: 'OP_TICKER'),
                   ],
                 ),
                 const Divider(indent: 16, endIndent: 16),
@@ -410,7 +410,7 @@ class _SidebarMenuState extends State<SidebarMenu> {
                           ),
                         ),
                       );
-                    }),
+                    }, screenCode: 'RM_ACT_SEARCH'),
                     _SubMenuItemData(Icons.hotel, 'ค้นหาห้องพัก', () {
                       Navigator.pop(context);
                       Navigator.push(
@@ -422,7 +422,7 @@ class _SidebarMenuState extends State<SidebarMenu> {
                           ),
                         ),
                       );
-                    }),
+                    }, screenCode: 'RM_LODGE_SEARCH'),
                     _SubMenuItemData(
                       Icons.restaurant_menu,
                       'ใบแจ้งค่าอาหาร',
@@ -437,7 +437,7 @@ class _SidebarMenuState extends State<SidebarMenu> {
                             ),
                           ),
                         );
-                      },
+                      }, screenCode: 'RM_FOOD_INVOICE',
                     ),
                     _SubMenuItemData(Icons.receipt_long, 'Folio', () {
                       Navigator.pop(context);
@@ -450,7 +450,7 @@ class _SidebarMenuState extends State<SidebarMenu> {
                           ),
                         ),
                       );
-                    }),
+                    }, screenCode: 'RM_FOLIO'),
                     _SubMenuItemData(
                       Icons.payments_outlined,
                       'รับชำระเงิน',
@@ -465,7 +465,7 @@ class _SidebarMenuState extends State<SidebarMenu> {
                             ),
                           ),
                         );
-                      },
+                      }, screenCode: 'RM_PAYMENT',
                     ),
                   ],
                 ),
@@ -493,7 +493,7 @@ class _SidebarMenuState extends State<SidebarMenu> {
                             ),
                           ),
                         );
-                      },
+                      }, screenCode: 'RPT_01',
                     ),
                     // 2
                     _SubMenuItemData(
@@ -510,7 +510,7 @@ class _SidebarMenuState extends State<SidebarMenu> {
                             ),
                           ),
                         );
-                      },
+                      }, screenCode: 'RPT_02',
                     ),
                     // 3
                     _SubMenuItemData(Icons.calendar_month, 'แผนการใช้ศูนย์', () {
@@ -524,7 +524,7 @@ class _SidebarMenuState extends State<SidebarMenu> {
                           ),
                         ),
                       );
-                    }),
+                    }, screenCode: 'RPT_03'),
                     // 4
                     _SubMenuItemData(
                       Icons.table_chart,
@@ -546,7 +546,7 @@ class _SidebarMenuState extends State<SidebarMenu> {
                             ),
                           ),
                         );
-                      },
+                      }, screenCode: 'RPT_04',
                     ),
                     // 5
                     _SubMenuItemData(
@@ -569,7 +569,7 @@ class _SidebarMenuState extends State<SidebarMenu> {
                             ),
                           ),
                         );
-                      },
+                      }, screenCode: 'RPT_05',
                     ),
                     // 6
                     _SubMenuItemData(
@@ -592,7 +592,7 @@ class _SidebarMenuState extends State<SidebarMenu> {
                             ),
                           ),
                         );
-                      },
+                      }, screenCode: 'RPT_06',
                     ),
                     // 7
                     _SubMenuItemData(
@@ -615,7 +615,7 @@ class _SidebarMenuState extends State<SidebarMenu> {
                             ),
                           ),
                         );
-                      },
+                      }, screenCode: 'RPT_07',
                     ),
                     // 8
                     _SubMenuItemData(
@@ -632,7 +632,7 @@ class _SidebarMenuState extends State<SidebarMenu> {
                             ),
                           ),
                         );
-                      },
+                      }, screenCode: 'RPT_08',
                     ),
                     // 9
                     _SubMenuItemData(
@@ -649,7 +649,7 @@ class _SidebarMenuState extends State<SidebarMenu> {
                             ),
                           ),
                         );
-                      },
+                      }, screenCode: 'RPT_09',
                     ),
                     // 10
                     _SubMenuItemData(
@@ -671,7 +671,7 @@ class _SidebarMenuState extends State<SidebarMenu> {
                             ),
                           ),
                         );
-                      },
+                      }, screenCode: 'RPT_10',
                     ),
                     // 11
                     _SubMenuItemData(
@@ -694,7 +694,7 @@ class _SidebarMenuState extends State<SidebarMenu> {
                             ),
                           ),
                         );
-                      },
+                      }, screenCode: 'RPT_11',
                     ),
                     // 12
                     _SubMenuItemData(Icons.build, 'สรุปงานซ่อมบำรุง', () {
@@ -713,7 +713,7 @@ class _SidebarMenuState extends State<SidebarMenu> {
                           ),
                         ),
                       );
-                    }),
+                    }, screenCode: 'RPT_12'),
                     // 13
                     _SubMenuItemData(
                       Icons.home_repair_service,
@@ -735,7 +735,7 @@ class _SidebarMenuState extends State<SidebarMenu> {
                             ),
                           ),
                         );
-                      },
+                      }, screenCode: 'RPT_13',
                     ),
                     // 14
                     _SubMenuItemData(Icons.inventory_2, 'ใบรับจ่ายวัสดุ', () {
@@ -749,7 +749,7 @@ class _SidebarMenuState extends State<SidebarMenu> {
                           ),
                         ),
                       );
-                    }),
+                    }, screenCode: 'RPT_14'),
                   ],
                 ),
                 //]
@@ -781,7 +781,7 @@ class _SidebarMenuState extends State<SidebarMenu> {
                                 CommodityScreen(apiService: ApiService()),
                           ),
                         );
-                      }),
+                      }, screenCode: 'MS_COMMODITY'),
                       _SubMenuItemData(Icons.bed, 'สิ่งอำนวยความสะดวก', () {
                         Navigator.pop(context);
                         Navigator.push(
@@ -791,7 +791,7 @@ class _SidebarMenuState extends State<SidebarMenu> {
                                 FacilityScreen(apiService: ApiService()),
                           ),
                         );
-                      }),
+                      }, screenCode: 'MS_FACILITY'),
                      
                       _SubMenuItemData(Icons.bed, 'ประเภทห้อง', () {
                         Navigator.pop(context);
@@ -802,7 +802,7 @@ class _SidebarMenuState extends State<SidebarMenu> {
                                 RoomtypeScreen(apiService: ApiService()),
                           ),
                         );
-                      }),
+                      }, screenCode: 'MS_ROOMTYPE'),
 
                       _SubMenuItemData(Icons.bed, 'ห้อง', () {
                         Navigator.pop(context);
@@ -813,7 +813,7 @@ class _SidebarMenuState extends State<SidebarMenu> {
                                 RoomScreen(apiService: ApiService()),
                           ),
                         );
-                      }),
+                      }, screenCode: 'MS_ROOM'),
                       _SubMenuItemData(Icons.build, 'วัสดุซ่อมบำรุง', () {
                         Navigator.pop(context);
                         Navigator.push(
@@ -823,7 +823,7 @@ class _SidebarMenuState extends State<SidebarMenu> {
                                 PartScreen(apiService: ApiService()),
                           ),
                         );
-                      }),
+                      }, screenCode: 'MS_PART'),
                        _SubMenuItemData(Icons.business, 'รหัสหน่วยงาน', () {
                         Navigator.pop(context);
                         Navigator.push(
@@ -833,7 +833,7 @@ class _SidebarMenuState extends State<SidebarMenu> {
                                 OrganizationScreen(apiService: ApiService()),
                           ),
                         );
-                      }),
+                      }, screenCode: 'MS_ORG'),
                        _SubMenuItemData(Icons.group, 'กลุ่ม', () {
                         Navigator.pop(context);
                         Navigator.push(
@@ -843,7 +843,7 @@ class _SidebarMenuState extends State<SidebarMenu> {
                                 SectionScreen(apiService: ApiService()),
                           ),
                         );
-                      }),
+                      }, screenCode: 'MS_SECTION'),
                        _SubMenuItemData(Icons.people, 'บุคลากร', () {
                         Navigator.pop(context);
                         Navigator.push(
@@ -853,7 +853,7 @@ class _SidebarMenuState extends State<SidebarMenu> {
                                 EmployeeScreen(apiService: ApiService()),
                           ),
                         );
-                      }),
+                      }, screenCode: 'MS_EMPLOYEE'),
                     ],//master
                   ),
                   _buildExpandableMenuItem(
@@ -872,7 +872,7 @@ class _SidebarMenuState extends State<SidebarMenu> {
                                 CommodityReportScreen(apiService: ApiService()),
                           ),
                         );
-                       }),
+                       }, screenCode: 'OP_BEDDING'),
                        _SubMenuItemData(
                         Icons.receipt_long,
                         'บันทึกรับจ่ายของใช้',
@@ -885,12 +885,12 @@ class _SidebarMenuState extends State<SidebarMenu> {
                                   CommodityInScreen(apiService: ApiService()),
                             ),
                           );
-                        },
+                        }, screenCode: 'OP_SUPPLY_IO',
                       ),
                       _SubMenuItemData(Icons.campaign, 'ข้อความวิ่ง', () {
                         Navigator.pop(context);
                         _showTickerMessageDialog(context);
-                      }),
+                      }, screenCode: 'OP_TICKER'),
                     ],
                   ),
                 ],*/
@@ -1023,7 +1023,7 @@ class _SidebarMenuState extends State<SidebarMenu> {
                         builder: (_) => const FacilitiesScreen(),
                       ),
                     );
-                  }),
+                  }, screenCode: 'MS_FACILITY'),
                 ],
               ),
               //  if (isWide)
@@ -1165,7 +1165,7 @@ class _SidebarMenuState extends State<SidebarMenu> {
                       Navigator.pop(context);
                       // Handle download
                       _showTickerMessageDialog(context);
-                    }),
+                    }, screenCode: 'OP_TICKER'),
                     _SubMenuItemData(Icons.book, 'เอกสารประกอบการอบรม', () {
                       Navigator.pop(context);
                     }),
@@ -1217,7 +1217,7 @@ class _SidebarMenuState extends State<SidebarMenu> {
                               CommodityScreen(apiService: ApiService()),
                         ),
                       );
-                    }),
+                    }, screenCode: 'MS_COMMODITY'),
                   ],
                 ),
               ],
@@ -1513,7 +1513,7 @@ class _SidebarMenuState extends State<SidebarMenu> {
                     _SubMenuItemData(Icons.campaign, 'ข้อความวิ่ง', () {
                       Navigator.pop(context);
                       _showTickerMessageDialog(context);
-                    }),
+                    }, screenCode: 'OP_TICKER'),
                   ],
                 ),
               ],
@@ -1572,7 +1572,7 @@ const Divider(indent: 16, endIndent: 16),
                             CommodityScreen(apiService: ApiService()),
                       ),
                     );
-                    }),
+                    }, screenCode: 'MS_COMMODITY'),
                   ],
                 ),
             ],
@@ -2159,6 +2159,17 @@ const Divider(indent: 16, endIndent: 16),
   }
 
   // Expandable menu item with submenu - FIXED
+  /// เมนูย่อยที่ผู้ใช้คนนี้มีสิทธิ์ดู
+  ///
+  /// เมนูที่ไม่ได้ระบุรหัสหน้าจอถือว่าเปิดให้ทุกคน เช่นเมนูที่ยังไม่ได้ลงทะเบียน
+  /// ไว้ในตารางสิทธิ์ จะได้ไม่หายไปเงียบ ๆ ตอนเพิ่มเมนูใหม่
+  List<_SubMenuItemData> _allowed(List<_SubMenuItemData> items) {
+    return items
+        .where((e) => e.screenCode == null
+            || widget.authProvider.canView(e.screenCode!))
+        .toList();
+  }
+
   Widget _buildExpandableMenuItem(
     BuildContext context, {
     required IconData icon,
@@ -2167,6 +2178,10 @@ const Divider(indent: 16, endIndent: 16),
     required List<_SubMenuItemData> children,
     bool compact = false,
   }) {
+    // ไม่มีเมนูย่อยที่ดูได้เลย ก็ไม่ต้องแสดงหัวข้อกลุ่มนี้
+    children = _allowed(children);
+    if (children.isEmpty) return const SizedBox.shrink();
+
     final isExpanded = _expandedMenus.contains(menuKey);
 
     return Column(
@@ -2316,10 +2331,15 @@ class _MenuItemData {
   _MenuItemData(this.icon, this.title, this.onTap);
 }
 
+/// หนึ่งเมนูย่อย
+///
+/// [screenCode] คือรหัสหน้าจอในตาราง m_screen ใส่ไว้เพื่อให้ซ่อนเมนูอัตโนมัติ
+/// เมื่อผู้ใช้ไม่มีสิทธิ์ดู เมนูที่ไม่ใส่รหัสจะแสดงกับทุกคน
 class _SubMenuItemData {
   final IconData icon;
   final String title;
   final VoidCallback onTap;
+  final String? screenCode;
 
-  _SubMenuItemData(this.icon, this.title, this.onTap);
+  _SubMenuItemData(this.icon, this.title, this.onTap, {this.screenCode});
 }

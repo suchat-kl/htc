@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import '../models/screen_permission.dart';
 import '../services/api_service.dart';
 
 class AuthProvider extends ChangeNotifier {
@@ -13,7 +14,25 @@ class AuthProvider extends ChangeNotifier {
 
   bool hasRole(String role) => _apiService.hasRole(role);
   bool get isAdmin => hasRole('ADMIN');
-  bool get isDirector => hasRole('DIRECTOR');
+
+  // ── สิทธิ์รายหน้าจอ ────────────────────────────────────────────
+  Map<String, ScreenPermission> get permissions => _apiService.permissions;
+  List<int> get bookStatusIds => _apiService.bookStatusIds;
+  bool get permissionsLoaded => _apiService.permissionsLoaded;
+
+  /// ผู้ใช้ทำ [action] (view/add/edit/delete/print) กับหน้าจอนี้ได้หรือไม่
+  bool can(String screenCode, String action) =>
+      _apiService.can(screenCode, action);
+
+  bool canView(String screenCode) => can(screenCode, 'view');
+  bool canAdd(String screenCode) => can(screenCode, 'add');
+  bool canEdit(String screenCode) => can(screenCode, 'edit');
+  bool canDelete(String screenCode) => can(screenCode, 'delete');
+  bool canPrint(String screenCode) => can(screenCode, 'print');
+
+  /// เปลี่ยนสถานะการจองเป็นสถานะนี้ได้หรือไม่
+  bool canChangeBookStatus(int statusId) =>
+      _apiService.canChangeBookStatus(statusId);
 
   AuthProvider() {
     // Listen to login state changes
@@ -24,6 +43,7 @@ class AuthProvider extends ChangeNotifier {
 
   Future<void> login(String username, String password) async {
     await _apiService.login(username, password);
+    await _apiService.loadPermissions();
     notifyListeners();
   }
 
@@ -34,6 +54,7 @@ class AuthProvider extends ChangeNotifier {
 
   Future<bool> loadSession() async {
     final result = await _apiService.loadSession();
+    if (result) await _apiService.loadPermissions();
     notifyListeners();
     return result;
   }
@@ -58,26 +79,36 @@ class AuthProvider extends ChangeNotifier {
     return name[0].toUpperCase();
   }
 
-  // Get role display names in Thai
-  List<String> get roleDisplayNames {
-    return roles.map((role) {
-      switch (role) {
-        case 'ADMIN':
-          return 'ผู้ดูแลระบบ';
-        case 'DIRECTOR':
-          return 'ผู้อำนวยการ';
-        case 'USER':
-          return 'ผู้ใช้งาน';
-        default:
-          return role;
-      }
-    }).toList();
-  }
+  /// ชื่อ role ภาษาไทย ตามชุด role ที่ใช้จริงในระบบ
+  static const Map<String, String> _roleNames = {
+    'ADMIN': 'ผู้ดูแลระบบ',
+    'MASTER': 'ผู้อำนวยการศูนย์ฯ',
+    'MANAGER': 'หัวหน้างาน',
+    'ACCOUNT': 'งานการเงิน',
+    'RECEPTION': 'งานต้อนรับ',
+    'RECEPTION2': 'งานต้อนรับ',
+    'ROOM_SERVICE': 'บริการห้องพัก',
+    'NUTRITION': 'งานโภชนาการ',
+    'EQUIP_MASTER': 'หัวหน้างานโสตฯ',
+    'SERVICE': 'งานซ่อมบำรุง',
+    'EQUIP': 'งานโสตฯ',
+    'USER': 'ผู้ใช้งาน',
+  };
 
-  // Get highest role for display
+  List<String> get roleDisplayNames =>
+      roles.map((role) => _roleNames[role] ?? role).toList();
+
+  /// role ที่ใช้แสดงบนโปรไฟล์ เอาตัวที่สิทธิ์สูงสุดที่ผู้ใช้ถืออยู่
+  ///
+  /// USER เป็น role พื้นฐานที่ทุกคนถือ จึงเป็นตัวสุดท้ายเสมอ
   String get highestRole {
-    if (isDirector) return 'ผู้อำนวยการ';
-    if (isAdmin) return 'ผู้ดูแลระบบ';
+    const rank = [
+      'ADMIN', 'MASTER', 'MANAGER', 'ACCOUNT', 'RECEPTION', 'RECEPTION2',
+      'NUTRITION', 'EQUIP_MASTER', 'SERVICE', 'ROOM_SERVICE', 'EQUIP', 'USER',
+    ];
+    for (final r in rank) {
+      if (hasRole(r)) return _roleNames[r] ?? r;
+    }
     return 'ผู้ใช้งาน';
   }
 }

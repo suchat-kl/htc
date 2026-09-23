@@ -7,6 +7,7 @@ import 'package:highway_training/models/bookdetail.dart';
 import 'package:highway_training/models/bookroom.dart';
 import 'package:highway_training/models/bookroomdetail.dart';
 import 'package:highway_training/models/commodity.dart';
+import 'package:highway_training/models/screen_permission.dart';
 import 'package:highway_training/models/commodity_in.dart';
 import 'package:highway_training/models/documentstatus.dart';
 import 'package:highway_training/models/employee.dart';
@@ -69,6 +70,16 @@ class ApiService {
   String? _fullName;
   int? _empID;
   List<String> _roles = [];
+
+  /// สิทธิ์รายหน้าจอของผู้ใช้ที่ล็อกอินอยู่ คีย์คือ screen_code
+  /// ว่างเปล่า = ยังไม่ได้โหลด หรือผู้ใช้ไม่มีสิทธิ์หน้าจอไหนเลย
+  Map<String, ScreenPermission> _permissions = {};
+
+  /// สถานะการจองที่ผู้ใช้เปลี่ยนได้ ว่างเปล่า = เปลี่ยนไม่ได้เลย
+  List<int> _bookStatusIds = [];
+
+  /// โหลดสิทธิ์สำเร็จแล้วหรือยัง ใช้กันไม่ให้ซ่อนเมนูทั้งหมดตอนยังโหลดไม่เสร็จ
+  bool _permissionsLoaded = false;
   bool _isLoggedIn = false;
 
   Function(bool isLoggedIn)? onLoginStateChanged;
@@ -182,6 +193,63 @@ class ApiService {
   bool get isLoggedIn => _isLoggedIn;
 
   bool hasRole(String role) => _roles.contains(role);
+
+  Map<String, ScreenPermission> get permissions => _permissions;
+  List<int> get bookStatusIds => _bookStatusIds;
+  bool get permissionsLoaded => _permissionsLoaded;
+
+  /// ผู้ใช้ทำ [action] กับหน้าจอ [screenCode] ได้หรือไม่
+  ///
+  /// ยังโหลดสิทธิ์ไม่เสร็จให้ถือว่าทำได้ไปก่อน เพื่อไม่ให้เมนูกะพริบหายตอนเปิดแอป
+  /// ส่วนการกันจริงอยู่ที่ backend อยู่แล้ว
+  bool can(String screenCode, String action) {
+    if (!_permissionsLoaded) return true;
+    final p = _permissions[screenCode];
+    if (p == null) return false;
+    return p.allows(action);
+  }
+
+  /// เปลี่ยนสถานะการจองเป็นสถานะนี้ได้หรือไม่
+  bool canChangeBookStatus(int statusId) {
+    if (!_permissionsLoaded) return true;
+    return _bookStatusIds.contains(statusId);
+  }
+
+  /// โหลดสิทธิ์ของผู้ใช้ที่ล็อกอินอยู่ เรียกหลัง login และหลังกู้ session
+  ///
+  /// ถ้าเรียกไม่สำเร็จจะปล่อยให้ _permissionsLoaded เป็น false
+  /// ซึ่งทำให้ can() คืนค่าจริงทั้งหมด เมนูจึงไม่หายไปเพราะเน็ตสะดุด
+  Future<void> loadPermissions() async {
+    try {
+      await _ensureToken();
+      final r = await dio.get(
+        '/api/auth/my-permissions',
+        options: Options(validateStatus: (status) => status! < 500),
+      );
+      if (r.statusCode != 200 || r.data is! Map) {
+        if (AppLogger.on) {
+          AppLogger.w('⚠️ โหลดสิทธิ์ไม่สำเร็จ (${r.statusCode})');
+        }
+        return;
+      }
+      final data = r.data as Map;
+      final list = (data['screens'] as List? ?? const [])
+          .map((e) => ScreenPermission.fromJson(e as Map<String, dynamic>))
+          .toList();
+      _permissions = {for (final p in list) p.screenCode: p};
+      _bookStatusIds = (data['bookStatusIds'] as List? ?? const [])
+          .map((e) => int.tryParse(e.toString()) ?? -1)
+          .where((e) => e >= 0)
+          .toList();
+      _permissionsLoaded = true;
+      if (AppLogger.on) {
+        AppLogger.i('🔐 สิทธิ์ ${_permissions.length} หน้าจอ, '
+            'เปลี่ยนสถานะได้ ${_bookStatusIds.length} สถานะ');
+      }
+    } catch (e) {
+      if (AppLogger.on) AppLogger.w('⚠️ โหลดสิทธิ์ไม่สำเร็จ: $e');
+    }
+  }
 
   // Login with detailed error handling
   Future<Map<String, dynamic>> login(String username, String password) async {
@@ -440,6 +508,9 @@ class ApiService {
       _email = null;
       _fullName = null;
       _roles = [];
+      _permissions = {};
+      _bookStatusIds = [];
+      _permissionsLoaded = false;
       _isLoggedIn = false;
 
       await storage.deleteAll();
