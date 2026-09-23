@@ -1530,6 +1530,41 @@ class ApiService {
     throw Exception('ออกรายงานไม่สำเร็จ (${r.statusCode})');
   }
 
+  /// ดาวน์โหลดใบรับจ่ายวัสดุ (เมนูรายงาน 14) — ไฟล์ Excel อย่างเดียว
+  ///
+  /// ช่วงวันที่ของฝั่งรับกับฝั่งจ่ายแยกกัน เว้นว่างได้ทั้งคู่
+  Future<List<int>> downloadMaterialLedger({
+    String? name,
+    double minBalance = 0,
+    String? receiveFrom,
+    String? receiveTo,
+    String? issueFrom,
+    String? issueTo,
+  }) async {
+    await _ensureToken();
+    final params = <String, dynamic>{'minBalance': minBalance};
+    if (name != null && name.isNotEmpty) params['name'] = name;
+    if (receiveFrom != null) params['receiveFrom'] = receiveFrom;
+    if (receiveTo != null) params['receiveTo'] = receiveTo;
+    if (issueFrom != null) params['issueFrom'] = issueFrom;
+    if (issueTo != null) params['issueTo'] = issueTo;
+    final r = await dio.get(
+      '/api/auth/report/material-ledger',
+      queryParameters: params,
+      options: Options(
+        responseType: ResponseType.bytes,
+        receiveTimeout: const Duration(seconds: 60),
+        validateStatus: (status) => status! < 500,
+      ),
+    );
+    if (r.statusCode == 200 && r.data is List<int>) {
+      final bytes = r.data as List<int>;
+      if (bytes.isEmpty) throw Exception('ไฟล์รายงานว่างเปล่า');
+      return bytes;
+    }
+    throw Exception('ออกรายงานไม่สำเร็จ (${r.statusCode})');
+  }
+
   /// ดาวน์โหลดสรุปงานซ่อมบำรุง ประจำปีงบประมาณ (เมนูรายงาน 12)
   Future<List<int>> downloadMaintenanceSummary({required int year}) async {
     await _ensureToken();

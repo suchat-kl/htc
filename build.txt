@@ -126,3 +126,9 @@ flutter pub run flutter_launcher_icons:main  //icon app
 flutter pub get upgrade
 flutter upgrade
 flutter doctor
+flutter run -d web-server --web-port=5555 --dart-define=API_BASE=https://suchat-dev.doh.go.th/htcapi
+พัฒนาบนเครื่อง (ชี้ WSL):
+flutter run -d chrome --dart-define=API_BASE=https://suchat-dev.doh.go.th/htcapi
+build ขึ้น production ไม่ต้องใส่อะไรเพิ่ม ได้ backupdoh.doh.go.th อัตโนมัติ:
+flutter build web --no-wasm-dry-run
+ค่าเริ่มต้นเป็น production ลืมใส่ตอน build ขึ้นเซิร์ฟเวอร์จึงไม่พัง และไม่ต้องแก้โค้ดสลับไปมาอีก
