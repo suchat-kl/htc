@@ -1530,6 +1530,22 @@ class ApiService {
     throw Exception('ออกรายงานไม่สำเร็จ (${r.statusCode})');
   }
 
+  /// ยกเลิกใบจอง — เปลี่ยนสถานะเป็นยกเลิกการจองแล้วปล่อยห้องคืน
+  ///
+  /// ใช้แทนการลบ ตามข้อเสนอแนะของ สตภ. ที่ให้เก็บทุกลำดับการจองไว้ตรวจสอบได้
+  Future<void> cancelBooking(int bookId) async {
+    await _ensureToken();
+    final r = await dio.put(
+      '/api/auth/bookings/$bookId/cancel',
+      options: Options(validateStatus: (status) => status! < 500),
+    );
+    if (r.statusCode == 200) return;
+    final msg = (r.data is Map && r.data['message'] != null)
+        ? r.data['message'].toString()
+        : 'ยกเลิกใบจองไม่สำเร็จ (${r.statusCode})';
+    throw Exception(msg);
+  }
+
   /// ดาวน์โหลดแบบรายงานการใช้ห้องกิจกรรม (เมนูรายงาน 1)
   ///
   /// ส่งเงื่อนไขชุดเดียวกับ [searchBookings] ฝั่ง backend จะค้นใบจองที่เข้าเงื่อนไข
