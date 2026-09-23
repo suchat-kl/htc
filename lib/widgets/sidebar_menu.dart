@@ -696,11 +696,23 @@ class _SidebarMenuState extends State<SidebarMenu> {
                       },
                     ),
                     // 12
-                    _SubMenuItemData(
-                      Icons.build,
-                      'สรุปงานซ่อมบำรุง',
-                      () => _reportSoon(context, 'สรุปงานซ่อมบำรุง'),
-                    ),
+                    _SubMenuItemData(Icons.build, 'สรุปงานซ่อมบำรุง', () {
+                      Navigator.pop(context);
+                      final api = ApiService();
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => AnnualReportScreen(
+                            title: 'สรุปรายงานซ่อมบำรุง',
+                            fileBaseName: 'สรุปงานซ่อมบำรุง',
+                            note:
+                                'ปีงบประมาณ 2569 คือ 1 ต.ค. 2568 ถึง 30 ก.ย. 2569 — ออกเป็นไฟล์ Excel เท่านั้น',
+                            download: (year) =>
+                                api.downloadMaintenanceSummary(year: year),
+                          ),
+                        ),
+                      );
+                    }),
                     // 13
                     _SubMenuItemData(
                       Icons.home_repair_service,
