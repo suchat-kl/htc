@@ -3,6 +3,7 @@
 // import 'dart:js' as js;
 import 'package:flutter/material.dart';
 import 'package:highway_training/screens/activity_room_search_screen.dart';
+import 'package:highway_training/screens/activity_usage_report_screen.dart';
 import 'package:highway_training/screens/booking_edit_screen.dart';
 import 'package:highway_training/screens/lodging_room_search_screen.dart';
 import 'package:highway_training/screens/folio_list_screen.dart';
@@ -474,10 +475,18 @@ class _SidebarMenuState extends State<SidebarMenu> {
                     _SubMenuItemData(
                       Icons.event_available,
                       'รายงานการใช้ห้องกิจกรรม (ค้นหา)',
-                      () => _reportSoon(
-                        context,
-                        'รายงานการใช้ห้องกิจกรรม (ค้นหา)',
-                      ),
+                      () {
+                        Navigator.pop(context);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => ActivityUsageReportScreen(
+                              apiService: ApiService(),
+                              authProvider: widget.authProvider,
+                            ),
+                          ),
+                        );
+                      },
                     ),
                     // 2
                     _SubMenuItemData(
