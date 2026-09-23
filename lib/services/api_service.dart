@@ -1507,6 +1507,29 @@ class ApiService {
     throw Exception('ออกรายงานไม่สำเร็จ (${r.statusCode})');
   }
 
+  /// ดาวน์โหลดรายงานการใช้ห้องกิจกรรม ประจำเดือน (เมนูรายงาน 6) — Excel อย่างเดียว
+  Future<List<int>> downloadActivityMonthly({
+    required int year,
+    required int month,
+  }) async {
+    await _ensureToken();
+    final r = await dio.get(
+      '/api/auth/report/activity-monthly',
+      queryParameters: {'year': year, 'month': month},
+      options: Options(
+        responseType: ResponseType.bytes,
+        receiveTimeout: const Duration(seconds: 60),
+        validateStatus: (status) => status! < 500,
+      ),
+    );
+    if (r.statusCode == 200 && r.data is List<int>) {
+      final bytes = r.data as List<int>;
+      if (bytes.isEmpty) throw Exception('ไฟล์รายงานว่างเปล่า');
+      return bytes;
+    }
+    throw Exception('ออกรายงานไม่สำเร็จ (${r.statusCode})');
+  }
+
   /// ดาวน์โหลดสรุปการใช้ห้องพัก ประจำเดือน (เมนูรายงาน 5) — ไฟล์ Excel อย่างเดียว
   Future<List<int>> downloadLodgingSummary({
     required int year,
