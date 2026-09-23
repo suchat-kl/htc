@@ -705,7 +705,24 @@ class _SidebarMenuState extends State<SidebarMenu> {
                     _SubMenuItemData(
                       Icons.home_repair_service,
                       'รายการซ่อมบำรุง อาคารเรียน',
-                      () => _reportSoon(context, 'รายการซ่อมบำรุง อาคารเรียน'),
+                      () {
+                        Navigator.pop(context);
+                        final api = ApiService();
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => MonthlyReportScreen(
+                              title: 'รายการซ่อมบำรุง อาคารเรียน',
+                              fileBaseName: 'รายการซ่อมบำรุงอาคารเรียน',
+                              download: (year, month) => api
+                                  .downloadMaintenanceSchool(
+                                    year: year,
+                                    month: month,
+                                  ),
+                            ),
+                          ),
+                        );
+                      },
                     ),
                     // 14
                     _SubMenuItemData(
