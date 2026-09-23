@@ -548,10 +548,24 @@ class _SidebarMenuState extends State<SidebarMenu> {
                     _SubMenuItemData(
                       Icons.summarize,
                       'สรุปการใช้ห้องพัก (ประจำเดือน)',
-                      () => _reportSoon(
-                        context,
-                        'สรุปการใช้ห้องพัก (ประจำเดือน)',
-                      ),
+                      () {
+                        Navigator.pop(context);
+                        final api = ApiService();
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => MonthlyReportScreen(
+                              title: 'สรุปการใช้ห้องพัก ประจำเดือน',
+                              fileBaseName: 'สรุปการใช้ห้องพัก',
+                              download: (year, month) => api
+                                  .downloadLodgingSummary(
+                                    year: year,
+                                    month: month,
+                                  ),
+                            ),
+                          ),
+                        );
+                      },
                     ),
                     // 6
                     _SubMenuItemData(
