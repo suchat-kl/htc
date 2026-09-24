@@ -69,14 +69,18 @@ class AuthProvider extends ChangeNotifier {
 
   // Get user's initials for avatar
   String get initials {
-    final name = displayName;
-    if (name.isEmpty) return '?';
-
-    final parts = name.split(' ');
+    // ตัดด้วยช่องว่างกี่ตัวก็ได้แล้วทิ้งชิ้นที่ว่าง เพราะ full_name ในฐานข้อมูล
+    // บางระเบียนมีช่องว่างซ้อนหรือช่องว่างท้ายชื่อ ถ้าตัดด้วย ' ' เฉย ๆ
+    // จะได้ชิ้นว่างมาแล้ว [0] ระเบิดเป็น RangeError ทั้งหน้าจอ
+    final parts = displayName
+        .split(RegExp(r'\s+'))
+        .where((p) => p.isNotEmpty)
+        .toList();
+    if (parts.isEmpty) return '?';
     if (parts.length >= 2) {
       return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
     }
-    return name[0].toUpperCase();
+    return parts[0][0].toUpperCase();
   }
 
   /// ชื่อ role ภาษาไทย ตามชุด role ที่ใช้จริงในระบบ
