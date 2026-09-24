@@ -68,9 +68,18 @@ class _MaintenanceEditScreenState extends State<MaintenanceEditScreen> {
       _loadExistingData();
       _loadTparts();
     } else {
-      _selectedEmp1 = widget.authProvider.empID;
-      _selectedEmp2 = widget.authProvider.empID;
+      _selectedEmp1 = _myEmpId;
+      _selectedEmp2 = _myEmpId;
     }
+  }
+
+  /// รหัสพนักงานของบัญชีที่ล็อกอิน ใช้เป็นค่าตั้งต้นของช่องผู้แจ้ง/ผู้รับงาน
+  ///
+  /// ตอนล็อกอิน backend ส่ง empID = 0 มาให้เมื่อบัญชีนั้นยังไม่ผูกกับพนักงาน
+  /// ต้องกรองทิ้ง ไม่งั้น dropdown จะได้ค่าที่ไม่มีในรายการแล้ว assert
+  int? get _myEmpId {
+    final id = widget.authProvider.empID;
+    return (id == null || id == 0) ? null : id;
   }
 
   void _loadExistingData() {
@@ -84,7 +93,10 @@ class _MaintenanceEditScreenState extends State<MaintenanceEditScreen> {
     _priceCtrl.text = m.price?.toString() ?? '';
     _workremarkCtrl.text = m.workremark ?? '';
     _selectedEmp1 = m.employeeid1?.toInt();
-    _selectedEmp2 = m.employeeid2?.toInt();
+    // ข้อ 13 ของความต้องการปรับปรุง ใบที่ยังไม่มีผู้รับงานให้ตั้งเป็นคนที่ล็อกอินอยู่
+    // ใบที่ระบุไว้แล้วไม่แตะ เพราะผู้รับงานเดิมเป็นข้อมูลของใบนั้น
+    final emp2 = m.employeeid2?.toInt();
+    _selectedEmp2 = (emp2 == null || emp2 == 0) ? _myEmpId : emp2;
     _selectedRoomid = m.roomid;
     _placetype = m.placetype ?? 'O';
     _workstatus = m.workstatus ?? '0';
@@ -512,7 +524,7 @@ class _MaintenanceEditScreenState extends State<MaintenanceEditScreen> {
 */
         _dd(
           'ชื่อผู้แจ้ง',
-          _selectedEmp1,
+          _empValue(_selectedEmp1),
           _employeeItems(),
           (v) => setState(() => _selectedEmp1 = v),
         ),
@@ -689,7 +701,7 @@ class _MaintenanceEditScreenState extends State<MaintenanceEditScreen> {
         */
         _dd(
           'ผู้รับงาน',
-          _selectedEmp2,
+          _empValue(_selectedEmp2),
           _employeeItems(),
           (v) => setState(() => _selectedEmp2 = v),
         ),
@@ -710,6 +722,15 @@ class _MaintenanceEditScreenState extends State<MaintenanceEditScreen> {
         _fld('อื่นๆ', _workremarkCtrl, maxLines: 2),
       ],
     );
+  }
+
+  /// ค่าที่ปลอดภัยสำหรับ dropdown พนักงาน
+  ///
+  /// รายชื่อพนักงานโหลดแบบ async ระหว่างที่ยังโหลดไม่เสร็จหรือพนักงานคนนั้น
+  /// ถูกลบไปแล้ว ค่าที่ค้างอยู่จะไม่มีในรายการ ต้องคืน null แทน
+  int? _empValue(int? id) {
+    if (id == null) return null;
+    return _employees.any((e) => e.empID == id) ? id : null;
   }
 
   List<DropdownMenuItem<int>> _employeeItems() => _employees
