@@ -224,8 +224,11 @@ class _BookingEditScreenState extends State<BookingEditScreen> {
   }
 
   Future<void> _addTfood() async {
-    if (_foodtypes.isEmpty) {
-      context.showInfoSnackBar('ไม่พบข้อมูลรายการอาหาร');
+    // ข้อ 16 ของความต้องการปรับปรุง เพิ่มรายการใหม่ได้เฉพาะที่ยังให้บริการ
+    // รายการที่ปิดไปแล้วยังแสดงในตารางของใบจองเก่าตามปกติ เพราะตารางใช้ _foodtypes เต็ม
+    final active = _foodtypes.where((f) => f.isActive).toList();
+    if (active.isEmpty) {
+      context.showInfoSnackBar('ไม่พบรายการอาหารที่เปิดให้บริการ');
       return;
     }
 
@@ -237,7 +240,7 @@ class _BookingEditScreenState extends State<BookingEditScreen> {
     final selected = await showDialog<Map<String, dynamic>>(
       context: context,
       builder: (ctx) => _AddTfoodDialog(
-        foodtypes: _foodtypes,
+        foodtypes: active,
         startDate: _startDate,
         stopDate: _stopDate,
       ),

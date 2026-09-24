@@ -824,13 +824,18 @@ class _FoodInvoiceScreenState extends State<FoodInvoiceScreen> {
           style: const TextStyle(fontSize: 14),
           overflow: TextOverflow.ellipsis,
         ),
+        // ข้อ 16 ของความต้องการปรับปรุง ให้เลือกได้เฉพาะรายการที่ยังให้บริการ
+        // ยกเว้นรายการที่บรรทัดนี้ใช้อยู่ ต้องคงไว้ไม่งั้นค่าเดิมจะหาย
         items: [
           for (final f in _foodtypes)
-            if (f.id != null)
+            if (f.id != null && (f.isActive || f.id == line.foodtypeId))
               DropdownMenuItem(
                 value: f.id,
                 child: Text(
-                  '${f.name ?? '-'} (${_money.format(f.price ?? 0)})',
+                  f.isActive
+                      ? '${f.name ?? '-'} (${_money.format(f.price ?? 0)})'
+                      : '${f.name ?? '-'} (${_money.format(f.price ?? 0)}) '
+                            '(เลิกให้บริการ)',
                   style: const TextStyle(fontSize: 14),
                   overflow: TextOverflow.ellipsis,
                 ),
