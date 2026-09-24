@@ -371,6 +371,27 @@ class _FoodtypeScreenState extends State<FoodtypeScreen> {
         DataCell(_rowInputField(row.sectionCtrl, 110, bf)),
         DataCell(_rowInputField(row.seqCtrl, 70, bf, digitsOnly: true)),
         DataCell(
+          SizedBox(
+            width: 140,
+            child: DropdownButtonFormField<String>(
+              initialValue: row.status,
+              isExpanded: true,
+              style: TextStyle(
+                fontSize: bf - 1,
+                color: row.status == '1'
+                    ? AppTheme.textPrimary
+                    : AppTheme.textSecondary,
+              ),
+              decoration: _rowInput(),
+              items: const [
+                DropdownMenuItem(value: '1', child: Text('ให้บริการ')),
+                DropdownMenuItem(value: '2', child: Text('เลิกให้บริการ')),
+              ],
+              onChanged: (v) => setState(() => row.status = v ?? '1'),
+            ),
+          ),
+        ),
+        DataCell(
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -739,6 +760,7 @@ class _FoodtypeScreenState extends State<FoodtypeScreen> {
                                 DataColumn(label: _hdr('ราคา', 80, bf)),
                                 DataColumn(label: _hdr('หมวดหมู่', 110, bf)),
                                 DataColumn(label: _hdr('ลำดับ', 70, bf)),
+                                DataColumn(label: _hdr('สถานะ', 140, bf)),
                                 DataColumn(label: _hdr('จัดการ', 60, bf)),
                               ],
                               rows: _rows
@@ -812,6 +834,7 @@ class _EditRow {
   final String originalPrice;
   final String originalSection;
   final String originalSeq;
+  final String originalStatus;
 
   final TextEditingController nameCtrl;
   final TextEditingController priceCtrl;
@@ -820,6 +843,10 @@ class _EditRow {
 
   /// กลุ่มรายการอาหาร (1 = อาหารหลัก, 2 = อาหารว่างและเครื่องดื่ม)
   int group;
+
+  /// ข้อ 16 ของความต้องการปรับปรุง '1' = ให้บริการ, '2' = เลิกให้บริการ
+  /// รายการที่เลิกให้บริการจะไม่โผล่ให้เลือกตอนจอง แต่ใบจองเก่ายังอ้างถึงได้
+  String status;
 
   /// ติ๊กเลือกไว้ (สำหรับปุ่มลบที่เลือก)
   bool selected = false;
@@ -831,7 +858,9 @@ class _EditRow {
     this.originalPrice = '0',
     this.originalSection = '',
     this.originalSeq = '0',
+    this.originalStatus = '1',
     this.group = 1,
+    this.status = '1',
     required this.nameCtrl,
     required this.priceCtrl,
     required this.sectionCtrl,
@@ -848,7 +877,9 @@ class _EditRow {
       originalPrice: price,
       originalSection: f.section ?? '',
       originalSeq: seq,
+      originalStatus: f.status ?? '1',
       group: f.foodgroupID ?? 1,
+      status: f.status ?? '1',
       nameCtrl: TextEditingController(text: f.name ?? ''),
       priceCtrl: TextEditingController(text: price),
       sectionCtrl: TextEditingController(text: f.section ?? ''),
@@ -883,7 +914,8 @@ class _EditRow {
           nameCtrl.text.trim() != originalName.trim() ||
           priceCtrl.text.trim() != originalPrice.trim() ||
           sectionCtrl.text.trim() != originalSection.trim() ||
-          seqCtrl.text.trim() != originalSeq.trim());
+          seqCtrl.text.trim() != originalSeq.trim() ||
+          status != originalStatus);
 
   Foodtype toFoodtype() => Foodtype(
     id: originalId,
@@ -892,6 +924,7 @@ class _EditRow {
     price: price ?? 0,
     section: sectionCtrl.text.trim(),
     sequence: sequence ?? 0,
+    status: status,
   );
 
   void dispose() {

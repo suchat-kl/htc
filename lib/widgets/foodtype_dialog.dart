@@ -20,6 +20,9 @@ class _FoodtypeDialogState extends State<FoodtypeDialog> {
       _sectionCtrl = TextEditingController(),
       _seqCtrl = TextEditingController();
   int _group = 1;
+
+  /// ข้อ 16 ของความต้องการปรับปรุง '1' = ให้บริการ, '2' = เลิกให้บริการ
+  String _status = '1';
   bool _loading = false;
   String? _err;
   bool get isEdit => widget.foodtype != null;
@@ -33,6 +36,7 @@ class _FoodtypeDialogState extends State<FoodtypeDialog> {
       _sectionCtrl.text = widget.foodtype!.section ?? '';
       _seqCtrl.text = '${widget.foodtype!.sequence ?? 0}';
       _group = widget.foodtype!.foodgroupID ?? 1;
+      _status = widget.foodtype!.status ?? '1';
     }
   }
 
@@ -59,6 +63,7 @@ class _FoodtypeDialogState extends State<FoodtypeDialog> {
         price: int.tryParse(_priceCtrl.text),
         section: _sectionCtrl.text,
         sequence: int.tryParse(_seqCtrl.text),
+        status: _status,
       );
       if (isEdit) {
         await widget.apiService.updateFoodtype(widget.foodtype!.id!, d);
@@ -173,6 +178,17 @@ class _FoodtypeDialogState extends State<FoodtypeDialog> {
                           child: Text('อาหารว่างและเครื่องดื่ม'),
                         ),
                       ], (v) => setState(() => _group = v!)),
+                      const SizedBox(height: 10),
+                      _dd('สถานะ', _status, [
+                        const DropdownMenuItem(
+                          value: '1',
+                          child: Text('ให้บริการ'),
+                        ),
+                        const DropdownMenuItem(
+                          value: '2',
+                          child: Text('เลิกให้บริการ'),
+                        ),
+                      ], (v) => setState(() => _status = v ?? '1')),
                       const SizedBox(height: 10),
                       _fld('รายการ', _nameCtrl),
                       const SizedBox(height: 10),

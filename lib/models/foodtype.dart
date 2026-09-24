@@ -6,6 +6,10 @@ class Foodtype {
   final String? section;
   final int? sequence;
 
+  /// ข้อ 16 ของความต้องการปรับปรุง '1' = ให้บริการ, '2' = เลิกให้บริการ
+  /// null คือข้อมูลเก่าก่อนมีคอลัมน์นี้ ถือว่ายังให้บริการ
+  final String? status;
+
   Foodtype({
     this.id,
     this.foodgroupID = 1,
@@ -13,7 +17,11 @@ class Foodtype {
     this.price = 0,
     this.section,
     this.sequence = 0,
+    this.status,
   });
+
+  /// ยังให้บริการอยู่หรือไม่ ใช้ตัดสินว่าจะให้เลือกตอนจองไหม
+  bool get isActive => status == null || status == '1';
 
   factory Foodtype.fromJson(Map<String, dynamic> json) {
     return Foodtype(
@@ -23,6 +31,7 @@ class Foodtype {
       price: json['price'] as int? ?? 0,
       section: json['section'] as String?,
       sequence: json['sequence'] as int? ?? 0,
+      status: json['status'] as String?,
     );
   }
 
@@ -34,6 +43,7 @@ class Foodtype {
       'price': price,
       'section': section,
       'sequence': sequence,
+      if (status != null) 'status': status,
     };
   }
 

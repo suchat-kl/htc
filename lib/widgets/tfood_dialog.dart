@@ -94,6 +94,24 @@ class _TfoodDialogState extends State<TfoodDialog> {
     }
   }
 
+  /// รายการที่เลือกได้
+  ///
+  /// ข้อ 16 ของความต้องการปรับปรุง รายการที่เลิกให้บริการต้องไม่โผล่ให้เลือกใหม่
+  /// แต่ถ้ากำลังแก้แถวเดิมที่ใช้รายการนั้นอยู่ ต้องคงไว้ในรายการด้วย
+  /// ไม่งั้นค่าที่เลือกไว้จะถูกล้างทิ้งเงียบ ๆ ตอนเปิดหน้าต่างมาแก้
+  List<DropdownMenuItem<int>> get _selectableFoodtypes => widget.foodtypes
+      .where((f) => f.id != null && (f.isActive || f.id == _foodtypeId))
+      .map(
+        (f) => DropdownMenuItem<int>(
+          value: f.id,
+          child: Text(
+            f.isActive ? (f.name ?? '-') : '${f.name ?? '-'} (เลิกให้บริการ)',
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      )
+      .toList();
+
   static DateTime? _parse(String? s) {
     if (s == null || s.isEmpty) return null;
     return DateTime.tryParse(s);
@@ -213,18 +231,7 @@ class _TfoodDialogState extends State<TfoodDialog> {
                         initialValue: _foodtypeId,
                         isExpanded: true,
                         decoration: _decoration(hint: 'เลือกรายการอาหาร'),
-                        items: widget.foodtypes
-                            .where((f) => f.id != null)
-                            .map(
-                              (f) => DropdownMenuItem<int>(
-                                value: f.id,
-                                child: Text(
-                                  f.name ?? '-',
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            )
-                            .toList(),
+                        items: _selectableFoodtypes,
                         onChanged: _isSaving
                             ? null
                             : (int? v) {

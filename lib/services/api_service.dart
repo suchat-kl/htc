@@ -3115,10 +3115,19 @@ class ApiService {
     }
   }
 
-  Future<List<Foodtype>> getFoodtypeList() async {
+  /// รายการอาหารทั้งหมดสำหรับเติม dropdown
+  ///
+  /// [activeOnly] true = เอาเฉพาะรายการที่ยังให้บริการ (ข้อ 16)
+  /// หน้าที่แสดงข้อมูลเก่า เช่นใบสำคัญค่าอาหาร ต้องขอทั้งหมด
+  /// ไม่งั้นชื่ออาหารของใบจองเก่าจะหายไปเมื่อรายการนั้นถูกปิด
+  Future<List<Foodtype>> getFoodtypeList({bool activeOnly = false}) async {
     final r = await publicDio.get(
       '/api/auth/foodtypes',
-      queryParameters: {'page': 0, 'size': 1000},
+      queryParameters: {
+        'page': 0,
+        'size': 1000,
+        if (activeOnly) 'activeOnly': true,
+      },
     );
     if (r.statusCode == 200 && r.data['foodtypes'] != null) {
       return (r.data['foodtypes'] as List)
