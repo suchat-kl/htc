@@ -193,12 +193,12 @@ class _SidebarMenuState extends State<SidebarMenu> {
                   },
                   compact: true,
                 ),
-                const Divider(indent: 16, endIndent: 16),
                 _buildExpandableMenuItem(
                   context,
                   icon: Icons.settings,
                   title: 'รายการหลัก',
                   menuKey: 'master',
+                  divider: true,
                   children: [
                     _SubMenuItemData(Icons.room, 'สถานะห้องพัก', () {
                       Navigator.pop(context);
@@ -315,12 +315,12 @@ class _SidebarMenuState extends State<SidebarMenu> {
                 //   Navigator.pop(context);
                 //   _showChangePasswordDialog(context);
                 // }),
-                const Divider(indent: 16, endIndent: 16),
                 _buildExpandableMenuItem(
                   context,
                   icon: Icons.settings,
                   title: 'การดำเนินงาน',
                   menuKey: 'operations',
+                  divider: true,
                   children: [
                     _SubMenuItemData(Icons.bed, 'ใบรื้อเครื่องนอน', () {
                       Navigator.pop(context);
@@ -392,12 +392,12 @@ class _SidebarMenuState extends State<SidebarMenu> {
                     }, screenCode: 'OP_TICKER'),
                   ],
                 ),
-                const Divider(indent: 16, endIndent: 16),
                 _buildExpandableMenuItem(
                   context,
                   icon: Icons.meeting_room,
                   title: 'ห้องพัก/ห้องกิจกรรม',
                   menuKey: 'room_search',
+                  divider: true,
                   children: [
                     _SubMenuItemData(Icons.search, 'ค้นหาห้องกิจกรรม', () {
                       Navigator.pop(context);
@@ -469,7 +469,6 @@ class _SidebarMenuState extends State<SidebarMenu> {
                     ),
                   ],
                 ),
-                const Divider(indent: 16, endIndent: 16),
                 // เมนูรายงาน — ลำดับตามที่ผู้ใช้กำหนด ใช้อ้างถึงเป็นเมนู 1-14
                 // ตอนนี้มีแต่รายการเมนู หน้าจอรายงานจะทยอยทำตามลำดับที่สั่ง
                 _buildExpandableMenuItem(
@@ -477,6 +476,7 @@ class _SidebarMenuState extends State<SidebarMenu> {
                   icon: Icons.assessment,
                   title: 'รายงาน',
                   menuKey: 'reports',
+                  divider: true,
                   children: [
                     // 1
                     _SubMenuItemData(
@@ -2177,8 +2177,11 @@ const Divider(indent: 16, endIndent: 16),
     required String menuKey,
     required List<_SubMenuItemData> children,
     bool compact = false,
+    bool divider = false,
   }) {
     // ไม่มีเมนูย่อยที่ดูได้เลย ก็ไม่ต้องแสดงหัวข้อกลุ่มนี้
+    // เส้นคั่นต้องอยู่ในนี้ด้วย ไม่ใช่วางไว้ข้างนอก ไม่งั้นกลุ่มที่ซ่อนไป
+    // จะทิ้งเส้นคั่นค้างเป็นบรรทัดว่างในเมนู
     children = _allowed(children);
     if (children.isEmpty) return const SizedBox.shrink();
 
@@ -2186,6 +2189,7 @@ const Divider(indent: 16, endIndent: 16),
 
     return Column(
       children: [
+        if (divider) const Divider(indent: 16, endIndent: 16),
         // Parent menu item
         Material(
           color: Colors.transparent,
