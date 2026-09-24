@@ -178,10 +178,9 @@ class _SidebarMenuState extends State<SidebarMenu> {
               //   ],
               // ),
 
-              // Operations menu (USER role)
-              if (widget.authProvider.isLoggedIn &&
-                  widget.authProvider.hasRole('USER')) ...[
-                // if (isWide) ...[
+              // เมนูของผู้ใช้ที่ล็อกอินแล้ว ไม่เช็ค role USER อีกแล้ว
+              // เพราะสิทธิ์จริงอยู่ที่ตารางสิทธิ์รายหน้าจอ แต่ละกลุ่มซ่อนตัวเองอยู่แล้ว
+              if (widget.authProvider.isLoggedIn) ...[
                 const Divider(indent: 16, endIndent: 16),
                 _buildMenuItem(
                   context,
