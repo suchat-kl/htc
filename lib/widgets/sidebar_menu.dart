@@ -896,27 +896,30 @@ class _SidebarMenuState extends State<SidebarMenu> {
                 ],*/
                 //not wide
               ],
-              // Admin menu items
-              if (widget.authProvider.isAdmin) ...[
+              // เมนูผู้ดูแลระบบ — ยึดตารางสิทธิ์รายหน้าจอ ไม่ใช่ role ตรง ๆ
+              // MANAGER ได้สองหน้าจอนี้เหมือน ADMIN ตามที่ศูนย์ฯ กำหนด
+              if (widget.authProvider.canView('USR_CREATE') ||
+                  widget.authProvider.canView('USR_RESET_PWD')) ...[
                 const Divider(indent: 16, endIndent: 16),
-                // if (isWide)
                 _buildMenuSection(
                   context,
                   title: 'เมนูผู้ดูแลระบบ',
                   titleColor: AppTheme.secondaryColor,
                   items: [
-                    _MenuItemData(Icons.person_add, 'สร้างผู้ใช้งาน', () {
-                      Navigator.pop(context);
-                      _showRegisterUserDialog(context);
-                    }),
-                    _MenuItemData(
-                      Icons.admin_panel_settings,
-                      'กำหนดรหัสผ่านใหม่',
-                      () {
+                    if (widget.authProvider.canView('USR_CREATE'))
+                      _MenuItemData(Icons.person_add, 'สร้างผู้ใช้งาน', () {
                         Navigator.pop(context);
-                        _showResetPasswordDialog(context);
-                      },
-                    ),
+                        _showRegisterUserDialog(context);
+                      }),
+                    if (widget.authProvider.canView('USR_RESET_PWD'))
+                      _MenuItemData(
+                        Icons.admin_panel_settings,
+                        'กำหนดรหัสผ่านใหม่',
+                        () {
+                          Navigator.pop(context);
+                          _showResetPasswordDialog(context);
+                        },
+                      ),
                   ],
                 ),
                 /*  else ...[
