@@ -31,7 +31,12 @@ class _RegisterUserDialogState extends State<RegisterUserDialog> {
   bool _obscurePassword = true;
   String? _errorMessage;
   List<Map<String, String>> _availableRoles = [];
-  List<String> _selectedRoles = ['USER']; // Default role
+  /// บทบาทที่เลือกไว้ ไม่ติ๊กอะไรให้ล่วงหน้า
+  ///
+  /// เดิมติ๊ก USER ไว้ให้ แต่ตั้งแต่ 24 ก.ย. 2569 role USER ไม่มีสิทธิ์หน้าจอใด ๆ
+  /// และไม่ได้เป็นด่านของ SecurityConfig อีกแล้ว ถ้ายังติ๊กไว้
+  /// คนสร้างอาจกดบันทึกโดยไม่เลือกบทบาทงาน ได้บัญชีที่ล็อกอินได้แต่ไม่เห็นเมนูเลย
+  List<String> _selectedRoles = [];
   // _selectedRoles.add("USER");
   // Password validation
   bool _hasMinLength = false;
@@ -83,12 +88,16 @@ class _RegisterUserDialogState extends State<RegisterUserDialog> {
     });
   }
 
+  /// role เดิมที่เหลือไว้เพื่อความเข้ากันได้ ไม่ให้สิทธิ์หน้าจอใด ๆ
+  static const String _legacyRole = 'USER';
+
   Future<void> _handleRegister() async {
     if (!_formKey.currentState!.validate()) return;
 
-    if (_selectedRoles.isEmpty) {
+    // USER ไม่ให้สิทธิ์หน้าจอใดเลย ติ๊กแค่ตัวนี้ถือว่ายังไม่ได้เลือกบทบาท
+    if (!_selectedRoles.any((r) => r != _legacyRole)) {
       setState(() {
-        _errorMessage = 'กรุณาเลือกอย่างน้อย 1 บทบาท';
+        _errorMessage = 'กรุณาเลือกบทบาทการทำงานอย่างน้อย 1 บทบาท';
       });
       return;
     }
@@ -149,7 +158,7 @@ class _RegisterUserDialogState extends State<RegisterUserDialog> {
     _departmentController.clear();
     _phoneController.clear();
     setState(() {
-      _selectedRoles = ['USER'];
+      _selectedRoles = [];
       _errorMessage = null;
       _hasMinLength = false;
       _hasUppercase = false;
@@ -625,7 +634,9 @@ class _RegisterUserDialogState extends State<RegisterUserDialog> {
                       return CheckboxListTile(
                         title: Text(name, style: const TextStyle(fontSize: 14)),
                         subtitle: Text(
-                          'Code: $code',
+                          code == _legacyRole
+                              ? 'Code: $code — ไม่ให้สิทธิ์หน้าจอใด ๆ'
+                              : 'Code: $code',
                           style: TextStyle(
                             fontSize: 11,
                             color: Colors.grey.shade500,
