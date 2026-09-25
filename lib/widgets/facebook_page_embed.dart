@@ -2,6 +2,7 @@
 import 'dart:ui_web' as ui_web;
 
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:universal_html/html.dart' as html;
 
 /// กล่องข่าวประชาสัมพันธ์ ฝังเพจ Facebook ของศูนย์ฯ
@@ -79,46 +80,59 @@ class _FacebookPageEmbedState extends State<FacebookPageEmbed> {
         // ปลั๊กอินรองรับความกว้าง 180-500 นอกช่วงนี้จะจัดหน้าเพี้ยน
         final width = constraints.maxWidth.clamp(180.0, 500.0);
 
-        return ClipRRect(
-          borderRadius: BorderRadius.circular(12),
-          child: Container(
-            height: widget.height,
-            decoration: BoxDecoration(
-              color: Colors.white,
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ClipRRect(
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.grey.shade200),
-            ),
-            child: Stack(
-              children: [
-                // ข้อความรองรับกรณีโหลดเพจไม่ขึ้น เช่น เครือข่ายปิดกั้น facebook.com
-                Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.campaign_outlined,
-                            size: 36, color: Colors.grey.shade400),
-                        const SizedBox(height: 8),
-                        Text(
-                          'กำลังโหลดข่าวจากเพจของศูนย์ฯ',
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: Colors.grey.shade600,
-                            fontFamily: 'NotoSansThai',
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
-                    ),
-                  ),
+              child: Container(
+                height: widget.height,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey.shade200),
                 ),
-                HtmlElementView(viewType: _viewTypeFor(width)),
-              ],
+                // iframe ทึบแสง ทับทุกอย่างที่วางไว้ข้างหลัง
+                // จึงไม่วางข้อความสำรองไว้ใต้มัน เพราะจะไม่มีวันได้เห็น
+                child: HtmlElementView(viewType: _viewTypeFor(width)),
+              ),
             ),
-          ),
+            const SizedBox(height: 10),
+            // ทางออกสำรองที่เห็นเสมอ
+            //
+            // กล่องด้านบนเป็นเนื้อหาจาก facebook.com ซึ่งถูกบล็อกได้หลายทาง
+            // ทั้งส่วนขยายกันโฆษณา การตั้งค่ากันการติดตามของเบราว์เซอร์
+            // และไฟร์วอลล์ขององค์กร เวลาถูกบล็อกจะเหลือเป็นกล่องขาวเปล่า
+            // โดยไม่มีอะไรบอกผู้ใช้เลย ปุ่มนี้จึงต้องอยู่ข้างนอกกล่องเสมอ
+            TextButton.icon(
+              onPressed: _openPage,
+              icon: const Icon(Icons.open_in_new, size: 16),
+              label: const Text('เปิดเพจ Facebook ของศูนย์ฯ'),
+              style: TextButton.styleFrom(
+                foregroundColor: const Color(0xFF1565C0),
+                textStyle: const TextStyle(
+                  fontSize: 13,
+                  fontFamily: 'NotoSansThai',
+                ),
+              ),
+            ),
+            Text(
+              'ถ้ากล่องด้านบนว่าง แสดงว่าเบราว์เซอร์หรือเครือข่ายปิดกั้นเนื้อหาจาก Facebook',
+              style: TextStyle(
+                fontSize: 11,
+                color: Colors.grey.shade600,
+                fontFamily: 'NotoSansThai',
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
         );
       },
     );
+  }
+
+  Future<void> _openPage() async {
+    final uri = Uri.parse(widget.pageUrl);
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
   }
 }

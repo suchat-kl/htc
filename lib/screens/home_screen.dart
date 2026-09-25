@@ -559,15 +559,16 @@ class _HomeScreenState extends State<HomeScreen> {
             Image.asset(
               'assets/images/meeting.png',
               fit: BoxFit.cover,
-              errorBuilder: (_, _, _) =>
-                  Container(color: AppTheme.primaryDark),
+              errorBuilder: (_, _, _) => Container(color: AppTheme.primaryDark),
             ),
             // ไล่สีบาง ๆ ให้ภาพกลืนกับพื้นการ์ด ไม่ตัดกันเป็นสองก้อน
             DecoratedBox(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: isDesktop ? Alignment.centerLeft : Alignment.topCenter,
-                  end: isDesktop ? Alignment.centerRight : Alignment.bottomCenter,
+                  end: isDesktop
+                      ? Alignment.centerRight
+                      : Alignment.bottomCenter,
                   colors: [
                     Colors.transparent,
                     AppTheme.primaryDark.withValues(alpha: 0.55),
@@ -583,8 +584,9 @@ class _HomeScreenState extends State<HomeScreen> {
     final text = Padding(
       padding: EdgeInsets.all(isDesktop ? 28 : 20),
       child: Column(
-        crossAxisAlignment:
-            isDesktop ? CrossAxisAlignment.start : CrossAxisAlignment.center,
+        crossAxisAlignment: isDesktop
+            ? CrossAxisAlignment.start
+            : CrossAxisAlignment.center,
         mainAxisAlignment: MainAxisAlignment.center,
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -597,9 +599,11 @@ class _HomeScreenState extends State<HomeScreen> {
                   color: AppTheme.secondaryColor,
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(Icons.event_available,
-                    size: isDesktop ? 26 : 22,
-                    color: AppTheme.onSecondaryColor),
+                child: Icon(
+                  Icons.event_available,
+                  size: isDesktop ? 26 : 22,
+                  color: AppTheme.onSecondaryColor,
+                ),
               ),
               const SizedBox(width: 12),
               Flexible(
@@ -633,10 +637,13 @@ class _HomeScreenState extends State<HomeScreen> {
               backgroundColor: AppTheme.secondaryColor,
               foregroundColor: AppTheme.onSecondaryColor,
               padding: EdgeInsets.symmetric(
-                  horizontal: isDesktop ? 28 : 22,
-                  vertical: isDesktop ? 16 : 12),
+                horizontal: isDesktop ? 28 : 22,
+                vertical: isDesktop ? 16 : 12,
+              ),
               textStyle: TextStyle(
-                  fontSize: isDesktop ? 16 : 14, fontWeight: FontWeight.bold),
+                fontSize: isDesktop ? 16 : 14,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
         ],
@@ -645,7 +652,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Padding(
       padding: EdgeInsets.fromLTRB(
-          isDesktop ? 32 : 20, 0, isDesktop ? 32 : 20, isDesktop ? 40 : 28),
+        isDesktop ? 32 : 20,
+        0,
+        isDesktop ? 32 : 20,
+        isDesktop ? 40 : 28,
+      ),
       child: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 960),
@@ -756,67 +767,89 @@ class _HomeScreenState extends State<HomeScreen> {
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.only(bottom: 12),
-      padding: EdgeInsets.all(isDesktop ? 20 : 16),
+      // ห้ามใส่ borderRadius คู่กับ Border ที่สีไม่เท่ากันทุกด้าน Flutter จะ assert
+      // ตอน paint แถบสีเหลืองด้านซ้ายจึงทำเป็นกล่องซ้อนข้างใน ไม่ใช่ขอบของกล่องนี้
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border(
-          left: BorderSide(color: AppTheme.secondaryColor, width: 4),
-          top: BorderSide(color: Colors.grey.shade200),
-          right: BorderSide(color: Colors.grey.shade200),
-          bottom: BorderSide(color: Colors.grey.shade200),
-        ),
+        border: Border.all(color: Colors.grey.shade200),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+      child: ClipRRect(
+        // ลบความหนาของขอบออก มุมข้างในจึงพอดีกับมุมข้างนอก
+        borderRadius: BorderRadius.circular(11),
+        // แถบสีต้องสูงเท่าเนื้อหา แต่การ์ดอยู่ในหน้าที่เลื่อนได้ซึ่งความสูงไม่จำกัด
+        // ใช้ stretch เฉย ๆ ไม่ได้ ต้องให้ Row รู้ความสูงก่อน
+        child: IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Icon(Icons.campaign,
-                  size: isDesktop ? 22 : 20, color: AppTheme.secondaryColor),
-              const SizedBox(width: 10),
+              Container(width: 4, color: AppTheme.secondaryColor),
               Expanded(
-                child: Text(
-                  n.title ?? '-',
-                  style: TextStyle(
-                    fontSize: isDesktop ? 17 : 15,
-                    fontWeight: FontWeight.bold,
-                  ),
+                child: Padding(
+                  padding: EdgeInsets.all(isDesktop ? 20 : 16),
+                  child: _buildNotificationBody(n, isDesktop),
                 ),
               ),
             ],
           ),
-          if ((n.message ?? '').isNotEmpty) ...[
-            const SizedBox(height: 8),
-            Text(
-              n.message!,
-              style: TextStyle(
-                fontSize: isDesktop ? 15 : 13,
-                height: 1.5,
-                color: AppTheme.textSecondary,
+        ),
+      ),
+    );
+  }
+
+  /// เนื้อในการ์ดประกาศ แยกออกมาเพื่อไม่ให้ย่อหน้าลึกจนอ่านยาก
+  Widget _buildNotificationBody(NotificationItem n, bool isDesktop) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(
+              Icons.campaign,
+              size: isDesktop ? 22 : 20,
+              color: AppTheme.secondaryColor,
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                n.title ?? '-',
+                style: TextStyle(
+                  fontSize: isDesktop ? 17 : 15,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
           ],
-          if ((n.periodLabel ?? '').isNotEmpty) ...[
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                const Icon(Icons.event,
-                    size: 14, color: AppTheme.textSecondary),
-                const SizedBox(width: 4),
-                Text(
-                  n.periodLabel!,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: AppTheme.textSecondary,
-                  ),
-                ),
-              ],
+        ),
+        if ((n.message ?? '').isNotEmpty) ...[
+          const SizedBox(height: 8),
+          Text(
+            n.message!,
+            style: TextStyle(
+              fontSize: isDesktop ? 15 : 13,
+              height: 1.5,
+              color: AppTheme.textSecondary,
             ),
-          ],
+          ),
         ],
-      ),
+        if ((n.periodLabel ?? '').isNotEmpty) ...[
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              const Icon(Icons.event, size: 14, color: AppTheme.textSecondary),
+              const SizedBox(width: 4),
+              Text(
+                n.periodLabel!,
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: AppTheme.textSecondary,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ],
     );
   }
 
