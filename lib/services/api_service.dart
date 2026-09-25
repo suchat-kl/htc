@@ -16,6 +16,7 @@ import 'package:highway_training/models/facility.dart';
 import 'package:highway_training/models/foodtype.dart';
 import 'package:highway_training/models/activity_fiscal_chart.dart';
 import 'package:highway_training/models/home_stats.dart';
+import 'package:highway_training/models/notification_item.dart';
 import 'package:highway_training/models/maintenance.dart';
 import 'package:highway_training/models/organization.dart';
 import 'package:highway_training/models/part.dart';
@@ -3177,6 +3178,84 @@ class ApiService {
       }
       throw Exception('เกิดข้อผิดพลาดในการเชื่อมต่อ');
     }
+  }
+
+  // ============ ประกาศประชาสัมพันธ์ ============
+
+  /// ประกาศที่ยังแสดงอยู่วันนี้ สำหรับหน้าแรก
+  ///
+  /// ใช้ publicDio เพราะหน้าแรกเปิดดูได้โดยไม่ต้องล็อกอิน
+  Future<List<NotificationItem>> getActiveNotifications() async {
+    final r = await publicDio.get('/api/auth/notifications/active');
+    if (r.statusCode == 200 && r.data is List) {
+      return (r.data as List)
+          .map((e) => NotificationItem.fromJson(Map<String, dynamic>.from(e as Map)))
+          .toList();
+    }
+    return const [];
+  }
+
+  /// รายการประกาศสำหรับหน้าจอจัดการ เห็นทุกสถานะ
+  Future<Map<String, dynamic>> getNotifications({
+    int page = 0,
+    int size = 10,
+    String? title,
+    String? status,
+  }) async {
+    await _ensureToken();
+    final p = <String, dynamic>{'page': page, 'size': size};
+    if (title != null && title.isNotEmpty) p['title'] = title;
+    if (status != null && status.isNotEmpty) p['status'] = status;
+    final r = await dio.get('/api/auth/notifications', queryParameters: p);
+    if (r.statusCode == 200) return Map<String, dynamic>.from(r.data as Map);
+    throw Exception('ไม่สามารถดึงข้อมูลได้');
+  }
+
+  Future<NotificationItem> createNotification(NotificationItem d) async {
+    await _ensureToken();
+    try {
+      final r = await dio.post('/api/auth/notifications', data: d.toJson());
+      if (r.statusCode == 200 && r.data['success'] == true) {
+        return NotificationItem.fromJson(
+            Map<String, dynamic>.from(r.data['notification'] as Map));
+      }
+      throw Exception(r.data['message'] ?? 'บันทึกไม่สำเร็จ');
+    } on DioException catch (e) {
+      throw Exception(_messageOf(e, 'บันทึกไม่สำเร็จ'));
+    }
+  }
+
+  Future<NotificationItem> updateNotification(int id, NotificationItem d) async {
+    await _ensureToken();
+    try {
+      final r = await dio.put('/api/auth/notifications/$id', data: d.toJson());
+      if (r.statusCode == 200 && r.data['success'] == true) {
+        return NotificationItem.fromJson(
+            Map<String, dynamic>.from(r.data['notification'] as Map));
+      }
+      throw Exception(r.data['message'] ?? 'อัปเดตไม่สำเร็จ');
+    } on DioException catch (e) {
+      throw Exception(_messageOf(e, 'อัปเดตไม่สำเร็จ'));
+    }
+  }
+
+  Future<void> deleteNotification(int id) async {
+    await _ensureToken();
+    try {
+      final r = await dio.delete('/api/auth/notifications/$id');
+      if (r.statusCode != 200 || r.data['success'] != true) {
+        throw Exception(r.data['message'] ?? 'ลบไม่สำเร็จ');
+      }
+    } on DioException catch (e) {
+      throw Exception(_messageOf(e, 'ลบไม่สำเร็จ'));
+    }
+  }
+
+  /// ข้อความผิดพลาดที่ backend ส่งมา ถ้าไม่มีก็ใช้ข้อความสำรอง
+  String _messageOf(DioException e, String fallback) {
+    final data = e.response?.data;
+    if (data is Map && data['message'] != null) return '${data['message']}';
+    return fallback;
   }
 
   /// ตัวเลขสรุปบนหน้าแรก

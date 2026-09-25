@@ -9,6 +9,7 @@ import 'booking_edit_screen.dart';
 import 'room_rates_screen.dart';
 import '../widgets/footer.dart';
 import 'package:highway_training/models/home_stats.dart';
+import 'package:highway_training/models/notification_item.dart';
 import 'package:highway_training/utils/logger.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -34,6 +35,9 @@ class _HomeScreenState extends State<HomeScreen> {
   /// ตัวเลขสรุปจากฐานข้อมูลจริง null = ยังโหลดไม่เสร็จหรือโหลดไม่ได้
   HomeStats? _stats;
 
+  /// ประกาศประชาสัมพันธ์ที่ยังอยู่ในช่วงวันที่ ว่างได้ถ้ายังไม่มีใครลง
+  List<NotificationItem> _notifications = [];
+
   final ApiService _apiService = ApiService();
 
   @override
@@ -41,6 +45,7 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     _loadTickerMessages();
     _loadStats();
+    _loadNotifications();
   }
 
   /// ตัวเลขสรุปบนหน้าแรก โหลดไม่ได้ก็ซ่อนแถบไปเลย ไม่ขึ้น error ให้ผู้ใช้ทั่วไปเห็น
@@ -50,6 +55,16 @@ class _HomeScreenState extends State<HomeScreen> {
       if (mounted) setState(() => _stats = stats);
     } catch (e) {
       if (AppLogger.on) AppLogger.d('โหลดสถิติหน้าแรกไม่สำเร็จ: $e');
+    }
+  }
+
+  /// ประกาศประชาสัมพันธ์ โหลดไม่ได้ก็ซ่อนส่วนนี้ไป ไม่ขึ้น error ให้คนนอกเห็น
+  Future<void> _loadNotifications() async {
+    try {
+      final list = await _apiService.getActiveNotifications();
+      if (mounted) setState(() => _notifications = list);
+    } catch (e) {
+      if (AppLogger.on) AppLogger.d('โหลดประกาศหน้าแรกไม่สำเร็จ: $e');
     }
   }
 
@@ -708,12 +723,98 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           SizedBox(height: isDesktop ? 24 : 18),
+          // ประกาศของศูนย์ฯ เองอยู่บนสุด ตามด้วยข่าวจากเพจ Facebook
+          // ประกาศเหมาะกับเรื่องที่เป็นทางการและมีวันหมดอายุ
+          // ส่วนเพจใช้ลงข่าวและภาพกิจกรรมซึ่งศูนย์ฯ โพสต์อยู่แล้ว
+          if (_notifications.isNotEmpty) ...[
+            Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 760),
+                child: Column(
+                  children: [
+                    for (final n in _notifications)
+                      _buildNotificationCard(n, isDesktop),
+                  ],
+                ),
+              ),
+            ),
+            SizedBox(height: isDesktop ? 28 : 20),
+          ],
           Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 520),
               child: FacebookPageEmbed(height: isDesktop ? 460 : 380),
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  /// การ์ดประกาศหนึ่งใบ
+  Widget _buildNotificationCard(NotificationItem n, bool isDesktop) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: EdgeInsets.all(isDesktop ? 20 : 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border(
+          left: BorderSide(color: AppTheme.secondaryColor, width: 4),
+          top: BorderSide(color: Colors.grey.shade200),
+          right: BorderSide(color: Colors.grey.shade200),
+          bottom: BorderSide(color: Colors.grey.shade200),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(Icons.campaign,
+                  size: isDesktop ? 22 : 20, color: AppTheme.secondaryColor),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  n.title ?? '-',
+                  style: TextStyle(
+                    fontSize: isDesktop ? 17 : 15,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          if ((n.message ?? '').isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text(
+              n.message!,
+              style: TextStyle(
+                fontSize: isDesktop ? 15 : 13,
+                height: 1.5,
+                color: AppTheme.textSecondary,
+              ),
+            ),
+          ],
+          if ((n.periodLabel ?? '').isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                const Icon(Icons.event,
+                    size: 14, color: AppTheme.textSecondary),
+                const SizedBox(width: 4),
+                Text(
+                  n.periodLabel!,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: AppTheme.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ],
         ],
       ),
     );

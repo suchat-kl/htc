@@ -28,4 +28,7 @@ class Perm {
   static const String payment = 'RM_PAYMENT';
   static const String foodInvoice = 'RM_FOOD_INVOICE';
   static const String folio = 'RM_FOLIO';
+
+  /// ประกาศประชาสัมพันธ์ (เมนูการดำเนินงาน)
+  static const String notification = 'OP_NOTIFY';
 }

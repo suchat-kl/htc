@@ -32,6 +32,7 @@ import 'package:highway_training/screens/organization_screen.dart';
 import 'package:highway_training/screens/part_screen.dart';
 import 'package:highway_training/screens/activity_fiscal_chart_screen.dart';
 import 'package:highway_training/screens/fiscal_year_report_screen.dart';
+import 'package:highway_training/screens/notification_screen.dart';
 import 'package:highway_training/screens/room_rates_screen.dart';
 import 'package:highway_training/screens/room_screen.dart';
 import 'package:highway_training/screens/roomtype_screen.dart';
@@ -391,6 +392,18 @@ class _SidebarMenuState extends State<SidebarMenu> {
                       Navigator.pop(context);
                       _showTickerMessageDialog(context);
                     }, screenCode: 'OP_TICKER'),
+                    // ยกกลับมาจากระบบเดิม ต่างจากข้อความวิ่งตรงที่มีหัวเรื่อง
+                    // เนื้อความยาว และช่วงวันที่ที่ให้แสดง
+                    _SubMenuItemData(Icons.article_outlined, 'ประกาศประชาสัมพันธ์', () {
+                      Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              NotificationScreen(apiService: ApiService()),
+                        ),
+                      );
+                    }, screenCode: 'OP_NOTIFY'),
                   ],
                 ),
                 _buildExpandableMenuItem(
