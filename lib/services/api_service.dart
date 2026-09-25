@@ -14,6 +14,7 @@ import 'package:highway_training/models/employee.dart';
 import 'package:highway_training/models/equipment.dart';
 import 'package:highway_training/models/facility.dart';
 import 'package:highway_training/models/foodtype.dart';
+import 'package:highway_training/models/activity_fiscal_chart.dart';
 import 'package:highway_training/models/home_stats.dart';
 import 'package:highway_training/models/maintenance.dart';
 import 'package:highway_training/models/organization.dart';
@@ -1750,6 +1751,68 @@ class ApiService {
     final r = await dio.get(
       '/api/auth/report/activity-monthly',
       queryParameters: {'year': year, 'month': month},
+      options: Options(
+        responseType: ResponseType.bytes,
+        receiveTimeout: const Duration(seconds: 60),
+        validateStatus: (status) => status! < 500,
+      ),
+    );
+    if (r.statusCode == 200 && r.data is List<int>) {
+      final bytes = r.data as List<int>;
+      if (bytes.isEmpty) throw Exception('ไฟล์รายงานว่างเปล่า');
+      return bytes;
+    }
+    throw Exception('ออกรายงานไม่สำเร็จ (${r.statusCode})');
+  }
+
+  /// ดาวน์โหลดรายงานการใช้ห้องกิจกรรม ประจำปีงบประมาณ (เมนูรายงาน 15)
+  Future<List<int>> downloadActivityFiscal({required int year}) async {
+    await _ensureToken();
+    final r = await dio.get(
+      '/api/auth/report/activity-fiscal',
+      queryParameters: {'year': year},
+      options: Options(
+        responseType: ResponseType.bytes,
+        receiveTimeout: const Duration(seconds: 60),
+        validateStatus: (status) => status! < 500,
+      ),
+    );
+    if (r.statusCode == 200 && r.data is List<int>) {
+      final bytes = r.data as List<int>;
+      if (bytes.isEmpty) throw Exception('ไฟล์รายงานว่างเปล่า');
+      return bytes;
+    }
+    throw Exception('ออกรายงานไม่สำเร็จ (${r.statusCode})');
+  }
+
+  /// ข้อมูลกราฟการใช้ห้องกิจกรรม ประจำปีงบประมาณ (เมนูรายงาน 16)
+  ///
+  /// ใช้วาดกราฟบนหน้าจอ ส่วนไฟล์ Excel ที่มีกราฟจริงอยู่ที่
+  /// downloadActivityFiscalChart
+  Future<ActivityFiscalChart> getActivityFiscalChart({required int year}) async {
+    await _ensureToken();
+    final r = await dio.get(
+      '/api/auth/report/activity-fiscal-chart/data',
+      queryParameters: {'year': year},
+      options: Options(validateStatus: (status) => status! < 500),
+    );
+    if (r.statusCode == 200 && r.data is Map) {
+      return ActivityFiscalChart.fromJson(Map<String, dynamic>.from(r.data as Map));
+    }
+    throw Exception('ดึงข้อมูลกราฟไม่สำเร็จ (${r.statusCode})');
+  }
+
+  /// ดาวน์โหลดกราฟการใช้ห้องกิจกรรม ประจำปีงบประมาณ (เมนูรายงาน 16)
+  ///
+  /// [chartType] คือ 'bar' หรือ 'line' ให้ตรงกับชนิดที่เลือกบนหน้าจอ
+  Future<List<int>> downloadActivityFiscalChart({
+    required int year,
+    required String chartType,
+  }) async {
+    await _ensureToken();
+    final r = await dio.get(
+      '/api/auth/report/activity-fiscal-chart',
+      queryParameters: {'year': year, 'chartType': chartType},
       options: Options(
         responseType: ResponseType.bytes,
         receiveTimeout: const Duration(seconds: 60),

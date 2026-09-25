@@ -30,6 +30,8 @@ import 'package:highway_training/screens/material_ledger_screen.dart';
 import 'package:highway_training/screens/monthly_report_screen.dart';
 import 'package:highway_training/screens/organization_screen.dart';
 import 'package:highway_training/screens/part_screen.dart';
+import 'package:highway_training/screens/activity_fiscal_chart_screen.dart';
+import 'package:highway_training/screens/fiscal_year_report_screen.dart';
 import 'package:highway_training/screens/room_rates_screen.dart';
 import 'package:highway_training/screens/room_screen.dart';
 import 'package:highway_training/screens/roomtype_screen.dart';
@@ -592,6 +594,43 @@ class _SidebarMenuState extends State<SidebarMenu> {
                           ),
                         );
                       }, screenCode: 'RPT_06',
+                    ),
+                    // 15 — ต่อยอดจากเมนู 6 เปลี่ยนช่วงเวลาเป็นปีงบประมาณ
+                    //      วางไว้ติดกันเพราะเป็นรายงานเรื่องเดียวกัน
+                    _SubMenuItemData(
+                      Icons.event_note,
+                      'รายงานการใช้ห้องกิจกรรม (ประจำปีงบประมาณ)',
+                      () {
+                        Navigator.pop(context);
+                        final api = ApiService();
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => FiscalYearReportScreen(
+                              title: 'รายงานการใช้ห้องกิจกรรม ประจำปีงบประมาณ',
+                              fileBaseName: 'รายงานการใช้ห้องกิจกรรม',
+                              download: (year) =>
+                                  api.downloadActivityFiscal(year: year),
+                            ),
+                          ),
+                        );
+                      }, screenCode: 'RPT_15',
+                    ),
+                    // 16 — กราฟของรายงานเดียวกัน เลือกชนิดกราฟได้
+                    _SubMenuItemData(
+                      Icons.bar_chart,
+                      'กราฟการใช้ห้องกิจกรรม (ประจำปีงบประมาณ)',
+                      () {
+                        Navigator.pop(context);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => ActivityFiscalChartScreen(
+                              apiService: ApiService(),
+                            ),
+                          ),
+                        );
+                      }, screenCode: 'RPT_16',
                     ),
                     // 7
                     _SubMenuItemData(
