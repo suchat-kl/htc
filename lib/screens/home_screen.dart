@@ -5,6 +5,7 @@ import 'package:highway_training/providers/auth_provider.dart';
 import 'package:highway_training/services/api_service.dart';
 import '../config/theme.dart';
 import '../widgets/facebook_page_embed.dart';
+import 'room_rates_screen.dart';
 import '../widgets/footer.dart';
 import 'package:highway_training/models/home_stats.dart';
 import 'package:highway_training/utils/logger.dart';
@@ -12,7 +13,7 @@ import 'package:highway_training/utils/logger.dart';
 class HomeScreen extends StatefulWidget {
   final AuthProvider authProvider;
   // ✅ ADD THIS STATIC KEY
-  
+
   const HomeScreen({super.key, required this.authProvider});
 
   @override
@@ -20,8 +21,8 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-// Store full TickerMessage objects with fontSize
-List<TickerMessage> _tickerMessagesData = [];
+  // Store full TickerMessage objects with fontSize
+  List<TickerMessage> _tickerMessagesData = [];
   final ScrollController _tickerScrollController = ScrollController();
   bool _isTickerPaused = false;
 
@@ -56,7 +57,9 @@ List<TickerMessage> _tickerMessagesData = [];
     try {
       if (AppLogger.on) AppLogger.d('🔄 Loading ticker messages...');
       final messages = await _apiService.getActiveTickerMessages();
-      if (AppLogger.on) AppLogger.d('📥 Ticker messages loaded: ${messages.length}');
+      if (AppLogger.on) {
+        AppLogger.d('📥 Ticker messages loaded: ${messages.length}');
+      }
 
       if (mounted) {
         setState(() {
@@ -194,40 +197,48 @@ List<TickerMessage> _tickerMessagesData = [];
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.apartment,
-                    size: isDesktop ? 52 : 38,
-                    color: Colors.white.withValues(alpha: 0.9)),
+                Icon(
+                  Icons.apartment,
+                  size: isDesktop ? 52 : 38,
+                  color: Colors.white.withValues(alpha: 0.9),
+                ),
                 SizedBox(height: isDesktop ? 14 : 10),
-                Text('ศูนย์พัฒนาทรัพยากรบุคคลงานทาง',
-                    style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: isDesktop ? 34 : 24,
-                          shadows: const [
-                            Shadow(blurRadius: 8, color: Colors.black54),
-                          ],
-                        ),
-                    textAlign: TextAlign.center),
+                Text(
+                  'ศูนย์พัฒนาทรัพยากรบุคคลงานทาง',
+                  style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: isDesktop ? 34 : 24,
+                    shadows: const [
+                      Shadow(blurRadius: 8, color: Colors.black54),
+                    ],
+                  ),
+                  textAlign: TextAlign.center,
+                ),
                 SizedBox(height: isDesktop ? 10 : 8),
-                Text('กรมทางหลวง  อำเภอศรีราชา จังหวัดชลบุรี',
-                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: Colors.white,
-                          fontSize: isDesktop ? 17 : 14,
-                          shadows: const [
-                            Shadow(blurRadius: 6, color: Colors.black54),
-                          ],
-                        ),
-                    textAlign: TextAlign.center),
+                Text(
+                  'กรมทางหลวง  อำเภอศรีราชา จังหวัดชลบุรี',
+                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    color: Colors.white,
+                    fontSize: isDesktop ? 17 : 14,
+                    shadows: const [
+                      Shadow(blurRadius: 6, color: Colors.black54),
+                    ],
+                  ),
+                  textAlign: TextAlign.center,
+                ),
                 SizedBox(height: isDesktop ? 12 : 10),
-                Text('ห้องพัก ห้องประชุม และห้องกิจกรรม สำหรับการฝึกอบรมและสัมมนา',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Colors.white70,
-                          fontSize: isDesktop ? 15 : 13,
-                          shadows: const [
-                            Shadow(blurRadius: 6, color: Colors.black54),
-                          ],
-                        ),
-                    textAlign: TextAlign.center),
+                Text(
+                  'ห้องพัก ห้องประชุม และห้องกิจกรรม สำหรับการฝึกอบรมและสัมมนา',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Colors.white70,
+                    fontSize: isDesktop ? 15 : 13,
+                    shadows: const [
+                      Shadow(blurRadius: 6, color: Colors.black54),
+                    ],
+                  ),
+                  textAlign: TextAlign.center,
+                ),
               ],
             ),
           ),
@@ -241,24 +252,61 @@ List<TickerMessage> _tickerMessagesData = [];
     if (_tickerMessages.isEmpty) return const SizedBox.shrink();
 
     return GestureDetector(
-      onTap: () => setState(() { _isTickerPaused = !_isTickerPaused; if (!_isTickerPaused) _startTickerAutoScroll(); }),
+      onTap: () => setState(() {
+        _isTickerPaused = !_isTickerPaused;
+        if (!_isTickerPaused) _startTickerAutoScroll();
+      }),
       child: Container(
         width: double.infinity,
         decoration: BoxDecoration(
-          gradient: LinearGradient(colors: [AppTheme.secondaryColor.withValues(alpha: 0.1), AppTheme.secondaryColor.withValues(alpha: 0.2), AppTheme.secondaryColor.withValues(alpha: 0.1)]),
-          border: Border(bottom: BorderSide(color: AppTheme.secondaryColor.withValues(alpha: 0.3), width: 1)),
+          gradient: LinearGradient(
+            colors: [
+              AppTheme.secondaryColor.withValues(alpha: 0.1),
+              AppTheme.secondaryColor.withValues(alpha: 0.2),
+              AppTheme.secondaryColor.withValues(alpha: 0.1),
+            ],
+          ),
+          border: Border(
+            bottom: BorderSide(
+              color: AppTheme.secondaryColor.withValues(alpha: 0.3),
+              width: 1,
+            ),
+          ),
         ),
-        padding: EdgeInsets.symmetric(vertical: isDesktop ? 12 : 10, horizontal: isDesktop ? 32 : 16),
+        padding: EdgeInsets.symmetric(
+          vertical: isDesktop ? 12 : 10,
+          horizontal: isDesktop ? 32 : 16,
+        ),
         child: Row(
           children: [
             Container(
-              padding: EdgeInsets.symmetric(horizontal: isDesktop ? 12 : 8, vertical: 4),
-              decoration: BoxDecoration(color: AppTheme.secondaryColor, borderRadius: BorderRadius.circular(4)),
-              child: Row(mainAxisSize: MainAxisSize.min, children: [
-                Icon(Icons.campaign, color: Colors.white, size: isDesktop ? 18 : 14),
-                SizedBox(width: isDesktop ? 6 : 4),
-                Text('ประกาศ', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: isDesktop ? 14 : 12)),
-              ]),
+              padding: EdgeInsets.symmetric(
+                horizontal: isDesktop ? 12 : 8,
+                vertical: 4,
+              ),
+              decoration: BoxDecoration(
+                color: AppTheme.secondaryColor,
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.campaign,
+                    color: Colors.white,
+                    size: isDesktop ? 18 : 14,
+                  ),
+                  SizedBox(width: isDesktop ? 6 : 4),
+                  Text(
+                    'ประกาศ',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: isDesktop ? 14 : 12,
+                    ),
+                  ),
+                ],
+              ),
             ),
             SizedBox(width: isDesktop ? 16 : 12),
             Expanded(
@@ -267,7 +315,11 @@ List<TickerMessage> _tickerMessagesData = [];
                 child: LayoutBuilder(
                   builder: (context, constraints) {
                     WidgetsBinding.instance.addPostFrameCallback((_) {
-                      if (_tickerMessages.isNotEmpty && !_isTickerPaused && mounted) _startTickerAutoScroll();
+                      if (_tickerMessages.isNotEmpty &&
+                          !_isTickerPaused &&
+                          mounted) {
+                        _startTickerAutoScroll();
+                      }
                     });
                     return SingleChildScrollView(
                       controller: _tickerScrollController,
@@ -276,12 +328,33 @@ List<TickerMessage> _tickerMessagesData = [];
                       child: Row(
                         children: [
                           for (int repeat = 0; repeat < 5; repeat++) ...[
-                            for (int i = 0; i < _tickerMessages.length; i++) ...[
-                              Text(_tickerMessages[i], style: TextStyle(color: AppTheme.textPrimary, 
-                              // fontSize: isDesktop ? 20 : 12  //use default
-                              fontSize: _tickerMessagesData[i].fontSize ?? (isDesktop ? 20 : 12),  // ✅ Use fontSize
-                              )),
-                              Padding(padding: const EdgeInsets.symmetric(horizontal: 40), child: Icon(Icons.fiber_manual_record, size: 6, color: AppTheme.secondaryColor.withValues(alpha: 0.5))),
+                            for (
+                              int i = 0;
+                              i < _tickerMessages.length;
+                              i++
+                            ) ...[
+                              Text(
+                                _tickerMessages[i],
+                                style: TextStyle(
+                                  color: AppTheme.textPrimary,
+                                  // fontSize: isDesktop ? 20 : 12  //use default
+                                  fontSize:
+                                      _tickerMessagesData[i].fontSize ??
+                                      (isDesktop ? 20 : 12), // ✅ Use fontSize
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 40,
+                                ),
+                                child: Icon(
+                                  Icons.fiber_manual_record,
+                                  size: 6,
+                                  color: AppTheme.secondaryColor.withValues(
+                                    alpha: 0.5,
+                                  ),
+                                ),
+                              ),
                             ],
                           ],
                           SizedBox(width: constraints.maxWidth * 2),
@@ -295,9 +368,23 @@ List<TickerMessage> _tickerMessagesData = [];
             if (isDesktop) ...[
               const SizedBox(width: 12),
               InkWell(
-                onTap: () => setState(() { _isTickerPaused = !_isTickerPaused; if (!_isTickerPaused) _startTickerAutoScroll(); }),
+                onTap: () => setState(() {
+                  _isTickerPaused = !_isTickerPaused;
+                  if (!_isTickerPaused) _startTickerAutoScroll();
+                }),
                 borderRadius: BorderRadius.circular(20),
-                child: Container(padding: const EdgeInsets.all(8), decoration: BoxDecoration(color: AppTheme.primaryColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(20)), child: Icon(_isTickerPaused ? Icons.play_arrow : Icons.pause, size: 20, color: AppTheme.primaryColor)),
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppTheme.primaryColor.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Icon(
+                    _isTickerPaused ? Icons.play_arrow : Icons.pause,
+                    size: 20,
+                    color: AppTheme.primaryColor,
+                  ),
+                ),
               ),
             ],
           ],
@@ -315,8 +402,12 @@ List<TickerMessage> _tickerMessagesData = [];
 
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.fromLTRB(isDesktop ? 32 : 20, isDesktop ? 32 : 24,
-          isDesktop ? 32 : 20, isDesktop ? 24 : 20),
+      padding: EdgeInsets.fromLTRB(
+        isDesktop ? 32 : 20,
+        isDesktop ? 32 : 24,
+        isDesktop ? 32 : 20,
+        isDesktop ? 24 : 20,
+      ),
       child: Column(
         children: [
           Wrap(
@@ -357,7 +448,9 @@ List<TickerMessage> _tickerMessagesData = [];
             Text(
               'ข้อมูล ณ วันที่ ${st.asOfDate}',
               style: TextStyle(
-                  fontSize: isDesktop ? 13 : 12, color: AppTheme.textSecondary),
+                fontSize: isDesktop ? 13 : 12,
+                color: AppTheme.textSecondary,
+              ),
             ),
           ],
         ],
@@ -382,9 +475,10 @@ List<TickerMessage> _tickerMessagesData = [];
         border: Border.all(color: Colors.grey.shade200),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 10,
-              offset: const Offset(0, 3)),
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
         ],
       ),
       child: Column(
@@ -396,25 +490,33 @@ List<TickerMessage> _tickerMessagesData = [];
             crossAxisAlignment: CrossAxisAlignment.baseline,
             textBaseline: TextBaseline.alphabetic,
             children: [
-              Text(value,
-                  style: TextStyle(
-                      color: color,
-                      fontWeight: FontWeight.bold,
-                      fontSize: isDesktop ? 32 : 24)),
+              Text(
+                value,
+                style: TextStyle(
+                  color: color,
+                  fontWeight: FontWeight.bold,
+                  fontSize: isDesktop ? 32 : 24,
+                ),
+              ),
               const SizedBox(width: 6),
               Flexible(
-                child: Text(unit,
-                    style: TextStyle(
-                        color: AppTheme.textSecondary,
-                        fontSize: isDesktop ? 13 : 11),
-                    overflow: TextOverflow.ellipsis),
+                child: Text(
+                  unit,
+                  style: TextStyle(
+                    color: AppTheme.textSecondary,
+                    fontSize: isDesktop ? 13 : 11,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
             ],
           ),
           SizedBox(height: isDesktop ? 6 : 4),
-          Text(label,
-              style: TextStyle(fontSize: isDesktop ? 14 : 12),
-              textAlign: TextAlign.center),
+          Text(
+            label,
+            style: TextStyle(fontSize: isDesktop ? 14 : 12),
+            textAlign: TextAlign.center,
+          ),
         ],
       ),
     );
@@ -429,18 +531,25 @@ List<TickerMessage> _tickerMessagesData = [];
       width: double.infinity,
       color: AppTheme.backgroundColor,
       padding: EdgeInsets.symmetric(
-          horizontal: isDesktop ? 32 : 20, vertical: isDesktop ? 40 : 28),
+        horizontal: isDesktop ? 32 : 20,
+        vertical: isDesktop ? 40 : 28,
+      ),
       child: Column(
         children: [
-          Text('ข่าวประชาสัมพันธ์',
-              style: Theme.of(context)
-                  .textTheme
-                  .headlineMedium
-                  ?.copyWith(fontSize: isDesktop ? 24 : 20)),
+          Text(
+            'ข่าวประชาสัมพันธ์',
+            style: Theme.of(
+              context,
+            ).textTheme.headlineMedium?.copyWith(fontSize: isDesktop ? 24 : 20),
+          ),
           SizedBox(height: isDesktop ? 8 : 6),
-          Text('ข่าวสารและภาพกิจกรรมจากเพจของศูนย์ฯ',
-              style: TextStyle(
-                  fontSize: isDesktop ? 14 : 12, color: AppTheme.textSecondary)),
+          Text(
+            'ข่าวสารและภาพกิจกรรมจากเพจของศูนย์ฯ',
+            style: TextStyle(
+              fontSize: isDesktop ? 14 : 12,
+              color: AppTheme.textSecondary,
+            ),
+          ),
           SizedBox(height: isDesktop ? 24 : 18),
           Center(
             child: ConstrainedBox(
@@ -459,33 +568,49 @@ List<TickerMessage> _tickerMessagesData = [];
     return Container(
       width: double.infinity,
       padding: EdgeInsets.symmetric(
-          horizontal: isDesktop ? 32 : 20, vertical: isDesktop ? 40 : 28),
+        horizontal: isDesktop ? 32 : 20,
+        vertical: isDesktop ? 40 : 28,
+      ),
       child: Column(
         children: [
-          Text('ห้องพักและห้องกิจกรรม',
-              style: Theme.of(context)
-                  .textTheme
-                  .headlineMedium
-                  ?.copyWith(fontSize: isDesktop ? 24 : 20)),
+          Text(
+            'ห้องพักและห้องกิจกรรม',
+            style: Theme.of(
+              context,
+            ).textTheme.headlineMedium?.copyWith(fontSize: isDesktop ? 24 : 20),
+          ),
           SizedBox(height: isDesktop ? 8 : 6),
-          Text('ดูรายละเอียดและราคาได้ที่เมนู เกี่ยวกับเรา',
-              style: TextStyle(
-                  fontSize: isDesktop ? 14 : 12, color: AppTheme.textSecondary)),
+          Text(
+            'กดที่การ์ดเพื่อดูราคาห้องทั้งหมด',
+            style: TextStyle(
+              fontSize: isDesktop ? 14 : 12,
+              color: AppTheme.textSecondary,
+            ),
+          ),
           SizedBox(height: isDesktop ? 28 : 20),
           Wrap(
             spacing: 24,
             runSpacing: 24,
             alignment: WrapAlignment.center,
             children: [
-              _buildRoomCard('assets/images/vip.png', 'ห้องพักวีไอพี',
-                  'ห้องพักสำหรับผู้บริหารและวิทยากร', isDesktop),
-              _buildRoomCard('assets/images/normal.png', 'ห้องพักมาตรฐาน',
-                  'ห้องพักสำหรับผู้เข้ารับการอบรม', isDesktop),
               _buildRoomCard(
-                  'assets/images/meeting.png',
-                  'ห้องประชุมและห้องกิจกรรม',
-                  'รองรับการอบรม สัมมนา และกิจกรรมกลุ่ม',
-                  isDesktop),
+                'assets/images/vip.png',
+                'ห้องพักวีไอพี',
+                'ห้องพักสำหรับผู้บริหารและวิทยากร',
+                isDesktop,
+              ),
+              _buildRoomCard(
+                'assets/images/normal.png',
+                'ห้องพักมาตรฐาน',
+                'ห้องพักสำหรับผู้เข้ารับการอบรม',
+                isDesktop,
+              ),
+              _buildRoomCard(
+                'assets/images/meeting.png',
+                'ห้องประชุมและห้องกิจกรรม',
+                'รองรับการอบรม สัมมนา และกิจกรรมกลุ่ม',
+                isDesktop,
+              ),
             ],
           ),
         ],
@@ -494,62 +619,106 @@ List<TickerMessage> _tickerMessagesData = [];
   }
 
   Widget _buildRoomCard(
-      String asset, String title, String description, bool isDesktop) {
+    String asset,
+    String title,
+    String description,
+    bool isDesktop,
+  ) {
     final width = isDesktop ? 300.0 : 260.0;
     final imageHeight = isDesktop ? 180.0 : 150.0;
 
-    return Container(
-      width: width,
-      decoration: BoxDecoration(
-        color: Colors.white,
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.grey.shade200),
-        boxShadow: [
-          BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 10,
-              offset: const Offset(0, 3)),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          ClipRRect(
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
-            child: Image.asset(
-              asset,
-              width: width,
-              height: imageHeight,
-              fit: BoxFit.cover,
-              // ภาพหายก็ยังแสดงการ์ดได้ ไม่ให้ทั้งหน้าพัง
-              errorBuilder: (_, _, _) => Container(
-                width: width,
-                height: imageHeight,
-                color: AppTheme.primaryPale,
-                child: Icon(Icons.image_outlined,
-                    size: 40,
-                    color: AppTheme.primaryColor.withValues(alpha: 0.4)),
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const RoomRatesScreen()),
+        ),
+        child: Ink(
+          width: width,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: Colors.grey.shade200),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.04),
+                blurRadius: 10,
+                offset: const Offset(0, 3),
               ),
-            ),
+            ],
           ),
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title,
-                    style: TextStyle(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ClipRRect(
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(14),
+                ),
+                child: Image.asset(
+                  asset,
+                  width: width,
+                  height: imageHeight,
+                  fit: BoxFit.cover,
+                  // ภาพหายก็ยังแสดงการ์ดได้ ไม่ให้ทั้งหน้าพัง
+                  errorBuilder: (_, _, _) => Container(
+                    width: width,
+                    height: imageHeight,
+                    color: AppTheme.primaryPale,
+                    child: Icon(
+                      Icons.image_outlined,
+                      size: 40,
+                      color: AppTheme.primaryColor.withValues(alpha: 0.4),
+                    ),
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
                         fontWeight: FontWeight.bold,
-                        fontSize: isDesktop ? 16 : 14)),
-                const SizedBox(height: 6),
-                Text(description,
-                    style: TextStyle(
+                        fontSize: isDesktop ? 16 : 14,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      description,
+                      style: TextStyle(
                         fontSize: isDesktop ? 14 : 12,
-                        color: AppTheme.textSecondary)),
-              ],
-            ),
+                        color: AppTheme.textSecondary,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        Text(
+                          'ดูราคาห้อง',
+                          style: TextStyle(
+                            fontSize: isDesktop ? 14 : 12,
+                            fontWeight: FontWeight.w600,
+                            color: AppTheme.primaryColor,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Icon(
+                          Icons.arrow_forward,
+                          size: isDesktop ? 16 : 14,
+                          color: AppTheme.primaryColor,
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
