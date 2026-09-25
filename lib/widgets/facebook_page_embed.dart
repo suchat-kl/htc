@@ -32,19 +32,22 @@ class _FacebookPageEmbedState extends State<FacebookPageEmbed> {
   /// ถ้าลงซ้ำจะ assert ตอน hot reload หรือตอนกลับเข้าหน้าเดิม
   static final Set<String> _registered = {};
 
-  late final String _viewType;
+  /// สร้าง iframe ของเพจตามความกว้างที่มีจริง
+  ///
+  /// ปลั๊กอินของ Facebook จัดหน้าตามค่า width ที่ส่งไปใน URL ถ้าส่งค่าตายตัว
+  /// แล้วเปิดด้วยจอแคบกว่านั้น เนื้อหาจะถูกตัดหายไปทางขวา
+  /// จึงต้องส่งความกว้างจริงไปด้วย และปัดเป็นช่วงละ 20 พิกเซล
+  /// เพื่อไม่ให้สร้าง view ใหม่ทุกพิกเซลตอนผู้ใช้ลากขยายหน้าต่าง
+  String _viewTypeFor(double width) {
+    final w = (width / 20).round() * 20;
+    final viewType = 'facebook-page-${widget.pageUrl.hashCode}-$w';
 
-  @override
-  void initState() {
-    super.initState();
-    _viewType = 'facebook-page-${widget.pageUrl.hashCode}';
-
-    if (_registered.add(_viewType)) {
-      ui_web.platformViewRegistry.registerViewFactory(_viewType, (int _) {
+    if (_registered.add(viewType)) {
+      ui_web.platformViewRegistry.registerViewFactory(viewType, (int _) {
         final src = Uri.https('www.facebook.com', '/plugins/page.php', {
           'href': widget.pageUrl,
           'tabs': 'timeline',
-          'width': '500',
+          'width': '$w',
           'height': '${widget.height.round()}',
           'small_header': 'false',
           'adapt_container_width': 'true',
@@ -66,48 +69,56 @@ class _FacebookPageEmbedState extends State<FacebookPageEmbed> {
         return frame;
       });
     }
+    return viewType;
   }
 
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        height: widget.height,
-        decoration: BoxDecoration(
-          color: Colors.white,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // ปลั๊กอินรองรับความกว้าง 180-500 นอกช่วงนี้จะจัดหน้าเพี้ยน
+        final width = constraints.maxWidth.clamp(180.0, 500.0);
+
+        return ClipRRect(
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey.shade200),
-        ),
-        child: Stack(
-          children: [
-            // ข้อความรองรับกรณีโหลดเพจไม่ขึ้น เช่น เครือข่ายปิดกั้น facebook.com
-            Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.campaign_outlined,
-                        size: 36, color: Colors.grey.shade400),
-                    const SizedBox(height: 8),
-                    Text(
-                      'กำลังโหลดข่าวจากเพจของศูนย์ฯ',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Colors.grey.shade600,
-                        fontFamily: 'NotoSansThai',
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ),
-              ),
+          child: Container(
+            height: widget.height,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.grey.shade200),
             ),
-            HtmlElementView(viewType: _viewType),
-          ],
-        ),
-      ),
+            child: Stack(
+              children: [
+                // ข้อความรองรับกรณีโหลดเพจไม่ขึ้น เช่น เครือข่ายปิดกั้น facebook.com
+                Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.campaign_outlined,
+                            size: 36, color: Colors.grey.shade400),
+                        const SizedBox(height: 8),
+                        Text(
+                          'กำลังโหลดข่าวจากเพจของศูนย์ฯ',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.grey.shade600,
+                            fontFamily: 'NotoSansThai',
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                HtmlElementView(viewType: _viewTypeFor(width)),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }

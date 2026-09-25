@@ -15,6 +15,8 @@ class CustomHeader extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isNarrow = MediaQuery.of(context).size.width < 600;
+
     return AppBar(
       backgroundColor: AppTheme.primaryColor,
       elevation: 4,
@@ -34,23 +36,32 @@ class CustomHeader extends StatelessWidget implements PreferredSizeWidget {
             ),
           ),
           const SizedBox(width: 12),
-          const Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'ระบบศูนย์พัฒนาทรัพยากรบุคคลงานทาง กรมทางหลวง',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
+          // ต้องเป็น Expanded และตัดท้ายด้วยจุดไข่ปลา
+          // ไม่งั้นชื่อระบบยาวกว่าแถบบนตอนเปิดด้วยจอแคบ แล้ว Row จะ overflow
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'ระบบศูนย์พัฒนาทรัพยากรบุคคลงานทาง กรมทางหลวง',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: isNarrow ? 14 : 16,
+                  ),
                 ),
-              ),
-              Text(
-                'Highway Training System',
-                style: TextStyle(color: Colors.white70, fontSize: 12),
-              ),
-            ],
+                Text(
+                  'Highway Training System',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                      color: Colors.white70, fontSize: isNarrow ? 11 : 12),
+                ),
+              ],
+            ),
           ),
         ],
       ),
