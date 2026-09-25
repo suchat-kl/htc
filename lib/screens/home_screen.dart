@@ -4,8 +4,9 @@ import 'package:highway_training/models/ticker_message.dart';
 import 'package:highway_training/providers/auth_provider.dart';
 import 'package:highway_training/services/api_service.dart';
 import '../config/theme.dart';
-import '../widgets/news_card.dart';
+import '../widgets/facebook_page_embed.dart';
 import '../widgets/footer.dart';
+import 'package:highway_training/models/home_stats.dart';
 import 'package:highway_training/utils/logger.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -19,8 +20,6 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final PageController _pageController = PageController();
-  int _currentPage = 0;
 // Store full TickerMessage objects with fontSize
 List<TickerMessage> _tickerMessagesData = [];
   final ScrollController _tickerScrollController = ScrollController();
@@ -30,49 +29,26 @@ List<TickerMessage> _tickerMessagesData = [];
   // ignore: unused_field
   bool _isLoadingTicker = true;
 
-  final List<Map<String, dynamic>> _bannerData = [
-    {
-      'title': 'ยินดีต้อนรับสู่ระบบศูนย์พัฒนาทรัพยากรบุคคลงานทาง',
-      'subtitle': 'พัฒนาบุคลากรด้วยหลักสูตรมาตรฐาน เพื่อการพัฒนาโครงสร้างพื้นฐานของประเทศ',
-      'color': AppTheme.primaryColor,
-    },
-    {
-      'title': 'หลักสูตรฝึกอบรมออนไลน์',
-      'subtitle': 'เรียนรู้ได้ทุกที่ทุกเวลา ด้วยระบบ E-Learning ที่ทันสมัย',
-      'color': AppTheme.accentColor,
-    },
-    {
-      'title': 'ลงทะเบียนอบรมวันนี้',
-      'subtitle': 'รับสิทธิพิเศษสำหรับผู้ลงทะเบียนล่วงหน้า',
-      'color': AppTheme.secondaryColor,
-    },
-  ];
+  /// ตัวเลขสรุปจากฐานข้อมูลจริง null = ยังโหลดไม่เสร็จหรือโหลดไม่ได้
+  HomeStats? _stats;
 
   final ApiService _apiService = ApiService();
 
   @override
   void initState() {
     super.initState();
-    _startAutoPlay();
     _loadTickerMessages();
+    _loadStats();
   }
 
-  void _startAutoPlay() {
-    Future.delayed(const Duration(seconds: 100), () {
-      if (mounted) {
-        if (_currentPage < _bannerData.length - 1) {
-          _currentPage++;
-        } else {
-          _currentPage = 0;
-        }
-        _pageController.animateToPage(
-          _currentPage,
-          duration: const Duration(milliseconds: 500),
-          curve: Curves.easeInOut,
-        );
-        _startAutoPlay();
-      }
-    });
+  /// ตัวเลขสรุปบนหน้าแรก โหลดไม่ได้ก็ซ่อนแถบไปเลย ไม่ขึ้น error ให้ผู้ใช้ทั่วไปเห็น
+  Future<void> _loadStats() async {
+    try {
+      final stats = await _apiService.getHomeStats();
+      if (mounted) setState(() => _stats = stats);
+    } catch (e) {
+      if (AppLogger.on) AppLogger.d('โหลดสถิติหน้าแรกไม่สำเร็จ: $e');
+    }
   }
 
   // Load ticker messages from API
@@ -150,7 +126,6 @@ List<TickerMessage> _tickerMessagesData = [];
 
   @override
   void dispose() {
-    _pageController.dispose();
     _tickerScrollController.dispose();
     super.dispose();
   }
@@ -169,63 +144,9 @@ List<TickerMessage> _tickerMessagesData = [];
         children: [
           _buildTickerBar(context, isDesktop),
           _buildBannerSection(context, isDesktop),
-          Padding(
-            padding: EdgeInsets.all(isDesktop ? 32 : 20),
-            child: Wrap(
-              spacing: isDesktop ? 24 : 16,
-              runSpacing: isDesktop ? 24 : 16,
-              alignment: WrapAlignment.center,
-              children: [
-                _buildStatCard(icon: Icons.people, value: '15,000+', label: 'ผู้เข้ารับการอบรม', color: AppTheme.primaryColor, isDesktop: isDesktop),
-                _buildStatCard(icon: Icons.menu_book, value: '50+', label: 'หลักสูตรฝึกอบรม', color: AppTheme.accentColor, isDesktop: isDesktop),
-                _buildStatCard(icon: Icons.calendar_today, value: '200+', label: 'รอบการอบรมต่อปี', color: AppTheme.secondaryColor, isDesktop: isDesktop),
-                _buildStatCard(icon: Icons.star, value: '98%', label: 'ความพึงพอใจ', color: Colors.orange, isDesktop: isDesktop),
-              ],
-            ),
-          ),
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: isDesktop ? 32 : 20),
-            child: Row(
-              children: [
-                Text('ข่าวสารล่าสุด', style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontSize: isDesktop ? 24 : 20)),
-                const Spacer(),
-                TextButton(onPressed: () {}, child: Text('ดูทั้งหมด', style: TextStyle(fontSize: isDesktop ? 16 : 14))),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          SizedBox(
-            height: isDesktop ? 320 : 280,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              padding: EdgeInsets.symmetric(horizontal: isDesktop ? 32 : 20),
-              children: [
-                NewsCard(title: 'เปิดรับสมัครฝึกอบรมหลักสูตรใหม่', date: '15 มิ.ย. 2567', description: 'หลักสูตรการบริหารจัดการโครงการทางหลวง...', imageUrl: 'assets/images/news1.jpg', onTap: () {}, isDesktop: isDesktop),
-                NewsCard(title: 'สรุปผลการอบรมประจำปี 2567', date: '10 มิ.ย. 2567', description: 'ภาพรวมความสำเร็จในการพัฒนาบุคลากร...', imageUrl: 'assets/images/news2.jpg', onTap: () {}, isDesktop: isDesktop),
-                NewsCard(title: 'การพัฒนาหลักสูตรออนไลน์', date: '5 มิ.ย. 2567', description: 'ระบบ E-Learning สำหรับบุคลากรทางหลวง...', imageUrl: 'assets/images/news3.jpg', onTap: () {}, isDesktop: isDesktop),
-                NewsCard(title: 'สัมมนาวิชาการด้านความปลอดภัย', date: '1 มิ.ย. 2567', description: 'งานสัมมนาประจำปีด้านความปลอดภัยบนทางหลวง...', imageUrl: 'assets/images/news1.jpg', onTap: () {}, isDesktop: isDesktop),
-              ],
-            ),
-          ),
-          const SizedBox(height: 48),
-          Container(
-            padding: EdgeInsets.all(isDesktop ? 32 : 20),
-            color: AppTheme.backgroundColor,
-            child: Column(
-              children: [
-                Text('หลักสูตรฝึกอบรมยอดนิยม', style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontSize: isDesktop ? 24 : 20)),
-                const SizedBox(height: 32),
-                Wrap(
-                  spacing: 24, runSpacing: 24, alignment: WrapAlignment.center,
-                  children: [
-                    _buildTrainingCard('ความปลอดภัยในการทำงานบนทางหลวง', 'เรียนรู้มาตรฐานความปลอดภัยและการจัดการความเสี่ยง', Icons.security, isDesktop: isDesktop),
-                    _buildTrainingCard('เทคโนโลยีก่อสร้างทางหลวงสมัยใหม่', 'นวัตกรรมและเทคโนโลยีในการก่อสร้างทางหลวง', Icons.engineering, isDesktop: isDesktop),
-                    _buildTrainingCard('การบริหารจัดการงบประมาณโครงการ', 'การวางแผนและควบคุมงบประมาณอย่างมีประสิทธิภาพ', Icons.account_balance_wallet, isDesktop: isDesktop),
-                  ],
-                ),
-              ],
-            ),
-          ),
+          _buildStatsSection(context, isDesktop),
+          _buildNewsSection(context, isDesktop),
+          _buildRoomSection(context, isDesktop),
           const CustomFooter(),
         ],
       ),
@@ -233,74 +154,85 @@ List<TickerMessage> _tickerMessagesData = [];
   }
 
   // Banner Section
+  /// แถบภาพหัวหน้าแรก ใช้ภาพวิวหน้าศูนย์ฯ ภาพเดียวกับระบบเดิม
+  ///
+  /// ภาพคัดลอกมาเก็บใน assets ไม่ได้ลิงก์ไปที่เซิร์ฟเวอร์ระบบเดิม
+  /// ถ้าลิงก์ไว้ วันที่ระบบเดิมถูกปิด หน้าแรกจะกลายเป็นช่องว่างทันที
+  ///
+  /// มีชั้นไล่สีทับภาพเพื่อให้ตัวหนังสือสีขาวอ่านออกทุกส่วนของภาพ
   Widget _buildBannerSection(BuildContext context, bool isDesktop) {
-    return Stack(
-      children: [
-        SizedBox(
-          height: isDesktop ? 500 : 350,
-          child: PageView.builder(
-            controller: _pageController,
-            onPageChanged: (index) => setState(() => _currentPage = index),
-            itemCount: _bannerData.length,
-            itemBuilder: (context, index) => Container(
-              width: double.infinity,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topRight, end: Alignment.bottomLeft,
-                  colors: [
-                    _bannerData[index]['color'] as Color,
-                    (_bannerData[index]['color'] as Color).withValues(alpha: 0.7),
-                    AppTheme.accentColor.withValues(alpha: 0.5),
-                  ],
-                ),
+    final height = isDesktop ? 460.0 : 320.0;
+
+    return SizedBox(
+      height: height,
+      width: double.infinity,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          Image.asset(
+            'assets/images/view.jpg',
+            fit: BoxFit.cover,
+            alignment: Alignment.center,
+            // ภาพหายก็ยังเห็นหัวเรื่อง ไม่ปล่อยให้ทั้งแถบพัง
+            errorBuilder: (_, _, _) => Container(color: AppTheme.primaryColor),
+          ),
+          DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.black.withValues(alpha: 0.45),
+                  Colors.black.withValues(alpha: 0.25),
+                  Colors.black.withValues(alpha: 0.55),
+                ],
               ),
             ),
           ),
-        ),
-        Positioned.fill(
-          child: Padding(
-            padding: EdgeInsets.all(isDesktop ? 32 : 20),
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: isDesktop ? 32 : 20),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Spacer(),
-                Container(
-                  padding: EdgeInsets.all(isDesktop ? 32 : 20),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.3),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.2), width: 1),
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.school, size: isDesktop ? 60 : 40, color: Colors.white.withValues(alpha: 0.8)),
-                      SizedBox(height: isDesktop ? 16 : 12),
-                      Text('ยินดีต้อนรับสู่ระบบศูนย์พัฒนาทรัพยากรบุคคลงานทาง', style: Theme.of(context).textTheme.headlineLarge?.copyWith(color: Colors.white, fontWeight: FontWeight.bold, fontSize: isDesktop ? 32 : 24), textAlign: TextAlign.center),
-                      SizedBox(height: isDesktop ? 12 : 8),
-                      Text('พัฒนาบุคลากรด้วยหลักสูตรมาตรฐาน\nเพื่อการพัฒนาโครงสร้างพื้นฐานของประเทศ', style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Colors.white70, fontSize: isDesktop ? 16 : 14), textAlign: TextAlign.center),
-                      SizedBox(height: isDesktop ? 20 : 16),
-                      isDesktop
-                          ? Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                              ElevatedButton.icon(onPressed: () {}, icon: const Icon(Icons.school), label: const Text('ดูหลักสูตรทั้งหมด'), style: ElevatedButton.styleFrom(backgroundColor: AppTheme.secondaryColor, padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16))),
-                              const SizedBox(width: 16),
-                              OutlinedButton.icon(onPressed: () {}, icon: const Icon(Icons.person_add), label: const Text('ลงทะเบียนอบรม'), style: OutlinedButton.styleFrom(foregroundColor: Colors.white, side: const BorderSide(color: Colors.white), padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16))),
-                            ])
-                          : Column(children: [
-                              SizedBox(width: double.infinity, child: ElevatedButton.icon(onPressed: () {}, icon: const Icon(Icons.school, size: 20), label: const Text('ดูหลักสูตรทั้งหมด'), style: ElevatedButton.styleFrom(backgroundColor: AppTheme.secondaryColor, padding: const EdgeInsets.symmetric(vertical: 12)))),
-                              const SizedBox(height: 8),
-                              SizedBox(width: double.infinity, child: OutlinedButton.icon(onPressed: () {}, icon: const Icon(Icons.person_add, size: 20), label: const Text('ลงทะเบียนอบรม'), style: OutlinedButton.styleFrom(foregroundColor: Colors.white, side: const BorderSide(color: Colors.white), padding: const EdgeInsets.symmetric(vertical: 12)))),
-                            ]),
-                    ],
-                  ),
-                ),
-                const Spacer(),
-                Row(mainAxisAlignment: MainAxisAlignment.center, children: List.generate(_bannerData.length, (index) => Container(width: 10, height: 10, margin: const EdgeInsets.symmetric(horizontal: 4), decoration: BoxDecoration(shape: BoxShape.circle, color: _currentPage == index ? Colors.white : Colors.white.withValues(alpha: 0.5))))),
+                Icon(Icons.apartment,
+                    size: isDesktop ? 52 : 38,
+                    color: Colors.white.withValues(alpha: 0.9)),
+                SizedBox(height: isDesktop ? 14 : 10),
+                Text('ศูนย์พัฒนาทรัพยากรบุคคลงานทาง',
+                    style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: isDesktop ? 34 : 24,
+                          shadows: const [
+                            Shadow(blurRadius: 8, color: Colors.black54),
+                          ],
+                        ),
+                    textAlign: TextAlign.center),
+                SizedBox(height: isDesktop ? 10 : 8),
+                Text('กรมทางหลวง  อำเภอศรีราชา จังหวัดชลบุรี',
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          color: Colors.white,
+                          fontSize: isDesktop ? 17 : 14,
+                          shadows: const [
+                            Shadow(blurRadius: 6, color: Colors.black54),
+                          ],
+                        ),
+                    textAlign: TextAlign.center),
+                SizedBox(height: isDesktop ? 12 : 10),
+                Text('ห้องพัก ห้องประชุม และห้องกิจกรรม สำหรับการฝึกอบรมและสัมมนา',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Colors.white70,
+                          fontSize: isDesktop ? 15 : 13,
+                          shadows: const [
+                            Shadow(blurRadius: 6, color: Colors.black54),
+                          ],
+                        ),
+                    textAlign: TextAlign.center),
               ],
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -374,33 +306,251 @@ List<TickerMessage> _tickerMessagesData = [];
     );
   }
 
-  Widget _buildStatCard({required IconData icon, required String value, required String label, required Color color, required bool isDesktop}) {
+  // ===================== สถิติจากข้อมูลจริง =====================
+
+  /// แถบตัวเลขสรุป ซ่อนทั้งแถบถ้าโหลดไม่ได้ ดีกว่าโชว์เลขศูนย์ลอย ๆ ให้เข้าใจผิด
+  Widget _buildStatsSection(BuildContext context, bool isDesktop) {
+    final st = _stats;
+    if (st == null) return const SizedBox.shrink();
+
     return Container(
-      width: isDesktop ? 220 : 160, padding: EdgeInsets.all(isDesktop ? 24 : 16),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), boxShadow: [BoxShadow(color: color.withValues(alpha: 0.2), blurRadius: 10, offset: const Offset(0, 4))]),
-      child: Column(children: [
-        Icon(icon, size: isDesktop ? 40 : 32, color: color),
-        SizedBox(height: isDesktop ? 12 : 8),
-        Text(value, style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: color, fontWeight: FontWeight.bold, fontSize: isDesktop ? 28 : 22)),
-        SizedBox(height: isDesktop ? 8 : 4),
-        Text(label, style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontSize: isDesktop ? 14 : 12), textAlign: TextAlign.center),
-      ]),
+      width: double.infinity,
+      padding: EdgeInsets.fromLTRB(isDesktop ? 32 : 20, isDesktop ? 32 : 24,
+          isDesktop ? 32 : 20, isDesktop ? 24 : 20),
+      child: Column(
+        children: [
+          Wrap(
+            spacing: isDesktop ? 24 : 16,
+            runSpacing: isDesktop ? 24 : 16,
+            alignment: WrapAlignment.center,
+            children: [
+              _buildStatCard(
+                icon: Icons.hotel,
+                value: st.lodgingFree.toString(),
+                unit: 'จาก ${st.lodgingTotal} ห้อง',
+                label: 'ห้องพักว่างวันนี้',
+                color: AppTheme.primaryColor,
+                isDesktop: isDesktop,
+              ),
+              _buildStatCard(
+                icon: Icons.meeting_room,
+                value: st.activityFree.toString(),
+                unit: 'จาก ${st.activityTotal} ห้อง',
+                label: 'ห้องกิจกรรมว่างวันนี้',
+                color: AppTheme.accentColor,
+                isDesktop: isDesktop,
+              ),
+              _buildStatCard(
+                icon: Icons.event_available,
+                value: st.bookingsThisMonth.toString(),
+                unit: 'ใบจอง',
+                label: st.monthLabel.isEmpty
+                    ? 'การจองเดือนนี้'
+                    : 'การจองเดือน${st.monthLabel}',
+                color: AppTheme.secondaryColor,
+                isDesktop: isDesktop,
+              ),
+            ],
+          ),
+          if (st.asOfDate.isNotEmpty) ...[
+            const SizedBox(height: 14),
+            Text(
+              'ข้อมูล ณ วันที่ ${st.asOfDate}',
+              style: TextStyle(
+                  fontSize: isDesktop ? 13 : 12, color: AppTheme.textSecondary),
+            ),
+          ],
+        ],
+      ),
     );
   }
 
-  Widget _buildTrainingCard(String title, String description, IconData icon, {required bool isDesktop}) {
+  Widget _buildStatCard({
+    required IconData icon,
+    required String value,
+    required String unit,
+    required String label,
+    required Color color,
+    required bool isDesktop,
+  }) {
     return Container(
-      width: isDesktop ? 300 : 280, padding: EdgeInsets.all(isDesktop ? 24 : 16),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), boxShadow: [BoxShadow(color: Colors.grey.withValues(alpha: 0.2), blurRadius: 10, offset: const Offset(0, 4))]),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: AppTheme.primaryColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)), child: Icon(icon, color: AppTheme.primaryColor, size: isDesktop ? 32 : 28)),
-        SizedBox(height: isDesktop ? 16 : 12),
-        Text(title, style: Theme.of(context).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold, fontSize: isDesktop ? 16 : 14)),
-        SizedBox(height: isDesktop ? 8 : 6),
-        Text(description, style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontSize: isDesktop ? 14 : 12)),
-        const SizedBox(height: 16),
-        SizedBox(width: double.infinity, child: OutlinedButton(onPressed: () {}, child: Text('รายละเอียด', style: TextStyle(fontSize: isDesktop ? 14 : 12)))),
-      ]),
+      width: isDesktop ? 240 : 150,
+      padding: EdgeInsets.all(isDesktop ? 24 : 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.grey.shade200),
+        boxShadow: [
+          BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 10,
+              offset: const Offset(0, 3)),
+        ],
+      ),
+      child: Column(
+        children: [
+          Icon(icon, size: isDesktop ? 34 : 26, color: color),
+          SizedBox(height: isDesktop ? 12 : 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              Text(value,
+                  style: TextStyle(
+                      color: color,
+                      fontWeight: FontWeight.bold,
+                      fontSize: isDesktop ? 32 : 24)),
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(unit,
+                    style: TextStyle(
+                        color: AppTheme.textSecondary,
+                        fontSize: isDesktop ? 13 : 11),
+                    overflow: TextOverflow.ellipsis),
+              ),
+            ],
+          ),
+          SizedBox(height: isDesktop ? 6 : 4),
+          Text(label,
+              style: TextStyle(fontSize: isDesktop ? 14 : 12),
+              textAlign: TextAlign.center),
+        ],
+      ),
+    );
+  }
+
+  // ===================== ข่าวประชาสัมพันธ์ =====================
+
+  /// ดึงจากเพจ Facebook ของศูนย์ฯ เพราะระบบไม่มีตารางข่าวของตัวเอง
+  /// และศูนย์ฯ ประกาศข่าวที่เพจอยู่แล้ว จะได้ไม่ต้องลงข่าวสองที่
+  Widget _buildNewsSection(BuildContext context, bool isDesktop) {
+    return Container(
+      width: double.infinity,
+      color: AppTheme.backgroundColor,
+      padding: EdgeInsets.symmetric(
+          horizontal: isDesktop ? 32 : 20, vertical: isDesktop ? 40 : 28),
+      child: Column(
+        children: [
+          Text('ข่าวประชาสัมพันธ์',
+              style: Theme.of(context)
+                  .textTheme
+                  .headlineMedium
+                  ?.copyWith(fontSize: isDesktop ? 24 : 20)),
+          SizedBox(height: isDesktop ? 8 : 6),
+          Text('ข่าวสารและภาพกิจกรรมจากเพจของศูนย์ฯ',
+              style: TextStyle(
+                  fontSize: isDesktop ? 14 : 12, color: AppTheme.textSecondary)),
+          SizedBox(height: isDesktop ? 24 : 18),
+          Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 520),
+              child: FacebookPageEmbed(height: isDesktop ? 460 : 380),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ===================== ห้องพักและห้องกิจกรรม =====================
+
+  Widget _buildRoomSection(BuildContext context, bool isDesktop) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(
+          horizontal: isDesktop ? 32 : 20, vertical: isDesktop ? 40 : 28),
+      child: Column(
+        children: [
+          Text('ห้องพักและห้องกิจกรรม',
+              style: Theme.of(context)
+                  .textTheme
+                  .headlineMedium
+                  ?.copyWith(fontSize: isDesktop ? 24 : 20)),
+          SizedBox(height: isDesktop ? 8 : 6),
+          Text('ดูรายละเอียดและราคาได้ที่เมนู เกี่ยวกับเรา',
+              style: TextStyle(
+                  fontSize: isDesktop ? 14 : 12, color: AppTheme.textSecondary)),
+          SizedBox(height: isDesktop ? 28 : 20),
+          Wrap(
+            spacing: 24,
+            runSpacing: 24,
+            alignment: WrapAlignment.center,
+            children: [
+              _buildRoomCard('assets/images/vip.png', 'ห้องพักวีไอพี',
+                  'ห้องพักสำหรับผู้บริหารและวิทยากร', isDesktop),
+              _buildRoomCard('assets/images/normal.png', 'ห้องพักมาตรฐาน',
+                  'ห้องพักสำหรับผู้เข้ารับการอบรม', isDesktop),
+              _buildRoomCard(
+                  'assets/images/meeting.png',
+                  'ห้องประชุมและห้องกิจกรรม',
+                  'รองรับการอบรม สัมมนา และกิจกรรมกลุ่ม',
+                  isDesktop),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRoomCard(
+      String asset, String title, String description, bool isDesktop) {
+    final width = isDesktop ? 300.0 : 260.0;
+    final imageHeight = isDesktop ? 180.0 : 150.0;
+
+    return Container(
+      width: width,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.grey.shade200),
+        boxShadow: [
+          BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 10,
+              offset: const Offset(0, 3)),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ClipRRect(
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
+            child: Image.asset(
+              asset,
+              width: width,
+              height: imageHeight,
+              fit: BoxFit.cover,
+              // ภาพหายก็ยังแสดงการ์ดได้ ไม่ให้ทั้งหน้าพัง
+              errorBuilder: (_, _, _) => Container(
+                width: width,
+                height: imageHeight,
+                color: AppTheme.primaryPale,
+                child: Icon(Icons.image_outlined,
+                    size: 40,
+                    color: AppTheme.primaryColor.withValues(alpha: 0.4)),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title,
+                    style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: isDesktop ? 16 : 14)),
+                const SizedBox(height: 6),
+                Text(description,
+                    style: TextStyle(
+                        fontSize: isDesktop ? 14 : 12,
+                        color: AppTheme.textSecondary)),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

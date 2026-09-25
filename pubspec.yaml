@@ -87,5 +87,6 @@ flutter:
     - assets/images/location.pdf
     - assets/images/line.png
     - assets/images/map500.png
+    - assets/images/view.jpg
     # - assets/icons/       # ถ้ามีไฟล์ icon.png ก็เปิดใช้งานด้วย
     # - assets/icons/icon.png

@@ -14,6 +14,7 @@ import 'package:highway_training/models/employee.dart';
 import 'package:highway_training/models/equipment.dart';
 import 'package:highway_training/models/facility.dart';
 import 'package:highway_training/models/foodtype.dart';
+import 'package:highway_training/models/home_stats.dart';
 import 'package:highway_training/models/maintenance.dart';
 import 'package:highway_training/models/organization.dart';
 import 'package:highway_training/models/part.dart';
@@ -3113,6 +3114,17 @@ class ApiService {
       }
       throw Exception('เกิดข้อผิดพลาดในการเชื่อมต่อ');
     }
+  }
+
+  /// ตัวเลขสรุปบนหน้าแรก
+  ///
+  /// ใช้ publicDio เพราะหน้าแรกเปิดดูได้โดยไม่ต้องล็อกอิน
+  Future<HomeStats> getHomeStats() async {
+    final r = await publicDio.get('/api/auth/home-stats');
+    if (r.statusCode == 200 && r.data is Map) {
+      return HomeStats.fromJson(Map<String, dynamic>.from(r.data as Map));
+    }
+    throw Exception('ไม่สามารถดึงข้อมูลสรุปได้');
   }
 
   /// รายการอาหารทั้งหมดสำหรับเติม dropdown
