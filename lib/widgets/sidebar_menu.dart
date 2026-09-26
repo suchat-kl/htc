@@ -4,6 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:highway_training/screens/activity_room_search_screen.dart';
 import 'package:highway_training/screens/activity_usage_report_screen.dart';
+import 'package:highway_training/screens/annual_graph_report_screen.dart';
 import 'package:highway_training/screens/annual_report_screen.dart';
 import 'package:highway_training/screens/booking_edit_screen.dart';
 import 'package:highway_training/screens/lodging_room_search_screen.dart';
@@ -348,7 +349,8 @@ class _SidebarMenuState extends State<SidebarMenu> {
                             ),
                           ),
                         );
-                      }, screenCode: 'OP_SUPPLY_IO',
+                      },
+                      screenCode: 'OP_SUPPLY_IO',
                     ),
                     _SubMenuItemData(Icons.build_circle, 'แจ้งซ่อม', () {
                       Navigator.pop(context);
@@ -376,7 +378,8 @@ class _SidebarMenuState extends State<SidebarMenu> {
                             ),
                           ),
                         );
-                      }, screenCode: 'OP_PART_IO',
+                      },
+                      screenCode: 'OP_PART_IO',
                     ),
                     _SubMenuItemData(Icons.headset_mic, 'รายการขอใช้โสตฯ', () {
                       Navigator.pop(context);
@@ -394,16 +397,21 @@ class _SidebarMenuState extends State<SidebarMenu> {
                     }, screenCode: 'OP_TICKER'),
                     // ยกกลับมาจากระบบเดิม ต่างจากข้อความวิ่งตรงที่มีหัวเรื่อง
                     // เนื้อความยาว และช่วงวันที่ที่ให้แสดง
-                    _SubMenuItemData(Icons.article_outlined, 'ประกาศประชาสัมพันธ์', () {
-                      Navigator.pop(context);
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) =>
-                              NotificationScreen(apiService: ApiService()),
-                        ),
-                      );
-                    }, screenCode: 'OP_NOTIFY'),
+                    _SubMenuItemData(
+                      Icons.article_outlined,
+                      'ประกาศประชาสัมพันธ์',
+                      () {
+                        Navigator.pop(context);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                NotificationScreen(apiService: ApiService()),
+                          ),
+                        );
+                      },
+                      screenCode: 'OP_NOTIFY',
+                    ),
                   ],
                 ),
                 _buildExpandableMenuItem(
@@ -451,7 +459,8 @@ class _SidebarMenuState extends State<SidebarMenu> {
                             ),
                           ),
                         );
-                      }, screenCode: 'RM_FOOD_INVOICE',
+                      },
+                      screenCode: 'RM_FOOD_INVOICE',
                     ),
                     _SubMenuItemData(Icons.receipt_long, 'Folio', () {
                       Navigator.pop(context);
@@ -479,7 +488,8 @@ class _SidebarMenuState extends State<SidebarMenu> {
                             ),
                           ),
                         );
-                      }, screenCode: 'RM_PAYMENT',
+                      },
+                      screenCode: 'RM_PAYMENT',
                     ),
                   ],
                 ),
@@ -507,7 +517,8 @@ class _SidebarMenuState extends State<SidebarMenu> {
                             ),
                           ),
                         );
-                      }, screenCode: 'RPT_01',
+                      },
+                      screenCode: 'RPT_01',
                     ),
                     // 2
                     _SubMenuItemData(
@@ -524,21 +535,27 @@ class _SidebarMenuState extends State<SidebarMenu> {
                             ),
                           ),
                         );
-                      }, screenCode: 'RPT_02',
+                      },
+                      screenCode: 'RPT_02',
                     ),
                     // 3
-                    _SubMenuItemData(Icons.calendar_month, 'แผนการใช้ศูนย์', () {
-                      Navigator.pop(context);
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => CenterPlanScreen(
-                            apiService: ApiService(),
-                            authProvider: widget.authProvider,
+                    _SubMenuItemData(
+                      Icons.calendar_month,
+                      'แผนการใช้ศูนย์',
+                      () {
+                        Navigator.pop(context);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => CenterPlanScreen(
+                              apiService: ApiService(),
+                              authProvider: widget.authProvider,
+                            ),
                           ),
-                        ),
-                      );
-                    }, screenCode: 'RPT_03'),
+                        );
+                      },
+                      screenCode: 'RPT_03',
+                    ),
                     // 4
                     _SubMenuItemData(
                       Icons.table_chart,
@@ -552,15 +569,16 @@ class _SidebarMenuState extends State<SidebarMenu> {
                             builder: (_) => MonthlyReportScreen(
                               title: 'ตารางการใช้ห้องพัก ประจำเดือน',
                               fileBaseName: 'ตารางการใช้ห้องพัก',
-                              download: (year, month) => api
-                                  .downloadRoomUsageTable(
+                              download: (year, month) =>
+                                  api.downloadRoomUsageTable(
                                     year: year,
                                     month: month,
                                   ),
                             ),
                           ),
                         );
-                      }, screenCode: 'RPT_04',
+                      },
+                      screenCode: 'RPT_04',
                     ),
                     // 5
                     _SubMenuItemData(
@@ -575,15 +593,16 @@ class _SidebarMenuState extends State<SidebarMenu> {
                             builder: (_) => MonthlyReportScreen(
                               title: 'สรุปการใช้ห้องพัก ประจำเดือน',
                               fileBaseName: 'สรุปการใช้ห้องพัก',
-                              download: (year, month) => api
-                                  .downloadLodgingSummary(
+                              download: (year, month) =>
+                                  api.downloadLodgingSummary(
                                     year: year,
                                     month: month,
                                   ),
                             ),
                           ),
                         );
-                      }, screenCode: 'RPT_05',
+                      },
+                      screenCode: 'RPT_05',
                     ),
                     // 6
                     _SubMenuItemData(
@@ -598,15 +617,16 @@ class _SidebarMenuState extends State<SidebarMenu> {
                             builder: (_) => MonthlyReportScreen(
                               title: 'รายงานการใช้ห้องกิจกรรม ประจำเดือน',
                               fileBaseName: 'รายงานการใช้ห้องกิจกรรม',
-                              download: (year, month) => api
-                                  .downloadActivityMonthly(
+                              download: (year, month) =>
+                                  api.downloadActivityMonthly(
                                     year: year,
                                     month: month,
                                   ),
                             ),
                           ),
                         );
-                      }, screenCode: 'RPT_06',
+                      },
+                      screenCode: 'RPT_06',
                     ),
                     // 15 — ต่อยอดจากเมนู 6 เปลี่ยนช่วงเวลาเป็นปีงบประมาณ
                     //      วางไว้ติดกันเพราะเป็นรายงานเรื่องเดียวกัน
@@ -627,7 +647,8 @@ class _SidebarMenuState extends State<SidebarMenu> {
                             ),
                           ),
                         );
-                      }, screenCode: 'RPT_15',
+                      },
+                      screenCode: 'RPT_15',
                     ),
                     // 16 — กราฟของรายงานเดียวกัน เลือกชนิดกราฟได้
                     _SubMenuItemData(
@@ -643,7 +664,8 @@ class _SidebarMenuState extends State<SidebarMenu> {
                             ),
                           ),
                         );
-                      }, screenCode: 'RPT_16',
+                      },
+                      screenCode: 'RPT_16',
                     ),
                     // 7
                     _SubMenuItemData(
@@ -658,15 +680,16 @@ class _SidebarMenuState extends State<SidebarMenu> {
                             builder: (_) => MonthlyReportScreen(
                               title: 'ตารางการใช้ห้องกิจกรรม ประจำเดือน',
                               fileBaseName: 'ตารางการใช้ห้องกิจกรรม',
-                              download: (year, month) => api
-                                  .downloadActivityRoomTable(
+                              download: (year, month) =>
+                                  api.downloadActivityRoomTable(
                                     year: year,
                                     month: month,
                                   ),
                             ),
                           ),
                         );
-                      }, screenCode: 'RPT_07',
+                      },
+                      screenCode: 'RPT_07',
                     ),
                     // 8
                     _SubMenuItemData(
@@ -683,7 +706,8 @@ class _SidebarMenuState extends State<SidebarMenu> {
                             ),
                           ),
                         );
-                      }, screenCode: 'RPT_08',
+                      },
+                      screenCode: 'RPT_08',
                     ),
                     // 9
                     _SubMenuItemData(
@@ -700,30 +724,28 @@ class _SidebarMenuState extends State<SidebarMenu> {
                             ),
                           ),
                         );
-                      }, screenCode: 'RPT_09',
+                      },
+                      screenCode: 'RPT_09',
                     ),
                     // 10
-                    _SubMenuItemData(
-                      Icons.headphones,
-                      'สรุปการใช้บริการโสตฯ',
-                      () {
-                        Navigator.pop(context);
-                        final api = ApiService();
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => AnnualReportScreen(
-                              title: 'สรุปการให้บริการโสตทัศนูปกรณ์ ประจำปีงบประมาณ',
-                              fileBaseName: 'สรุปการให้บริการโสตทัศนูปกรณ์',
-                              note:
-                                  'ปีงบประมาณ 2569 คือ 1 ต.ค. 2568 ถึง 30 ก.ย. 2569 — ออกเป็นไฟล์ Excel เท่านั้น',
-                              download: (year) =>
-                                  api.downloadAvServiceReport(year: year),
-                            ),
+                    _SubMenuItemData(Icons.headphones, 'สรุปการใช้บริการโสตฯ', () {
+                      Navigator.pop(context);
+                      final api = ApiService();
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => AnnualReportScreen(
+                            title:
+                                'สรุปการให้บริการโสตทัศนูปกรณ์ ประจำปีงบประมาณ',
+                            fileBaseName: 'สรุปการให้บริการโสตทัศนูปกรณ์',
+                            note:
+                                'ปีงบประมาณ 2569 คือ 1 ต.ค. 2568 ถึง 30 ก.ย. 2569 — ออกเป็นไฟล์ Excel เท่านั้น',
+                            download: (year) =>
+                                api.downloadAvServiceReport(year: year),
                           ),
-                        );
-                      }, screenCode: 'RPT_10',
-                    ),
+                        ),
+                      );
+                    }, screenCode: 'RPT_10'),
                     // 11
                     _SubMenuItemData(
                       Icons.bed,
@@ -737,15 +759,16 @@ class _SidebarMenuState extends State<SidebarMenu> {
                             builder: (_) => MonthlyReportScreen(
                               title: 'สรุปเครื่องนอนและเติมของใช้ ประจำเดือน',
                               fileBaseName: 'สรุปเครื่องนอนและเติมของใช้',
-                              download: (year, month) => api
-                                  .downloadCommoditySummary(
+                              download: (year, month) =>
+                                  api.downloadCommoditySummary(
                                     year: year,
                                     month: month,
                                   ),
                             ),
                           ),
                         );
-                      }, screenCode: 'RPT_11',
+                      },
+                      screenCode: 'RPT_11',
                     ),
                     // 12
                     _SubMenuItemData(Icons.build, 'สรุปงานซ่อมบำรุง', () {
@@ -778,15 +801,16 @@ class _SidebarMenuState extends State<SidebarMenu> {
                             builder: (_) => MonthlyReportScreen(
                               title: 'รายการซ่อมบำรุง อาคารเรียน',
                               fileBaseName: 'รายการซ่อมบำรุงอาคารเรียน',
-                              download: (year, month) => api
-                                  .downloadMaintenanceSchool(
+                              download: (year, month) =>
+                                  api.downloadMaintenanceSchool(
                                     year: year,
                                     month: month,
                                   ),
                             ),
                           ),
                         );
-                      }, screenCode: 'RPT_13',
+                      },
+                      screenCode: 'RPT_13',
                     ),
                     // 14
                     _SubMenuItemData(Icons.inventory_2, 'ใบรับจ่ายวัสดุ', () {
@@ -801,6 +825,17 @@ class _SidebarMenuState extends State<SidebarMenu> {
                         ),
                       );
                     }, screenCode: 'RPT_14'),
+                    // 17 — หน้าจอเดียวเลือกได้หลายหัวข้อ ถอดแบบจากรายงานประจำปีของศูนย์ฯ
+                    _SubMenuItemData(Icons.insights, 'กราฟรายงานประจำปี', () {
+                      Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              AnnualGraphReportScreen(apiService: ApiService()),
+                        ),
+                      );
+                    }, screenCode: 'RPT_17'),
                   ],
                 ),
                 //]
@@ -2219,8 +2254,11 @@ const Divider(indent: 16, endIndent: 16),
   /// ไว้ในตารางสิทธิ์ จะได้ไม่หายไปเงียบ ๆ ตอนเพิ่มเมนูใหม่
   List<_SubMenuItemData> _allowed(List<_SubMenuItemData> items) {
     return items
-        .where((e) => e.screenCode == null
-            || widget.authProvider.canView(e.screenCode!))
+        .where(
+          (e) =>
+              e.screenCode == null ||
+              widget.authProvider.canView(e.screenCode!),
+        )
         .toList();
   }
 

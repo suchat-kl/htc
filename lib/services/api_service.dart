@@ -246,8 +246,10 @@ class ApiService {
           .toList();
       _permissionsLoaded = true;
       if (AppLogger.on) {
-        AppLogger.i('🔐 สิทธิ์ ${_permissions.length} หน้าจอ, '
-            'เปลี่ยนสถานะได้ ${_bookStatusIds.length} สถานะ');
+        AppLogger.i(
+          '🔐 สิทธิ์ ${_permissions.length} หน้าจอ, '
+          'เปลี่ยนสถานะได้ ${_bookStatusIds.length} สถานะ',
+        );
       }
     } catch (e) {
       if (AppLogger.on) AppLogger.w('⚠️ โหลดสิทธิ์ไม่สำเร็จ: $e');
@@ -1786,11 +1788,54 @@ class ApiService {
     throw Exception('ออกรายงานไม่สำเร็จ (${r.statusCode})');
   }
 
+  /// ดาวน์โหลดรายงานของเมนูกราฟรายงานประจำปี — ไฟล์ Excel
+  ///
+  /// [topic] คือส่วนท้ายของ path เช่น 'service-summary', 'av'
+  /// [params] คือเงื่อนไขของหัวข้อนั้น ส่วนใหญ่เป็น {'year': 2569}
+  /// หัวข้อเปรียบเทียบหลายปีใช้ {'fromYear': ..., 'toYear': ...}
+  ///
+  /// ถ้า backend ปฏิเสธ (เช่นปีผิด หรือยังไม่มีห้องในระบบ) จะส่งข้อความกลับมาเป็น JSON
+  /// แต่เราขอผลเป็น bytes จึงต้องถอดข้อความเองก่อนโยน Exception ให้หน้าจอแสดง
+  Future<List<int>> downloadAnnualReport(
+    String topic,
+    Map<String, dynamic> params,
+  ) async {
+    await _ensureToken();
+    final r = await dio.get(
+      '/api/auth/report/annual/$topic',
+      queryParameters: params,
+      options: Options(
+        responseType: ResponseType.bytes,
+        receiveTimeout: const Duration(seconds: 120),
+        validateStatus: (status) => status! < 600,
+      ),
+    );
+    if (r.statusCode == 200 && r.data is List<int>) {
+      final bytes = r.data as List<int>;
+      if (bytes.isEmpty) throw Exception('ไฟล์รายงานว่างเปล่า');
+      return bytes;
+    }
+    String? message;
+    if (r.data is List<int>) {
+      try {
+        final body = jsonDecode(utf8.decode(r.data as List<int>));
+        if (body is Map && body['message'] != null) {
+          message = '${body['message']}';
+        }
+      } catch (_) {
+        // เนื้อหาไม่ใช่ JSON ใช้ข้อความกลางด้านล่าง
+      }
+    }
+    throw Exception(message ?? 'ออกรายงานไม่สำเร็จ (${r.statusCode})');
+  }
+
   /// ข้อมูลกราฟการใช้ห้องกิจกรรม ประจำปีงบประมาณ (เมนูรายงาน 16)
   ///
   /// ใช้วาดกราฟบนหน้าจอ ส่วนไฟล์ Excel ที่มีกราฟจริงอยู่ที่
   /// downloadActivityFiscalChart
-  Future<ActivityFiscalChart> getActivityFiscalChart({required int year}) async {
+  Future<ActivityFiscalChart> getActivityFiscalChart({
+    required int year,
+  }) async {
     await _ensureToken();
     final r = await dio.get(
       '/api/auth/report/activity-fiscal-chart/data',
@@ -1798,7 +1843,9 @@ class ApiService {
       options: Options(validateStatus: (status) => status! < 500),
     );
     if (r.statusCode == 200 && r.data is Map) {
-      return ActivityFiscalChart.fromJson(Map<String, dynamic>.from(r.data as Map));
+      return ActivityFiscalChart.fromJson(
+        Map<String, dynamic>.from(r.data as Map),
+      );
     }
     throw Exception('ดึงข้อมูลกราฟไม่สำเร็จ (${r.statusCode})');
   }
@@ -3189,7 +3236,10 @@ class ApiService {
     final r = await publicDio.get('/api/auth/notifications/active');
     if (r.statusCode == 200 && r.data is List) {
       return (r.data as List)
-          .map((e) => NotificationItem.fromJson(Map<String, dynamic>.from(e as Map)))
+          .map(
+            (e) =>
+                NotificationItem.fromJson(Map<String, dynamic>.from(e as Map)),
+          )
           .toList();
     }
     return const [];
@@ -3217,7 +3267,8 @@ class ApiService {
       final r = await dio.post('/api/auth/notifications', data: d.toJson());
       if (r.statusCode == 200 && r.data['success'] == true) {
         return NotificationItem.fromJson(
-            Map<String, dynamic>.from(r.data['notification'] as Map));
+          Map<String, dynamic>.from(r.data['notification'] as Map),
+        );
       }
       throw Exception(r.data['message'] ?? 'บันทึกไม่สำเร็จ');
     } on DioException catch (e) {
@@ -3225,13 +3276,17 @@ class ApiService {
     }
   }
 
-  Future<NotificationItem> updateNotification(int id, NotificationItem d) async {
+  Future<NotificationItem> updateNotification(
+    int id,
+    NotificationItem d,
+  ) async {
     await _ensureToken();
     try {
       final r = await dio.put('/api/auth/notifications/$id', data: d.toJson());
       if (r.statusCode == 200 && r.data['success'] == true) {
         return NotificationItem.fromJson(
-            Map<String, dynamic>.from(r.data['notification'] as Map));
+          Map<String, dynamic>.from(r.data['notification'] as Map),
+        );
       }
       throw Exception(r.data['message'] ?? 'อัปเดตไม่สำเร็จ');
     } on DioException catch (e) {

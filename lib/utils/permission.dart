@@ -14,11 +14,13 @@ class Perm {
   static bool view(String screenCode) => ApiService().can(screenCode, 'view');
   static bool add(String screenCode) => ApiService().can(screenCode, 'add');
   static bool edit(String screenCode) => ApiService().can(screenCode, 'edit');
-  static bool remove(String screenCode) => ApiService().can(screenCode, 'delete');
+  static bool remove(String screenCode) =>
+      ApiService().can(screenCode, 'delete');
   static bool print(String screenCode) => ApiService().can(screenCode, 'print');
 
   /// เปลี่ยนสถานะการจองเป็นสถานะนี้ได้หรือไม่
-  static bool bookStatus(int statusId) => ApiService().canChangeBookStatus(statusId);
+  static bool bookStatus(int statusId) =>
+      ApiService().canChangeBookStatus(statusId);
 
   /// บัญชีผู้ดูแลระบบ ใช้กับงานที่สงวนไว้เฉพาะ admin เช่นการลบใบจองจริง
   static bool get isAdmin => ApiService().hasRole('ADMIN');
@@ -31,4 +33,7 @@ class Perm {
 
   /// ประกาศประชาสัมพันธ์ (เมนูการดำเนินงาน)
   static const String notification = 'OP_NOTIFY';
+
+  /// กราฟรายงานประจำปี (เมนูรายงาน) หน้าจอเดียวเลือกได้หลายหัวข้อ
+  static const String annualReport = 'RPT_17';
 }
