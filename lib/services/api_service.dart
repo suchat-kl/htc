@@ -3160,6 +3160,8 @@ class ApiService {
     String? departmentname,
     String? booktitle,
     int? status,
+    String? idcard,
+    String? bookingtype,
     int page = 0,
     int size = 10,
   }) async {
@@ -3173,6 +3175,11 @@ class ApiService {
     }
     if (booktitle != null && booktitle.isNotEmpty) p['booktitle'] = booktitle;
     if (status != null) p['status'] = status;
+    if (idcard != null && idcard.isNotEmpty) p['idcard'] = idcard;
+    // A = กองฝึก (รวมใบที่ไม่ได้ระบุประเภท), B = หน่วยราชการอื่น, C = รายย่อย
+    if (bookingtype != null && bookingtype.isNotEmpty) {
+      p['bookingtype'] = bookingtype;
+    }
 
     try {
       final r = await publicDio.get(

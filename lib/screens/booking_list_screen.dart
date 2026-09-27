@@ -46,9 +46,16 @@ class _BookingListScreenState extends State<BookingListScreen> {
   final TextEditingController _stopDateCtrl = TextEditingController();
   final TextEditingController _departmentCtrl = TextEditingController();
   final TextEditingController _booktitleCtrl = TextEditingController();
+  final TextEditingController _idcardCtrl = TextEditingController();
 
   // Search State
   int? _selectedStatusId;
+
+  /// ประเภทผู้จองที่ค้น null = ทั้งหมด
+  /// เจ้าหน้าที่ที่ล็อกอินส่วนใหญ่ดูใบของกองฝึก ส่วนคนทั่วไปที่ไม่ได้ล็อกอินคือผู้จองรายย่อย
+  late String? _bookingtype = _defaultBookingtype;
+
+  String get _defaultBookingtype => widget.authProvider.isLoggedIn ? 'A' : 'C';
   DateTime? _startDate;
   DateTime? _stopDate;
 
@@ -66,6 +73,7 @@ class _BookingListScreenState extends State<BookingListScreen> {
     _stopDateCtrl.dispose();
     _departmentCtrl.dispose();
     _booktitleCtrl.dispose();
+    _idcardCtrl.dispose();
     super.dispose();
   }
 
@@ -106,6 +114,10 @@ class _BookingListScreenState extends State<BookingListScreen> {
             : null,
         booktitle: _booktitleCtrl.text.isNotEmpty ? _booktitleCtrl.text : null,
         status: _selectedStatusId,
+        idcard: _idcardCtrl.text.trim().isNotEmpty
+            ? _idcardCtrl.text.trim()
+            : null,
+        bookingtype: _bookingtype,
         page: _currentPage,
         size: _pageSize,
       );
@@ -141,6 +153,8 @@ class _BookingListScreenState extends State<BookingListScreen> {
       _stopDateCtrl.clear();
       _departmentCtrl.clear();
       _booktitleCtrl.clear();
+      _idcardCtrl.clear();
+      _bookingtype = _defaultBookingtype;
       _selectedStatusId = null;
       _startDate = null;
       _stopDate = null;
@@ -291,6 +305,12 @@ class _BookingListScreenState extends State<BookingListScreen> {
                 controller: _booktitleCtrl,
                 width: isDesktop ? 200 : 150,
               ),
+              _buildSearchField(
+                label: 'เลขบัตรประชาชน',
+                controller: _idcardCtrl,
+                width: isDesktop ? 180 : 150,
+                isNumber: true,
+              ),
             ],
           ),
           const SizedBox(height: 12),
@@ -298,6 +318,8 @@ class _BookingListScreenState extends State<BookingListScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
+              Flexible(child: _buildBookingtypeDropdown()),
+              const SizedBox(width: 12),
               Flexible(child: _buildStatusDropdown()),
               const SizedBox(width: 12),
               ElevatedButton.icon(
@@ -401,6 +423,50 @@ class _BookingListScreenState extends State<BookingListScreen> {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildBookingtypeDropdown() {
+    return SizedBox(
+      width: 220,
+      child: DropdownButtonFormField<String?>(
+        // key ผูกกับค่า เพื่อให้ปุ่มล้างรีเซ็ตค่าที่แสดงได้ (initialValue อ่านครั้งเดียว)
+        key: ValueKey('bookingtype-$_bookingtype'),
+        initialValue: _bookingtype,
+        isExpanded: true,
+        decoration: InputDecoration(
+          labelText: 'ประเภทผู้จอง',
+          labelStyle: const TextStyle(fontSize: 14),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+          filled: true,
+          fillColor: Colors.white,
+          isDense: true,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 10,
+            vertical: 4,
+          ),
+        ),
+        items: const [
+          DropdownMenuItem<String?>(value: null, child: Text('ทั้งหมด')),
+          DropdownMenuItem<String?>(
+            value: 'A',
+            child: Text('กองฝึก กรมทางหลวง', overflow: TextOverflow.ellipsis),
+          ),
+          DropdownMenuItem<String?>(
+            value: 'B',
+            child: Text('หน่วยราชการอื่น', overflow: TextOverflow.ellipsis),
+          ),
+          DropdownMenuItem<String?>(
+            value: 'C',
+            child: Text(
+              'รายย่อย (ไม่เกิน 10 ห้อง)',
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+        onChanged: (value) => setState(() => _bookingtype = value),
+        style: const TextStyle(fontSize: 14, color: AppTheme.textPrimary),
       ),
     );
   }
