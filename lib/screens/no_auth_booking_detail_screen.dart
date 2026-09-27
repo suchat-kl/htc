@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../config/theme.dart';
 import '../services/api_service.dart';
 import '../utils/snackbar_helper.dart';
+import '../widgets/payment_slip_upload_section.dart';
 
 class NoAuthBookingDetailScreen extends StatefulWidget {
   final ApiService apiService;
@@ -22,7 +23,7 @@ class NoAuthBookingDetailScreen extends StatefulWidget {
 }
 
 class _NoAuthBookingDetailScreenState extends State<NoAuthBookingDetailScreen>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late TabController _tabController;
 
   // ✅ ตัวแปรสำหรับเก็บข้อมูล
@@ -35,6 +36,18 @@ class _NoAuthBookingDetailScreenState extends State<NoAuthBookingDetailScreen>
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
     _loadBookingData();
+  }
+
+  /// แจ้งชำระเงิน (แนบสลิป) ใช้กับใบจองประเภทรายย่อย (C) เท่านั้น
+  /// ประเภทอื่นเป็นหน่วยงานราชการที่ชำระตามขั้นตอนเดิม
+  bool get _canPayOnline => _bookingData?['bookingtype'] == 'C';
+
+  /// จำนวนแท็บขึ้นกับประเภทใบจอง ซึ่งรู้หลังโหลดข้อมูลเสร็จ
+  void _syncTabCount() {
+    final length = _canPayOnline ? 4 : 3;
+    if (_tabController.length == length) return;
+    _tabController.dispose();
+    _tabController = TabController(length: length, vsync: this);
   }
 
   @override
@@ -62,6 +75,7 @@ class _NoAuthBookingDetailScreenState extends State<NoAuthBookingDetailScreen>
         if (bookings != null && bookings.isNotEmpty) {
           setState(() {
             _bookingData = bookings.first as Map<String, dynamic>;
+            _syncTabCount();
             _isLoading = false;
           });
         } else {
@@ -99,11 +113,28 @@ class _NoAuthBookingDetailScreenState extends State<NoAuthBookingDetailScreen>
         elevation: 4,
         bottom: TabBar(
           controller: _tabController,
-          tabs: const [
-            Tab(icon: Icon(Icons.info, size: 18), text: 'ข้อมูลสำรองห้อง'),
-            Tab(icon: Icon(Icons.meeting_room, size: 18), text: 'กำหนดห้อง'),
-            Tab(icon: Icon(Icons.check_circle, size: 18), text: 'Check in'),
+          tabs: [
+            const Tab(
+              icon: Icon(Icons.info, size: 18),
+              text: 'ข้อมูลสำรองห้อง',
+            ),
+            const Tab(
+              icon: Icon(Icons.meeting_room, size: 18),
+              text: 'กำหนดห้อง',
+            ),
+            const Tab(
+              icon: Icon(Icons.check_circle, size: 18),
+              text: 'Check in',
+            ),
+            if (_canPayOnline)
+              const Tab(
+                icon: Icon(Icons.receipt_long, size: 18),
+                text: 'แจ้งชำระเงิน',
+              ),
           ],
+          // แท็บที่ 4 มีเฉพาะใบจองรายย่อย จอแคบวางไม่พอ จึงให้เลื่อนได้เฉพาะกรณีนี้
+          isScrollable: _canPayOnline,
+          tabAlignment: TabAlignment.center,
           labelColor: Colors.white,
           unselectedLabelColor: Colors.grey.shade300,
           labelStyle: const TextStyle(
@@ -148,6 +179,13 @@ class _NoAuthBookingDetailScreenState extends State<NoAuthBookingDetailScreen>
                 SingleChildScrollView(child: _buildBookingInfoTab()),
                 SingleChildScrollView(child: _buildRoomAssignmentTab()),
                 SingleChildScrollView(child: _buildCheckInTab()),
+                if (_canPayOnline)
+                  SingleChildScrollView(
+                    child: PaymentSlipUploadSection(
+                      apiService: widget.apiService,
+                      bookId: widget.bookId,
+                    ),
+                  ),
               ],
             ),
     );
@@ -743,23 +781,28 @@ class _NoAuthBookingDetailScreenState extends State<NoAuthBookingDetailScreen>
                                 ],
                               ),
                             ),
-                            Expanded(
-                              child: Row(
-                                children: [
-                                  Checkbox(
-                                    value: data?['requestconference'] == 'T'
-                                        ? true
-                                        : false,
-                                    onChanged: null,
-                                    activeColor: Colors.blue,
-                                  ),
-                                  const Text(
-                                    'ห้องกิจกรรม',
-                                    style: TextStyle(fontSize: 14),
-                                  ),
-                                ],
+                            // รายย่อยขอได้เฉพาะห้องพัก ไม่แสดงช่องห้องกิจกรรม
+                            // เว้นที่ว่างไว้ให้ช่องห้องพักอยู่ตำแหน่งเดิม
+                            if (data?['bookingtype'] == 'C')
+                              const Spacer()
+                            else
+                              Expanded(
+                                child: Row(
+                                  children: [
+                                    Checkbox(
+                                      value: data?['requestconference'] == 'T'
+                                          ? true
+                                          : false,
+                                      onChanged: null,
+                                      activeColor: Colors.blue,
+                                    ),
+                                    const Text(
+                                      'ห้องกิจกรรม',
+                                      style: TextStyle(fontSize: 14),
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ),
                           ],
                         ),
                       ],

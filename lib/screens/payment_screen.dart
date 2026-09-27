@@ -17,6 +17,7 @@ import '../utils/logger.dart';
 import '../utils/snackbar_helper.dart';
 import '../models/invoice.dart';
 import '../utils/util.dart';
+import '../widgets/payment_slip_review_section.dart';
 import 'food_invoice_screen.dart';
 
 /// หนึ่งแถวค่าห้องในตารางสรุปค่าบริการ
@@ -599,9 +600,22 @@ class _PaymentScreenState extends State<PaymentScreen> {
                       : c.maxWidth - 32;
                   return SingleChildScrollView(
                     padding: const EdgeInsets.all(16),
-                    child: SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: SizedBox(width: width, child: _summaryTable()),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: SizedBox(width: width, child: _summaryTable()),
+                        ),
+                        const SizedBox(height: 16),
+                        // สลิปที่ผู้จองแนบมา ใช้ประกอบการบันทึกรับชำระด้านบน
+                        PaymentSlipReviewSection(
+                          apiService: widget.apiService,
+                          bookId: widget.bookId,
+                          totalDue: _total,
+                          onlinePayment: _booking?.bookingtype == 'C',
+                        ),
+                      ],
                     ),
                   );
                 },

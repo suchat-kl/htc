@@ -30,6 +30,7 @@ import 'package:highway_training/models/section.dart';
 import 'package:highway_training/models/payment_activity.dart';
 import 'package:highway_training/models/payment_lodging.dart';
 import 'package:highway_training/models/payment_room_summary.dart';
+import 'package:highway_training/models/payment_slip.dart';
 import 'package:highway_training/models/invoice.dart';
 import 'package:highway_training/models/room_search_result.dart';
 import 'package:highway_training/models/room_type_option.dart';
@@ -1827,6 +1828,138 @@ class ApiService {
       }
     }
     throw Exception(message ?? 'ออกรายงานไม่สำเร็จ (${r.statusCode})');
+  }
+
+  // ============ สลิปโอนเงิน ============
+
+  /// ผู้จองแนบสลิปโอนเงิน — ไม่ต้องล็อกอิน
+  ///
+  /// backend อ่าน QR บนสลิปเพื่อกันสลิปซ้ำ ถ้าซ้ำหรือไฟล์ไม่ถูกต้องจะโยน Exception
+  /// พร้อมข้อความจาก backend ให้หน้าจอแสดงได้เลย
+  Future<PaymentSlip> uploadPaymentSlip({
+    required int bookId,
+    required double amount,
+    String? note,
+    required List<int> bytes,
+    required String fileName,
+  }) async {
+    final form = FormData.fromMap({
+      'bookId': bookId,
+      'amount': amount.toStringAsFixed(2),
+      if (note != null && note.trim().isNotEmpty) 'note': note.trim(),
+      'file': MultipartFile.fromBytes(bytes, filename: fileName),
+    });
+    final r = await publicDio.post(
+      '/api/auth/public-slips',
+      data: form,
+      options: Options(
+        sendTimeout: const Duration(seconds: 120),
+        validateStatus: (status) => status! < 600,
+      ),
+    );
+    if (r.statusCode == 200 && r.data is Map && r.data['slip'] != null) {
+      return PaymentSlip.fromJson(Map<String, dynamic>.from(r.data['slip']));
+    }
+    if (r.statusCode == 413) {
+      throw Exception('ไฟล์ใหญ่เกินกว่าที่ระบบรับได้ กรุณาใช้รูปที่เล็กลง');
+    }
+    throw Exception(_slipMessage(r.data) ?? 'แนบสลิปไม่สำเร็จ (${r.statusCode})');
+  }
+
+  /// QR พร้อมเพย์ของใบจองรายย่อย — ไม่ต้องล็อกอิน
+  ///
+  /// ไม่ส่ง [amount] = ยอดคงเหลือ (ค่าบริการรวม หักสลิปที่แนบแล้วและยังไม่ถูกปฏิเสธ)
+  Future<PromptPayQrInfo> getPromptPayQr(int bookId, {double? amount}) async {
+    final r = await publicDio.get(
+      '/api/auth/public-slips/promptpay',
+      queryParameters: {
+        'bookId': bookId,
+        if (amount != null) 'amount': amount.toStringAsFixed(2),
+      },
+      options: Options(validateStatus: (status) => status! < 500),
+    );
+    if (r.statusCode == 200 && r.data is Map) {
+      return PromptPayQrInfo.fromJson(Map<String, dynamic>.from(r.data));
+    }
+    throw Exception(_slipMessage(r.data) ?? 'สร้าง QR ไม่สำเร็จ (${r.statusCode})');
+  }
+
+  /// สลิปของใบจอง สำหรับผู้จอง — ไม่ต้องล็อกอิน ไม่มีรูปและเลขอ้างอิง
+  Future<List<PaymentSlip>> getPublicPaymentSlips(int bookId) async {
+    final r = await publicDio.get(
+      '/api/auth/public-slips',
+      queryParameters: {'bookId': bookId},
+      options: Options(validateStatus: (status) => status! < 500),
+    );
+    return _slipList(r, 'ดึงรายการสลิปไม่สำเร็จ');
+  }
+
+  /// สลิปของใบจอง สำหรับเจ้าหน้าที่ในหน้ารับชำระเงิน
+  Future<List<PaymentSlip>> getPaymentSlips(int bookId) async {
+    await _ensureToken();
+    final r = await dio.get(
+      '/api/auth/payment-slips',
+      queryParameters: {'bookId': bookId},
+      options: Options(validateStatus: (status) => status! < 500),
+    );
+    return _slipList(r, 'ดึงรายการสลิปไม่สำเร็จ');
+  }
+
+  /// รูปสลิป สำหรับเจ้าหน้าที่
+  Future<Uint8List> getPaymentSlipImage(int id) async {
+    await _ensureToken();
+    final r = await dio.get(
+      '/api/auth/payment-slips/$id/image',
+      options: Options(
+        responseType: ResponseType.bytes,
+        validateStatus: (status) => status! < 600,
+      ),
+    );
+    if (r.statusCode == 200 && r.data is List<int>) {
+      return Uint8List.fromList(r.data as List<int>);
+    }
+    String? message;
+    if (r.data is List<int>) {
+      try {
+        message = _slipMessage(jsonDecode(utf8.decode(r.data as List<int>)));
+      } catch (_) {
+        // ไม่ใช่ JSON ใช้ข้อความกลาง
+      }
+    }
+    throw Exception(message ?? 'เปิดรูปสลิปไม่สำเร็จ (${r.statusCode})');
+  }
+
+  /// เจ้าหน้าที่บันทึกผลตรวจสลิป [status] = CONFIRMED / REJECTED / PENDING
+  Future<PaymentSlip> reviewPaymentSlip(
+    int id, {
+    required String status,
+    String? remark,
+  }) async {
+    await _ensureToken();
+    final r = await dio.put(
+      '/api/auth/payment-slips/$id/review',
+      data: {'status': status, 'remark': remark},
+      options: Options(validateStatus: (status) => status! < 500),
+    );
+    if (r.statusCode == 200 && r.data is Map && r.data['slip'] != null) {
+      return PaymentSlip.fromJson(Map<String, dynamic>.from(r.data['slip']));
+    }
+    throw Exception(_slipMessage(r.data) ?? 'บันทึกผลตรวจไม่สำเร็จ (${r.statusCode})');
+  }
+
+  List<PaymentSlip> _slipList(Response r, String fallback) {
+    if (r.statusCode == 200 && r.data is Map) {
+      final list = (r.data['slips'] as List?) ?? const [];
+      return list
+          .map((e) => PaymentSlip.fromJson(Map<String, dynamic>.from(e as Map)))
+          .toList();
+    }
+    throw Exception(_slipMessage(r.data) ?? '$fallback (${r.statusCode})');
+  }
+
+  static String? _slipMessage(dynamic body) {
+    if (body is Map && body['message'] != null) return '${body['message']}';
+    return null;
   }
 
   /// ข้อมูลกราฟการใช้ห้องกิจกรรม ประจำปีงบประมาณ (เมนูรายงาน 16)
