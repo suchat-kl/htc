@@ -84,8 +84,8 @@ class _PaymentSlipReviewSectionState extends State<PaymentSlipReviewSection> {
       if (remark == null) return;
     } else if (status == 'CONFIRMED') {
       final ok = await _confirm(
-        'ยืนยันสลิปยอด ${_money.format(s.amount)} บาท',
-        'ตรวจกับรายการเดินบัญชีของศูนย์ฯ แล้วว่าเงินเข้าจริงตามวันเวลาและยอดในสลิป',
+        'ยืนยันหลักฐานยอด ${_money.format(s.amount)} บาท',
+        'ตรวจกับรายการเดินบัญชีของศูนย์ฯ แล้วว่าเงินเข้าจริงตามวันเวลาและยอดในหลักฐาน',
       );
       if (!ok) return;
     }
@@ -100,7 +100,7 @@ class _PaymentSlipReviewSectionState extends State<PaymentSlipReviewSection> {
       setState(() {
         _slips = [for (final x in _slips) x.id == updated.id ? updated : x];
       });
-      context.showSuccessSnackBar('บันทึกผลการตรวจสลิปแล้ว');
+      context.showSuccessSnackBar('บันทึกผลการตรวจแล้ว');
     } catch (e) {
       if (mounted) {
         context.showErrorSnackBar(e.toString().replaceAll('Exception: ', ''));
@@ -141,7 +141,10 @@ class _PaymentSlipReviewSectionState extends State<PaymentSlipReviewSection> {
     return showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('ไม่รับสลิปนี้', style: TextStyle(fontFamily: _font)),
+        title: const Text(
+          'ไม่รับหลักฐานนี้',
+          style: TextStyle(fontFamily: _font),
+        ),
         content: SizedBox(
           width: 420,
           child: TextField(
@@ -152,7 +155,7 @@ class _PaymentSlipReviewSectionState extends State<PaymentSlipReviewSection> {
             style: const TextStyle(fontFamily: _font),
             decoration: const InputDecoration(
               labelText: 'เหตุผล (ผู้จองจะเห็นข้อความนี้)',
-              hintText: 'เช่น ไม่พบเงินเข้าบัญชีตามวันเวลาในสลิป',
+              hintText: 'เช่น ไม่พบเงินเข้าบัญชีตามวันเวลาในใบเสร็จ',
               border: OutlineInputBorder(),
             ),
           ),
@@ -191,7 +194,7 @@ class _PaymentSlipReviewSectionState extends State<PaymentSlipReviewSection> {
             children: [
               ListTile(
                 title: Text(
-                  'สลิปยอด ${_money.format(s.amount)} บาท',
+                  'หลักฐานยอด ${_money.format(s.amount)} บาท',
                   style: const TextStyle(
                     fontFamily: _font,
                     fontWeight: FontWeight.bold,
@@ -301,7 +304,7 @@ class _PaymentSlipReviewSectionState extends State<PaymentSlipReviewSection> {
             const SizedBox(height: 4),
             const Text(
               'ก่อนกดยืนยัน ให้ตรวจกับรายการเดินบัญชีว่าเงินเข้าจริง '
-              'การยืนยันสลิปไม่ได้บันทึกเลขที่ใบเสร็จให้',
+              'การยืนยันหลักฐานไม่ได้บันทึกเลขที่ใบเสร็จของศูนย์ฯ ให้',
               style: TextStyle(
                 fontFamily: _font,
                 fontSize: 12,
@@ -322,7 +325,7 @@ class _PaymentSlipReviewSectionState extends State<PaymentSlipReviewSection> {
             )
           else if (_slips.isEmpty)
             const Text(
-              'ยังไม่มีสลิปแนบมา',
+              'ยังไม่มีหลักฐานการชำระเงินแนบมา',
               style: TextStyle(
                 fontFamily: _font,
                 color: AppTheme.textSecondary,
@@ -377,32 +380,35 @@ class _PaymentSlipReviewSectionState extends State<PaymentSlipReviewSection> {
                   'แนบเมื่อ $date${s.note == null ? '' : '  ·  ${s.note}'}',
                   style: const TextStyle(fontFamily: _font, fontSize: 13),
                 ),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      s.needsCloserLook
-                          ? Icons.warning_amber_rounded
-                          : Icons.qr_code_2,
-                      size: 16,
-                      color: qrColor,
-                    ),
-                    const SizedBox(width: 4),
-                    Flexible(
-                      child: Text(
+                // ใบเสร็จจากเคาน์เตอร์ไม่มี QR อยู่แล้ว แสดงผลอ่าน QR เฉพาะหลักฐานที่มี QR
+                // (สลิปโอนเงินจากแอปธนาคาร) จะได้ไม่ขึ้นคำเตือนกับใบเสร็จทุกใบ
+                if (s.qrStatus != 'NO_QR')
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
                         s.needsCloserLook
-                            ? '${s.qrLabel} — ตรวจรูปสลิปให้ละเอียด'
-                            : '${s.qrLabel}  ธนาคารผู้โอน ${s.sendingBankName}'
-                                  '  เลขอ้างอิง ${s.transRef}',
-                        style: TextStyle(
-                          fontFamily: _font,
-                          fontSize: 12,
-                          color: qrColor,
+                            ? Icons.warning_amber_rounded
+                            : Icons.qr_code_2,
+                        size: 16,
+                        color: qrColor,
+                      ),
+                      const SizedBox(width: 4),
+                      Flexible(
+                        child: Text(
+                          s.needsCloserLook
+                              ? '${s.qrLabel} — ตรวจรูปให้ละเอียด'
+                              : '${s.qrLabel}  ธนาคารผู้โอน ${s.sendingBankName}'
+                                    '  เลขอ้างอิง ${s.transRef}',
+                          style: TextStyle(
+                            fontFamily: _font,
+                            fontSize: 12,
+                            color: qrColor,
+                          ),
                         ),
                       ),
-                    ),
-                  ],
-                ),
+                    ],
+                  ),
                 if (s.reviewedBy != null)
                   Text(
                     '${s.reviewLabel}โดย ${s.reviewedBy}'
@@ -423,7 +429,7 @@ class _PaymentSlipReviewSectionState extends State<PaymentSlipReviewSection> {
               OutlinedButton.icon(
                 onPressed: () => _showImage(s),
                 icon: const Icon(Icons.image_outlined, size: 18),
-                label: const Text('ดูสลิป'),
+                label: const Text('ดูหลักฐาน'),
               ),
               if (_canReview && !s.isConfirmed)
                 ElevatedButton(
