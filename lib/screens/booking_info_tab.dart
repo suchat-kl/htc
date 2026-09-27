@@ -494,6 +494,10 @@ class _BookingInfoTabState extends State<BookingInfoTab> {
                     if (!RegExp(r'^[0-9]{13}$').hasMatch(cleaned)) {
                       return 'กรุณากรอกเฉพาะตัวเลขเท่านั้น';
                     }
+                    // รายย่อยใช้เลขนี้เป็น Ref.1 ของใบ Pay-in ต้องเป็นเลขที่ถูกต้องจริง
+                    if (_bookingtype == 'C' && !Util.isValidThaiId(cleaned)) {
+                      return 'เลขบัตรประชาชนไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง';
+                    }
                     return null;
                   },
                 ),

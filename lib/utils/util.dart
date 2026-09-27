@@ -8,6 +8,21 @@ import '../config/theme.dart';
 class Util {
   Util();
 
+  /// เลขบัตรประชาชน / เลขประจำตัวผู้เสียภาษี 13 หลัก ถูกต้องตามหลักตรวจสอบหรือไม่
+  ///
+  /// หลักที่ 13 = (11 - (ผลรวมของหลักที่ 1-12 คูณ 13 ลงไปถึง 2) mod 11) mod 10
+  /// ใช้จับเลขที่พิมพ์ผิด เพราะใบจองรายย่อยใช้เลขนี้เป็น Ref.1 ของใบ Pay-in
+  /// ต้องตรงกับ BookroomService.isValidThaiId ฝั่ง backend
+  static bool isValidThaiId(String? value) {
+    final d = (value ?? '').replaceAll(RegExp(r'[^0-9]'), '');
+    if (d.length != 13) return false;
+    var sum = 0;
+    for (var i = 0; i < 12; i++) {
+      sum += int.parse(d[i]) * (13 - i);
+    }
+    return (11 - sum % 11) % 10 == int.parse(d[12]);
+  }
+
   /// เลือกวันที่ด้วยปฏิทินภาษาไทย (พ.ศ.) — คืน null เมื่อกดยกเลิก
   ///
   /// ทั้งระบบใช้ตัวนี้ตัวเดียว ผู้เรียกต้องเช็ค null เองก่อนนำค่าไปใช้

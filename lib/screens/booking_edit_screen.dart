@@ -597,6 +597,11 @@ class _BookingEditScreenState extends State<BookingEditScreen> {
                                     ).hasMatch(cleaned)) {
                                       return 'กรุณากรอกเฉพาะตัวเลขเท่านั้น';
                                     }
+                                    // รายย่อยใช้เลขนี้เป็น Ref.1 ของใบ Pay-in ต้องเป็นเลขที่ถูกต้องจริง
+                                    if (_bookingtype == 'C' &&
+                                        !Util.isValidThaiId(cleaned)) {
+                                      return 'เลขบัตรประชาชนไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง';
+                                    }
                                     return null; // ผ่านการตรวจสอบ
                                   },
                                 ),
