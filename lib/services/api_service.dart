@@ -1863,7 +1863,54 @@ class ApiService {
     if (r.statusCode == 413) {
       throw Exception('ไฟล์ใหญ่เกินกว่าที่ระบบรับได้ กรุณาใช้รูปที่เล็กลง');
     }
-    throw Exception(_slipMessage(r.data) ?? 'แนบสลิปไม่สำเร็จ (${r.statusCode})');
+    throw Exception(
+      _slipMessage(r.data) ?? 'แนบสลิปไม่สำเร็จ (${r.statusCode})',
+    );
+  }
+
+  /// ยอดค่าบริการ ยอดที่ชำระแล้ว และยอดคงเหลือของใบจองรายย่อย — ไม่ต้องล็อกอิน
+  Future<PaymentBalance> getPaymentBalance(int bookId) async {
+    final r = await publicDio.get(
+      '/api/auth/public-slips/balance',
+      queryParameters: {'bookId': bookId},
+      options: Options(validateStatus: (status) => status! < 500),
+    );
+    if (r.statusCode == 200 && r.data is Map) {
+      return PaymentBalance.fromJson(Map<String, dynamic>.from(r.data));
+    }
+    throw Exception(
+      _slipMessage(r.data) ?? 'ดึงยอดชำระไม่สำเร็จ (${r.statusCode})',
+    );
+  }
+
+  /// ใบแจ้งการชำระเงิน (Pay-in) ของใบจองรายย่อยเป็น PDF — ไม่ต้องล็อกอิน
+  ///
+  /// ยอดในใบคือยอดคงเหลือ ถ้าออกใบไม่ได้ (เช่นไม่มีเลขบัตร หรือชำระครบแล้ว)
+  /// backend ส่งข้อความกลับมาเป็น JSON ต้องถอดเองเพราะขอผลเป็น bytes
+  Future<List<int>> downloadPayIn(int bookId) async {
+    final r = await publicDio.get(
+      '/api/auth/public-slips/payin',
+      queryParameters: {'bookId': bookId},
+      options: Options(
+        responseType: ResponseType.bytes,
+        receiveTimeout: const Duration(seconds: 60),
+        validateStatus: (status) => status! < 600,
+      ),
+    );
+    if (r.statusCode == 200 && r.data is List<int>) {
+      final bytes = r.data as List<int>;
+      if (bytes.isEmpty) throw Exception('ไฟล์ใบ Pay-in ว่างเปล่า');
+      return bytes;
+    }
+    String? message;
+    if (r.data is List<int>) {
+      try {
+        message = _slipMessage(jsonDecode(utf8.decode(r.data as List<int>)));
+      } catch (_) {
+        // ไม่ใช่ JSON ใช้ข้อความกลาง
+      }
+    }
+    throw Exception(message ?? 'สร้างใบ Pay-in ไม่สำเร็จ (${r.statusCode})');
   }
 
   /// QR พร้อมเพย์ของใบจองรายย่อย — ไม่ต้องล็อกอิน
@@ -1881,7 +1928,9 @@ class ApiService {
     if (r.statusCode == 200 && r.data is Map) {
       return PromptPayQrInfo.fromJson(Map<String, dynamic>.from(r.data));
     }
-    throw Exception(_slipMessage(r.data) ?? 'สร้าง QR ไม่สำเร็จ (${r.statusCode})');
+    throw Exception(
+      _slipMessage(r.data) ?? 'สร้าง QR ไม่สำเร็จ (${r.statusCode})',
+    );
   }
 
   /// สลิปของใบจอง สำหรับผู้จอง — ไม่ต้องล็อกอิน ไม่มีรูปและเลขอ้างอิง
@@ -1944,7 +1993,9 @@ class ApiService {
     if (r.statusCode == 200 && r.data is Map && r.data['slip'] != null) {
       return PaymentSlip.fromJson(Map<String, dynamic>.from(r.data['slip']));
     }
-    throw Exception(_slipMessage(r.data) ?? 'บันทึกผลตรวจไม่สำเร็จ (${r.statusCode})');
+    throw Exception(
+      _slipMessage(r.data) ?? 'บันทึกผลตรวจไม่สำเร็จ (${r.statusCode})',
+    );
   }
 
   List<PaymentSlip> _slipList(Response r, String fallback) {

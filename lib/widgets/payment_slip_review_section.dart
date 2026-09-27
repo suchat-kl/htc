@@ -269,7 +269,7 @@ class _PaymentSlipReviewSectionState extends State<PaymentSlipReviewSection> {
               const SizedBox(width: 8),
               const Expanded(
                 child: Text(
-                  'สลิปโอนเงินที่ผู้จองแนบมา',
+                  'หลักฐานการชำระเงินที่ผู้จองแนบมา',
                   style: TextStyle(
                     fontFamily: _font,
                     fontSize: 16,

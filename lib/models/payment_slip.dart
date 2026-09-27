@@ -151,3 +151,28 @@ class PromptPayQrInfo {
     );
   }
 }
+
+/// ยอดของใบจองรายย่อย ยอดคงเหลือ = ค่าบริการรวม - ที่ยืนยันแล้ว - ที่รอตรวจ
+class PaymentBalance {
+  final double totalDue;
+  final double confirmed;
+  final double pending;
+  final double remaining;
+
+  const PaymentBalance({
+    required this.totalDue,
+    required this.confirmed,
+    required this.pending,
+    required this.remaining,
+  });
+
+  factory PaymentBalance.fromJson(Map<String, dynamic> json) {
+    double n(String k) => (json[k] as num?)?.toDouble() ?? 0;
+    return PaymentBalance(
+      totalDue: n('totalDue'),
+      confirmed: n('confirmed'),
+      pending: n('pending'),
+      remaining: n('remaining'),
+    );
+  }
+}

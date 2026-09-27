@@ -13,10 +13,12 @@ import '../utils/file_pick.dart';
 import '../utils/snackbar_helper.dart';
 import '../utils/util.dart';
 
-/// ส่วนแจ้งชำระเงินของผู้จอง — QR พร้อมเพย์ และแนบรูปสลิปโอนเงิน (ไม่ต้องล็อกอิน)
+/// ส่วนแจ้งชำระเงินของผู้จอง (ไม่ต้องล็อกอิน) ใช้กับใบจองประเภทรายย่อย (C) เท่านั้น
+/// หน้าที่เรียกต้องเช็คประเภทเอง
 ///
-/// ใช้กับใบจองประเภทรายย่อย (C) เท่านั้น หน้าที่เรียกต้องเช็คประเภทเอง
-/// QR ตั้งยอดตั้งต้นเป็นยอดคงเหลือ ผู้จองเปลี่ยนเป็นยอดที่ต่ำกว่าได้ถ้าจะจ่ายแยกงวด
+/// ตอนนี้ใช้ใบ Pay-in ไปชำระที่เคาน์เตอร์ แล้วแนบใบเสร็จเป็นหลักฐาน
+/// QR พร้อมเพย์ทำไว้แล้วแต่ปิดไว้ก่อน ([showPromptPay] = false) รอ QR Bill Payment ของกรุงไทย
+/// ถ้าเปิด QR จะแทนที่การ์ดใบ Pay-in และข้อความเปลี่ยนเป็นแนบสลิปโอนเงิน
 ///
 /// สลิปที่แนบเป็นแค่รายการรอตรวจ เจ้าหน้าที่ต้องเทียบกับรายการเดินบัญชีก่อนยืนยัน
 /// ผู้จองเห็นแค่ยอด สถานะ และเหตุผลที่ไม่รับ ไม่เห็นรูปสลิปที่แนบไปแล้ว
@@ -24,10 +26,14 @@ class PaymentSlipUploadSection extends StatefulWidget {
   final ApiService apiService;
   final int bookId;
 
+  /// true = แสดง QR พร้อมเพย์แทนใบ Pay-in
+  final bool showPromptPay;
+
   const PaymentSlipUploadSection({
     super.key,
     required this.apiService,
     required this.bookId,
+    this.showPromptPay = false,
   });
 
   @override
@@ -50,6 +56,15 @@ class _PaymentSlipUploadSectionState extends State<PaymentSlipUploadSection> {
   bool _qrLoading = true;
   String? _qrError;
 
+  // ใบ Pay-in
+  PaymentBalance? _balance;
+  bool _balanceLoading = true;
+  String? _balanceError;
+  bool _payInBusy = false;
+  Uint8List? _payInPdf;
+  DateTime? _payInAt;
+  double? _payInAmount;
+
   PickedFile? _file;
   bool _uploading = false;
   bool _loading = true;
@@ -60,8 +75,17 @@ class _PaymentSlipUploadSectionState extends State<PaymentSlipUploadSection> {
   void initState() {
     super.initState();
     _load();
-    _loadQr();
+    if (widget.showPromptPay) {
+      _loadQr();
+    } else {
+      _loadBalance();
+    }
   }
+
+  bool get _payInMode => !widget.showPromptPay;
+
+  /// ข้อความที่ต่างกันระหว่างโหมดใบ Pay-in (แนบใบเสร็จ) กับโหมด QR (แนบสลิปโอนเงิน)
+  String get _proofName => _payInMode ? 'ใบเสร็จ' : 'สลิป';
 
   @override
   void dispose() {
@@ -92,6 +116,69 @@ class _PaymentSlipUploadSectionState extends State<PaymentSlipUploadSection> {
         _loading = false;
       });
     }
+  }
+
+  Future<void> _loadBalance() async {
+    setState(() {
+      _balanceLoading = true;
+      _balanceError = null;
+    });
+    try {
+      final b = await widget.apiService.getPaymentBalance(widget.bookId);
+      if (!mounted) return;
+      setState(() {
+        _balance = b;
+        _balanceLoading = false;
+        // ตั้งยอดในช่องแนบใบเสร็จเป็นยอดคงเหลือไว้ก่อน ผู้จองแก้ได้
+        if (_amountCtrl.text.isEmpty && b.remaining > 0) {
+          _amountCtrl.text = b.remaining.toStringAsFixed(2);
+        }
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _balanceError = e.toString().replaceAll('Exception: ', '');
+        _balanceLoading = false;
+      });
+    }
+  }
+
+  /// สร้างใบ Pay-in ยอดคงเหลือ เก็บไฟล์ไว้ให้กดดาวน์โหลด
+  Future<void> _createPayIn() async {
+    setState(() => _payInBusy = true);
+    try {
+      final bytes = await widget.apiService.downloadPayIn(widget.bookId);
+      if (!mounted) return;
+      setState(() {
+        _payInPdf = Uint8List.fromList(bytes);
+        _payInAt = DateTime.now();
+        _payInAmount = _balance?.remaining;
+      });
+      context.showSuccessSnackBar('สร้างใบ Pay-in แล้ว กดดาวน์โหลด PDF ได้เลย');
+    } catch (e) {
+      if (mounted) {
+        context.showErrorSnackBar(e.toString().replaceAll('Exception: ', ''));
+      }
+    } finally {
+      if (mounted) setState(() => _payInBusy = false);
+    }
+  }
+
+  void _downloadPayIn() {
+    final pdf = _payInPdf;
+    if (pdf == null) return;
+    final blob = html.Blob([pdf], 'application/pdf');
+    final url = html.Url.createObjectUrlFromBlob(blob);
+    final anchor = html.document.createElement('a') as html.AnchorElement
+      ..href = url
+      ..style.display = 'none'
+      ..download = 'PayIn_${widget.bookId}.pdf';
+    html.document.body!.children.add(anchor);
+    anchor.click();
+    Future.delayed(const Duration(seconds: 1), () {
+      html.document.body!.children.remove(anchor);
+      html.Url.revokeObjectUrl(url);
+    });
   }
 
   /// โหลด QR ยอดคงเหลือ หรือยอดที่ผู้จองระบุ
@@ -171,7 +258,7 @@ class _PaymentSlipUploadSectionState extends State<PaymentSlipUploadSection> {
     }
     final file = _file;
     if (file == null) {
-      context.showErrorSnackBar('กรุณาเลือกรูปสลิป');
+      context.showErrorSnackBar('กรุณาเลือกรูป$_proofName');
       return;
     }
     setState(() => _uploading = true);
@@ -188,10 +275,15 @@ class _PaymentSlipUploadSectionState extends State<PaymentSlipUploadSection> {
       _noteCtrl.clear();
       setState(() => _file = null);
       context.showSuccessSnackBar(
-        'แนบสลิปเรียบร้อย เจ้าหน้าที่จะตรวจกับรายการเดินบัญชีอีกครั้ง',
+        'แนบ$_proofNameเรียบร้อย เจ้าหน้าที่จะตรวจกับรายการเดินบัญชีอีกครั้ง',
       );
-      // ยอดคงเหลือเปลี่ยนหลังแนบสลิป QR ต้องคำนวณใหม่
-      await Future.wait([_load(), _loadQr()]);
+      // ยอดคงเหลือเปลี่ยนหลังแนบหลักฐาน ต้องคำนวณใหม่
+      // ใบ Pay-in ที่สร้างไว้ใช้ยอดเก่า ล้างทิ้งให้สร้างใหม่
+      setState(() => _payInPdf = null);
+      await Future.wait([
+        _load(),
+        widget.showPromptPay ? _loadQr() : _loadBalance(),
+      ]);
     } catch (e) {
       if (mounted) {
         context.showErrorSnackBar(e.toString().replaceAll('Exception: ', ''));
@@ -211,13 +303,162 @@ class _PaymentSlipUploadSectionState extends State<PaymentSlipUploadSection> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _qrCard(),
+              widget.showPromptPay ? _qrCard() : _payInCard(),
               const SizedBox(height: 16),
               _uploadCard(),
               const SizedBox(height: 16),
               _historyCard(),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _payInCard() {
+    final b = _balance;
+    Widget body;
+    if (_balanceLoading && b == null) {
+      body = const Padding(
+        padding: EdgeInsets.all(16),
+        child: Center(child: CircularProgressIndicator()),
+      );
+    } else if (_balanceError != null && b == null) {
+      body = Column(
+        children: [
+          Text(
+            _balanceError!,
+            style: TextStyle(fontFamily: _font, color: Colors.red.shade700),
+          ),
+          TextButton(onPressed: _loadBalance, child: const Text('ลองใหม่')),
+        ],
+      );
+    } else {
+      final canCreate = b!.totalDue > 0 && b.remaining > 0;
+      final String? blocked = b.totalDue <= 0
+          ? 'ยังไม่มียอดค่าบริการ รอเจ้าหน้าที่สรุปค่าบริการก่อน'
+          : b.remaining <= 0
+          ? (b.pending > 0
+                ? 'แนบหลักฐานการชำระครบยอดแล้ว รอเจ้าหน้าที่ตรวจ'
+                : 'ชำระครบแล้ว')
+          : null;
+      body = Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _amountLine('ค่าบริการรวม', b.totalDue),
+          if (b.confirmed > 0) _amountLine('ยืนยันการชำระแล้ว', b.confirmed),
+          if (b.pending > 0) _amountLine('แนบใบเสร็จแล้ว รอตรวจ', b.pending),
+          _amountLine('ยอดคงเหลือ', b.remaining, bold: true),
+          const SizedBox(height: 12),
+          if (blocked != null)
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppTheme.primaryPale,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                blocked,
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontFamily: _font, fontSize: 15),
+              ),
+            )
+          else ...[
+            const Text(
+              '1. กดสร้างใบ Pay-in แล้วดาวน์โหลดไฟล์ PDF พิมพ์ออกมา\n'
+              '2. นำไปชำระที่เคาน์เตอร์ธนาคารกรุงไทย '
+              '(ผู้ชำระเป็นผู้รับผิดชอบค่าธรรมเนียมเอง)\n'
+              '3. แนบรูปใบเสร็จที่ได้จากธนาคารในช่องด้านล่าง',
+              style: TextStyle(
+                fontFamily: _font,
+                fontSize: 14,
+                color: AppTheme.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 12,
+              runSpacing: 8,
+              alignment: WrapAlignment.center,
+              children: [
+                ElevatedButton.icon(
+                  onPressed: canCreate && !_payInBusy ? _createPayIn : null,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primaryColor,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 14,
+                    ),
+                  ),
+                  icon: _payInBusy
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Icon(Icons.receipt_long),
+                  label: Text(
+                    _payInPdf == null
+                        ? 'สร้างใบ Pay-in'
+                        : 'สร้างใบ Pay-in ใหม่',
+                    style: const TextStyle(fontFamily: _font, fontSize: 16),
+                  ),
+                ),
+                if (_payInPdf != null)
+                  ElevatedButton.icon(
+                    onPressed: _downloadPayIn,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.printColor,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 14,
+                      ),
+                    ),
+                    icon: const Icon(Icons.picture_as_pdf),
+                    label: const Text(
+                      'ดาวน์โหลด PDF',
+                      style: TextStyle(fontFamily: _font, fontSize: 16),
+                    ),
+                  ),
+              ],
+            ),
+            if (_payInPdf != null && _payInAt != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Text(
+                  'สร้างเมื่อ ${Util.formatThaiDate(_payInAt!)} '
+                  '${DateFormat('HH:mm').format(_payInAt!)} น. '
+                  'ยอด ${_money.format(_payInAmount ?? 0)} บาท',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontFamily: _font,
+                    fontSize: 13,
+                    color: AppTheme.textSecondary,
+                  ),
+                ),
+              ),
+          ],
+        ],
+      );
+    }
+
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _title(Icons.account_balance, 'ใบแจ้งการชำระเงิน (Pay-in)'),
+            const SizedBox(height: 12),
+            body,
+          ],
         ),
       ),
     );
@@ -409,13 +650,20 @@ class _PaymentSlipUploadSectionState extends State<PaymentSlipUploadSection> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _title(Icons.receipt_long, 'แนบสลิปโอนเงิน'),
+            _title(
+              Icons.upload_file,
+              _payInMode ? 'แนบใบเสร็จรับเงิน' : 'แนบสลิปโอนเงิน',
+            ),
             const SizedBox(height: 8),
-            const Text(
-              'โอนเงินค่าบริการแล้ว แนบรูปสลิปจากแอปธนาคารที่นี่ '
-              'ถ้าโอนหลายครั้งให้แนบแยกทีละใบ '
-              'เจ้าหน้าที่จะตรวจกับรายการเดินบัญชีของศูนย์ฯ ก่อนยืนยันการชำระเงิน',
-              style: TextStyle(
+            Text(
+              _payInMode
+                  ? 'ชำระที่เคาน์เตอร์ธนาคารแล้ว ถ่ายรูปใบเสร็จแนบที่นี่เป็นหลักฐาน '
+                        'ถ้าชำระหลายครั้งให้แนบแยกทีละใบ '
+                        'เจ้าหน้าที่จะตรวจกับรายการเดินบัญชีของศูนย์ฯ ก่อนยืนยันการชำระเงิน'
+                  : 'โอนเงินค่าบริการแล้ว แนบรูปสลิปจากแอปธนาคารที่นี่ '
+                        'ถ้าโอนหลายครั้งให้แนบแยกทีละใบ '
+                        'เจ้าหน้าที่จะตรวจกับรายการเดินบัญชีของศูนย์ฯ ก่อนยืนยันการชำระเงิน',
+              style: const TextStyle(
                 fontFamily: _font,
                 fontSize: 14,
                 color: AppTheme.textSecondary,
@@ -458,7 +706,7 @@ class _PaymentSlipUploadSectionState extends State<PaymentSlipUploadSection> {
                   onPressed: _uploading ? null : _pick,
                   icon: const Icon(Icons.image_outlined),
                   label: Text(
-                    _file == null ? 'เลือกรูปสลิป' : 'เปลี่ยนรูป',
+                    _file == null ? 'เลือกรูป$_proofName' : 'เปลี่ยนรูป',
                     style: const TextStyle(fontFamily: _font),
                   ),
                 ),
@@ -504,9 +752,9 @@ class _PaymentSlipUploadSectionState extends State<PaymentSlipUploadSection> {
                       ),
                     )
                   : const Icon(Icons.upload),
-              label: const Text(
-                'ส่งสลิป',
-                style: TextStyle(fontFamily: _font, fontSize: 16),
+              label: Text(
+                'ส่ง$_proofName',
+                style: const TextStyle(fontFamily: _font, fontSize: 16),
               ),
             ),
           ],
@@ -533,11 +781,14 @@ class _PaymentSlipUploadSectionState extends State<PaymentSlipUploadSection> {
         ],
       );
     } else if (_slips.isEmpty) {
-      body = const Padding(
-        padding: EdgeInsets.symmetric(vertical: 12),
+      body = Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12),
         child: Text(
-          'ยังไม่มีสลิปที่แนบไว้',
-          style: TextStyle(fontFamily: _font, color: AppTheme.textSecondary),
+          'ยังไม่มี$_proofNameที่แนบไว้',
+          style: const TextStyle(
+            fontFamily: _font,
+            color: AppTheme.textSecondary,
+          ),
         ),
       );
     } else {
@@ -556,7 +807,7 @@ class _PaymentSlipUploadSectionState extends State<PaymentSlipUploadSection> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _title(Icons.history, 'สลิปที่แนบแล้ว'),
+            _title(Icons.history, '$_proofNameที่แนบแล้ว'),
             const SizedBox(height: 8),
             body,
           ],
