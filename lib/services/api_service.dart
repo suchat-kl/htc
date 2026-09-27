@@ -1954,6 +1954,29 @@ class ApiService {
     return _slipList(r, 'ดึงรายการสลิปไม่สำเร็จ');
   }
 
+  /// จำนวนหลักฐานการชำระเงินที่รอตรวจของใบจองในหน้ารายการ — เจ้าหน้าที่
+  ///
+  /// คืนเฉพาะใบที่มีหลักฐานรอตรวจ ใบที่ไม่อยู่ใน Map แปลว่าไม่มี
+  Future<Map<int, int>> getPendingSlipCounts(List<int> bookIds) async {
+    if (bookIds.isEmpty) return {};
+    await _ensureToken();
+    final r = await dio.get(
+      '/api/auth/payment-slips/pending-counts',
+      queryParameters: {'bookIds': bookIds.join(',')},
+      options: Options(validateStatus: (status) => status! < 500),
+    );
+    if (r.statusCode == 200 && r.data is Map && r.data['counts'] is Map) {
+      final raw = Map<String, dynamic>.from(r.data['counts'] as Map);
+      return {
+        for (final e in raw.entries)
+          int.parse(e.key): (e.value as num).toInt(),
+      };
+    }
+    throw Exception(
+      _slipMessage(r.data) ?? 'ดึงจำนวนหลักฐานรอตรวจไม่สำเร็จ (${r.statusCode})',
+    );
+  }
+
   /// รูปสลิป สำหรับเจ้าหน้าที่
   Future<Uint8List> getPaymentSlipImage(int id) async {
     await _ensureToken();
@@ -3213,6 +3236,7 @@ class ApiService {
     int? status,
     String? idcard,
     String? bookingtype,
+    bool pendingSlip = false,
     int page = 0,
     int size = 10,
   }) async {
@@ -3231,6 +3255,8 @@ class ApiService {
     if (bookingtype != null && bookingtype.isNotEmpty) {
       p['bookingtype'] = bookingtype;
     }
+    // หน้ารับชำระเงิน: เฉพาะใบที่มีหลักฐานการชำระเงินรอเจ้าหน้าที่ตรวจ
+    if (pendingSlip) p['pendingSlip'] = true;
 
     try {
       final r = await publicDio.get(

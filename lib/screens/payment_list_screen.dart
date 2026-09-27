@@ -52,6 +52,12 @@ class _PaymentListScreenState extends State<PaymentListScreen> {
 
   // Search State
   int? _selectedStatusId;
+
+  /// เฉพาะใบที่มีหลักฐานการชำระเงิน (ใบเสร็จ/สลิป) ที่ผู้จองแนบมารอตรวจ
+  bool _pendingOnly = false;
+
+  /// จำนวนหลักฐานรอตรวจของใบจองในหน้าที่แสดงอยู่ ใบที่ไม่มีจะไม่อยู่ใน Map
+  Map<int, int> _pendingCounts = {};
   DateTime? _startDate;
   DateTime? _stopDate;
 
@@ -109,6 +115,7 @@ class _PaymentListScreenState extends State<PaymentListScreen> {
             : null,
         booktitle: _booktitleCtrl.text.isNotEmpty ? _booktitleCtrl.text : null,
         status: _selectedStatusId,
+        pendingSlip: _pendingOnly,
         page: _currentPage,
         size: _pageSize,
       );
@@ -124,6 +131,7 @@ class _PaymentListScreenState extends State<PaymentListScreen> {
           _isSearching = false;
           _isLoading = false;
         });
+        _loadPendingCounts();
       }
     } catch (e) {
       if (mounted) {
@@ -137,8 +145,24 @@ class _PaymentListScreenState extends State<PaymentListScreen> {
     }
   }
 
+  /// ป้ายรอตรวจเป็นข้อมูลเสริม โหลดไม่ได้ก็ยังใช้หน้ารายการได้ตามปกติ
+  Future<void> _loadPendingCounts() async {
+    final ids = [
+      for (final b in _bookings)
+        if (b.bookID != null) b.bookID!,
+    ];
+    try {
+      final counts = await widget.apiService.getPendingSlipCounts(ids);
+      if (mounted) setState(() => _pendingCounts = counts);
+    } catch (e) {
+      if (AppLogger.on) AppLogger.d('โหลดจำนวนหลักฐานรอตรวจไม่ได้: $e');
+      if (mounted) setState(() => _pendingCounts = {});
+    }
+  }
+
   void _clearSearch() {
     setState(() {
+      _pendingOnly = false;
       _bookIDCtrl.clear();
       _startDateCtrl.clear();
       _stopDateCtrl.clear();
@@ -301,6 +325,30 @@ class _PaymentListScreenState extends State<PaymentListScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
+              FilterChip(
+                avatar: Icon(
+                  Icons.receipt_long,
+                  size: 18,
+                  color: _pendingOnly ? Colors.white : AppTheme.warningColor,
+                ),
+                label: const Text('มีหลักฐานรอตรวจ'),
+                selected: _pendingOnly,
+                showCheckmark: false,
+                selectedColor: AppTheme.warningColor,
+                labelStyle: TextStyle(
+                  fontSize: 14,
+                  color: _pendingOnly ? Colors.white : AppTheme.textPrimary,
+                ),
+                side: const BorderSide(color: AppTheme.warningColor),
+                onSelected: (v) {
+                  setState(() {
+                    _pendingOnly = v;
+                    _currentPage = 0;
+                  });
+                  _searchBookings();
+                },
+              ),
+              const SizedBox(width: 12),
               Flexible(child: _buildStatusDropdown()),
               const SizedBox(width: 12),
               ElevatedButton.icon(
@@ -500,6 +548,8 @@ class _PaymentListScreenState extends State<PaymentListScreen> {
                 _buildHeader('ห้องพัก', flex: 1),
                 _buildHeader('สถานะ', flex: 1),
                 _buildHeader('รับชำระ', flex: 1),
+                // ที่ของป้าย "รอตรวจ" ท้ายแถว กว้างเท่ากับ _pendingBadge
+                const SizedBox(width: 86),
               ],
             ),
           ),
@@ -587,6 +637,7 @@ class _PaymentListScreenState extends State<PaymentListScreen> {
                               ),
                             ),
                           ),
+                          _pendingBadge(item.bookID),
                         ],
                       ),
                     ),
@@ -703,10 +754,45 @@ class _PaymentListScreenState extends State<PaymentListScreen> {
     );
   }
 
+  /// ป้าย "รอตรวจ n" ท้ายแถว ใบที่ไม่มีหลักฐานรอตรวจเว้นที่ว่างไว้ให้ตารางตรงกัน
+  Widget _pendingBadge(int? bookId) {
+    final n = bookId == null ? 0 : (_pendingCounts[bookId] ?? 0);
+    return SizedBox(
+      width: 86,
+      child: n == 0
+          ? const SizedBox()
+          : Padding(
+              padding: const EdgeInsets.only(left: 8, top: 6),
+              child: Tooltip(
+                message: 'มีหลักฐานการชำระเงินที่ผู้จองแนบมารอตรวจ $n ใบ',
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppTheme.warningColor,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    'รอตรวจ $n',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+    );
+  }
+
   /// เปิดหน้ารับชำระเงินของใบจองนั้น
   ///
-  /// ตอนนี้เป็นหน้าว่างไว้ก่อนตามที่กำหนด เมื่อทำหน้ารับชำระจริงแล้วให้กลับมา
-  /// จัดการค่าที่ส่งกลับ (เช่นโหลดรายการใหม่หลังบันทึกการชำระเงิน)
+  /// กลับมาแล้วโหลดป้ายรอตรวจใหม่ เพราะเจ้าหน้าที่อาจเพิ่งยืนยันหรือไม่รับหลักฐานไป
+  /// ถ้ากำลังกรองเฉพาะใบที่มีหลักฐานรอตรวจ ต้องค้นใหม่ทั้งหน้าเพื่อเอาใบที่ตรวจครบแล้วออก
   Future<void> _showPayment(int bookId) async {
     await Navigator.push(
       context,
@@ -718,5 +804,11 @@ class _PaymentListScreenState extends State<PaymentListScreen> {
         ),
       ),
     );
+    if (!mounted) return;
+    if (_pendingOnly) {
+      _searchBookings();
+    } else {
+      _loadPendingCounts();
+    }
   }
 }
