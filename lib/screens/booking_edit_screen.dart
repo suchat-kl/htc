@@ -37,6 +37,14 @@ class _BookingEditScreenState extends State<BookingEditScreen> {
   String _bookingtype = 'A';
   bool _requestRoom = false;
   bool _requestConference = false;
+
+  /// ใบจองรายย่อย (C) ขอใช้ได้เฉพาะห้องพัก
+  /// ติ๊กห้องพักไว้ให้ตั้งแต่ต้น และล้างห้องกิจกรรมที่อาจติ๊กค้างไว้จากประเภทเดิม
+  void _applyLodgingOnly() {
+    _requestRoom = true;
+    _requestConference = false;
+  }
+
   DateTime _startDate = DateTime.now();
   DateTime _stopDate = DateTime.now().add(const Duration(days: 1));
 
@@ -89,6 +97,7 @@ class _BookingEditScreenState extends State<BookingEditScreen> {
     _bookingtype = b.bookingtype ?? 'A';
     _requestRoom = b.requestroom == 'T';
     _requestConference = b.requestconference == 'T';
+    if (_bookingtype == 'C') _applyLodgingOnly();
     if (b.startdate != null) {
       _startDate = DateTime.tryParse(b.startdate!) ?? DateTime.now();
     }
@@ -164,7 +173,9 @@ class _BookingEditScreenState extends State<BookingEditScreen> {
         contractnumber1: _contractNumberCtrl.text,
         bookingtype: _bookingtype,
         requestroom: _requestRoom ? 'T' : 'F',
-        requestconference: _requestConference ? 'T' : 'F',
+        requestconference: _bookingtype != 'C' && _requestConference
+            ? 'T'
+            : 'F',
         bookremark: _bookRemarkCtrl.text,
       );
 
@@ -526,6 +537,7 @@ class _BookingEditScreenState extends State<BookingEditScreen> {
                                 onChanged: (String? value) {
                                   setState(() {
                                     _bookingtype = value!;
+                                    if (value == 'C') _applyLodgingOnly();
                                   });
                                 },
                                 // Wrap แทน Row เพื่อไม่ให้ overflow บนจอแคบ
@@ -648,12 +660,15 @@ class _BookingEditScreenState extends State<BookingEditScreen> {
                                     onChanged: (v) =>
                                         setState(() => _requestRoom = v),
                                   ),
-                                  _CheckOption(
-                                    value: _requestConference,
-                                    label: 'ห้องกิจกรรม',
-                                    onChanged: (v) =>
-                                        setState(() => _requestConference = v),
-                                  ),
+                                  // รายย่อยขอได้เฉพาะห้องพัก
+                                  if (_bookingtype != 'C')
+                                    _CheckOption(
+                                      value: _requestConference,
+                                      label: 'ห้องกิจกรรม',
+                                      onChanged: (v) => setState(
+                                        () => _requestConference = v,
+                                      ),
+                                    ),
                                 ],
                               ),
                             ],

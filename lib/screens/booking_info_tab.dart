@@ -61,6 +61,14 @@ class _BookingInfoTabState extends State<BookingInfoTab> {
   String _bookingtype = 'A';
   bool _requestRoom = false;
   bool _requestConference = false;
+
+  /// ใบจองรายย่อย (C) ขอใช้ได้เฉพาะห้องพัก
+  /// ติ๊กห้องพักไว้ให้ตั้งแต่ต้น และล้างห้องกิจกรรมที่อาจติ๊กค้างไว้จากประเภทเดิม
+  void _applyLodgingOnly() {
+    _requestRoom = true;
+    _requestConference = false;
+  }
+
   DateTime _startDate = DateTime.now();
   DateTime _stopDate = DateTime.now().add(const Duration(days: 1));
   int? _statusId;
@@ -144,6 +152,7 @@ class _BookingInfoTabState extends State<BookingInfoTab> {
     _bookingtype = b['bookingtype']?.toString() ?? 'A';
     _requestRoom = b['requestroom'] == 'T';
     _requestConference = b['requestconference'] == 'T';
+    if (_bookingtype == 'C') _applyLodgingOnly();
     _statusId = _asInt(b['statusId']);
     _bookdate = b['bookdate']?.toString();
     _branchName = b['branchName']?.toString();
@@ -196,7 +205,9 @@ class _BookingInfoTabState extends State<BookingInfoTab> {
         contractnumber1: _contractNumberCtrl.text,
         bookingtype: _bookingtype,
         requestroom: _requestRoom ? 'T' : 'F',
-        requestconference: _requestConference ? 'T' : 'F',
+        requestconference: _bookingtype != 'C' && _requestConference
+            ? 'T'
+            : 'F',
         bookremark: _bookRemarkCtrl.text,
         address: _addressCtrl.text,
         branchName: _branchName,
@@ -499,12 +510,22 @@ class _BookingInfoTabState extends State<BookingInfoTab> {
               const SizedBox(height: 18),
               _twoCol(
                 a: _dateField('วันที่เริ่มต้น', _startDate, () async {
-                  final p = await Util.dateFieldPickerNullable(context, _startDate);
-                  if (p != null && p != _startDate) setState(() => _startDate = p);
+                  final p = await Util.dateFieldPickerNullable(
+                    context,
+                    _startDate,
+                  );
+                  if (p != null && p != _startDate) {
+                    setState(() => _startDate = p);
+                  }
                 }),
                 b: _dateField('วันที่สิ้นสุด', _stopDate, () async {
-                  final p = await Util.dateFieldPickerNullable(context, _stopDate);
-                  if (p != null && p != _stopDate) setState(() => _stopDate = p);
+                  final p = await Util.dateFieldPickerNullable(
+                    context,
+                    _stopDate,
+                  );
+                  if (p != null && p != _stopDate) {
+                    setState(() => _stopDate = p);
+                  }
                 }),
               ),
               const SizedBox(height: 18),
@@ -537,11 +558,13 @@ class _BookingInfoTabState extends State<BookingInfoTab> {
                     label: 'ห้องพัก',
                     onChanged: (v) => setState(() => _requestRoom = v),
                   ),
-                  _CheckOption(
-                    value: _requestConference,
-                    label: 'ห้องกิจกรรม',
-                    onChanged: (v) => setState(() => _requestConference = v),
-                  ),
+                  // รายย่อยขอได้เฉพาะห้องพัก
+                  if (_bookingtype != 'C')
+                    _CheckOption(
+                      value: _requestConference,
+                      label: 'ห้องกิจกรรม',
+                      onChanged: (v) => setState(() => _requestConference = v),
+                    ),
                 ],
               ),
             ],
@@ -566,7 +589,11 @@ class _BookingInfoTabState extends State<BookingInfoTab> {
               RadioGroup<String>(
                 groupValue: _bookingtype,
                 onChanged: (String? value) {
-                  if (value != null) setState(() => _bookingtype = value);
+                  if (value == null) return;
+                  setState(() {
+                    _bookingtype = value;
+                    if (value == 'C') _applyLodgingOnly();
+                  });
                 },
                 child: const Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -659,7 +686,9 @@ class _BookingInfoTabState extends State<BookingInfoTab> {
                 s.statusName ?? '-',
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  color: allowed ? AppTheme.textPrimary : AppTheme.textSecondary,
+                  color: allowed
+                      ? AppTheme.textPrimary
+                      : AppTheme.textSecondary,
                 ),
               ),
             );
