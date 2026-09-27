@@ -883,6 +883,8 @@ class _BookingEditScreenState extends State<BookingEditScreen> {
         maxLines: maxLines,
         validator: validator, // ✅ ใช้ validator ที่รับเข้ามา
         decoration: InputDecoration(
+          // ข้อความเตือนยาวอย่างเลขบัตรไม่ถูกต้อง ให้ขึ้นบรรทัดใหม่แทนการตัดทิ้ง
+          errorMaxLines: 3,
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(10),
             borderSide: BorderSide(color: Colors.grey.shade300),

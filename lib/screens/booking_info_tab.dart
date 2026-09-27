@@ -1021,6 +1021,8 @@ class _BookingInfoTabState extends State<BookingInfoTab> {
         validator: validator,
         decoration: InputDecoration(
           hintText: hint,
+          // ข้อความเตือนยาวอย่างเลขบัตรไม่ถูกต้อง ให้ขึ้นบรรทัดใหม่แทนการตัดทิ้ง
+          errorMaxLines: 3,
           hintStyle: TextStyle(fontSize: 13, color: Colors.grey.shade400),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(10),
