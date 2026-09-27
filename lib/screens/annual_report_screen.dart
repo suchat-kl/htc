@@ -99,7 +99,8 @@ class _AnnualReportScreenState extends State<AnnualReportScreen> {
       backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: const Icon(Icons.close, size: 28),
+          tooltip: 'ปิด',
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
