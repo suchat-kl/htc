@@ -7,6 +7,7 @@ import '../models/tfood.dart';
 import '../models/foodtype.dart';
 import '../services/api_service.dart';
 import '../utils/snackbar_helper.dart';
+import '../utils/thaid.dart';
 import '../utils/util.dart';
 import 'package:highway_training/utils/logger.dart';
 
@@ -38,6 +39,113 @@ class _BookingEditScreenState extends State<BookingEditScreen> {
   bool _requestRoom = false;
   bool _requestConference = false;
 
+  /// เลขบัตรที่ได้จากการยืนยันตัวตนด้วย ThaID ถ้าผู้ใช้แก้เลขบัตรเองป้ายยืนยันจะหายไป
+  String? _thaidPid;
+  String? _thaidAddress;
+  bool _thaidBusy = false;
+
+  bool get _thaidVerified =>
+      _thaidPid != null && _idcardCtrl.text.replaceAll(' ', '') == _thaidPid;
+
+  /// ยืนยันตัวตนผู้จองรายย่อยด้วย ThaID แล้วเติมเลขบัตรและชื่อ-สกุลให้
+  Future<void> _verifyWithThaid() async {
+    setState(() => _thaidBusy = true);
+    try {
+      final id = await verifyWithThaid(widget.apiService);
+      if (!mounted || id == null) return;
+      setState(() {
+        _thaidPid = id.pid;
+        _thaidAddress = id.address;
+        _idcardCtrl.text = id.pid;
+        if (id.fullName.isNotEmpty) _contractNameCtrl.text = id.fullName;
+      });
+      context.showSuccessSnackBar(
+        'ยืนยันตัวตนด้วย ThaID แล้ว เติมเลขบัตรและชื่อให้เรียบร้อย',
+      );
+    } catch (e) {
+      if (mounted) {
+        context.showErrorSnackBar(e.toString().replaceAll('Exception: ', ''));
+      }
+    } finally {
+      if (mounted) setState(() => _thaidBusy = false);
+    }
+  }
+
+  Widget _thaidPanel() {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppTheme.primaryPale,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Wrap(
+            spacing: 12,
+            runSpacing: 8,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              ElevatedButton.icon(
+                onPressed: _thaidBusy ? null : _verifyWithThaid,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primaryColor,
+                  foregroundColor: Colors.white,
+                ),
+                icon: _thaidBusy
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Icon(Icons.verified_user, size: 18),
+                label: const Text(
+                  'ยืนยันตัวตนด้วย ThaID',
+                  style: TextStyle(fontFamily: 'NotoSansThai'),
+                ),
+              ),
+              if (_thaidVerified)
+                const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.check_circle,
+                      color: AppTheme.successColor,
+                      size: 18,
+                    ),
+                    SizedBox(width: 4),
+                    Text(
+                      'ยืนยันตัวตนแล้ว',
+                      style: TextStyle(
+                        fontFamily: 'NotoSansThai',
+                        color: AppTheme.successColor,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          // คู่มือ ThaID ข้อ 2.3 ให้แจ้งวัตถุประสงค์การใช้ข้อมูลกับผู้ใช้ให้ชัดเจน
+          const Text(
+            'สแกน QR ด้วยแอป ThaID เพื่อเติมเลขบัตรประชาชนและชื่อ-สกุลให้อัตโนมัติ '
+            'ระบบใช้เลขบัตร ชื่อ-สกุล และที่อยู่ตามหน้าบัตร เฉพาะในใบจอง '
+            'ใบแจ้งการชำระเงิน (Pay-in) และใบเสร็จเท่านั้น หรือจะกรอกเองก็ได้',
+            style: TextStyle(
+              fontFamily: 'NotoSansThai',
+              fontSize: 13,
+              color: AppTheme.textSecondary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   /// ใบจองรายย่อย (C) ขอใช้ได้เฉพาะห้องพัก
   /// ติ๊กห้องพักไว้ให้ตั้งแต่ต้น และล้างห้องกิจกรรมที่อาจติ๊กค้างไว้จากประเภทเดิม
   void _applyLodgingOnly() {
@@ -62,6 +170,10 @@ class _BookingEditScreenState extends State<BookingEditScreen> {
   @override
   void initState() {
     super.initState();
+    // แก้เลขบัตรหลังยืนยันด้วย ThaID แล้ว ป้าย "ยืนยันตัวตนแล้ว" ต้องหายตาม
+    _idcardCtrl.addListener(() {
+      if (_thaidPid != null && mounted) setState(() {});
+    });
     _currentBooking = widget.booking; // เก็บข้อมูลเริ่มต้น
     _loadFoodtypes();
     if (isEdit) {
@@ -171,6 +283,8 @@ class _BookingEditScreenState extends State<BookingEditScreen> {
         booktitle: _booktitleCtrl.text,
         contractname1: _contractNameCtrl.text,
         contractnumber1: _contractNumberCtrl.text,
+        // ที่อยู่จาก ThaID ส่งไปเฉพาะเมื่อยืนยันตัวตนแล้ว ไม่ส่ง = backend คงค่าเดิม
+        address: _thaidVerified ? _thaidAddress : null,
         bookingtype: _bookingtype,
         requestroom: _requestRoom ? 'T' : 'F',
         requestconference: _bookingtype != 'C' && _requestConference
@@ -606,6 +720,11 @@ class _BookingEditScreenState extends State<BookingEditScreen> {
                                   },
                                 ),
                               ),
+                              // รายย่อย: ยืนยันตัวตนด้วย ThaID แทนการพิมพ์เลขบัตรและชื่อเอง
+                              if (_bookingtype == 'C') ...[
+                                const SizedBox(height: 12),
+                                _thaidPanel(),
+                              ],
                               const SizedBox(height: 18),
 
                               // ช่องตัวเลขไม่ต้องกว้าง — ให้แค่ช่องละหนึ่งในสี่

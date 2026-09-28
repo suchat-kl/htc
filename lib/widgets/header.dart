@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:highway_training/services/api_service.dart';
 import 'package:highway_training/utils/snackbar_helper.dart';
+import 'package:highway_training/utils/thaid.dart';
+import 'package:universal_html/html.dart' as html;
 import 'package:highway_training/widgets/change_password_dialog.dart';
 import 'package:highway_training/widgets/register_user_dialog.dart';
 import 'package:highway_training/widgets/reset_password_dialog.dart';
@@ -58,7 +60,9 @@ class CustomHeader extends StatelessWidget implements PreferredSizeWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                      color: Colors.white70, fontSize: isNarrow ? 11 : 12),
+                    color: Colors.white70,
+                    fontSize: isNarrow ? 11 : 12,
+                  ),
                 ),
               ],
             ),
@@ -92,6 +96,10 @@ class CustomHeader extends StatelessWidget implements PreferredSizeWidget {
         //   onPressed: () {},
         // ),
 
+        // ปุ่ม ThaID วางคู่ปุ่มเข้าสู่ระบบ ตอนนี้เปิดหน้า QR ของ ThaID ให้ทดสอบเท่านั้น
+        // ยังไม่ได้ใช้ผลเข้าสู่ระบบ (คู่มือกรมการปกครองข้อ 2.3 ห้ามใช้ ThaID เป็น login ประจำ)
+        if (!authProvider.isLoggedIn) _buildThaidButton(context),
+
         // User Profile / Login
         Container(
           margin: const EdgeInsets.only(right: 16),
@@ -100,6 +108,81 @@ class CustomHeader extends StatelessWidget implements PreferredSizeWidget {
               : _buildLoginButton(context),
         ),
       ],
+    );
+  }
+
+  /// ปุ่มรูปโลโก้ ThaID ใช้ไฟล์ assets/images/thaid.png
+  /// ถ้ายังไม่มีไฟล์ แสดงตัวอักษร ThaiD สีเดียวกับโลโก้แทน ปุ่มจะไม่หายไป
+  Widget _buildThaidButton(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 10),
+      child: Center(
+        child: Tooltip(
+          message: 'เข้าสู่ระบบด้วย ThaID',
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(8),
+              onTap: () => _openThaid(context),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.asset(
+                  'assets/images/thaid.png',
+                  height: 36,
+                  fit: BoxFit.contain,
+                  errorBuilder: (_, _, _) => _thaidFallback(),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// เปิดหน้า QR ของ ThaID ในหน้าต่างใหม่ URL มาจาก backend (client_id ใน env.conf และ state สุ่มใหม่)
+  /// เปิดหน้าต่างเปล่าก่อนตอนกด ไม่งั้นเบราว์เซอร์บล็อกหน้าต่างที่เปิดหลังรอ API
+  Future<void> _openThaid(BuildContext context) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final popup = html.window.open('', 'thaid', 'width=520,height=780');
+    try {
+      final start = await ApiService().thaidStart(thaidReturnUrl());
+      popup.location.href = start.url;
+    } catch (e) {
+      popup.close();
+      messenger.showSnackBar(
+        SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))),
+      );
+    }
+  }
+
+  Widget _thaidFallback() {
+    const navy = Color(0xFF06115A);
+    const yellow = Color(0xFFFBC515);
+    return Container(
+      height: 36,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: BoxDecoration(
+        color: navy,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.white, width: 1.5),
+      ),
+      alignment: Alignment.center,
+      child: const Text.rich(
+        TextSpan(
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+          children: [
+            TextSpan(
+              text: 'Tha',
+              style: TextStyle(color: Colors.white),
+            ),
+            TextSpan(
+              text: 'iD',
+              style: TextStyle(color: yellow),
+            ),
+          ],
+        ),
+      ),
     );
   }
 

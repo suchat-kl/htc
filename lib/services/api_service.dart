@@ -40,6 +40,7 @@ import 'package:highway_training/models/ticker_message.dart';
 import 'package:highway_training/models/tpart.dart';
 import 'package:highway_training/services/auth_interceptor.dart';
 import 'package:highway_training/utils/logger.dart';
+import 'package:highway_training/utils/thaid.dart';
 
 class ApiService {
   static final ApiService _instance = ApiService._internal();
@@ -1868,6 +1869,45 @@ class ApiService {
     );
   }
 
+  // ============ ThaID ============
+
+  /// เริ่มยืนยันตัวตนด้วย ThaID — ไม่ต้องล็อกอิน
+  ///
+  /// backend สุ่มค่า state ใหม่ เก็บไว้ แล้วคืน URL หน้า QR ของ ThaID พร้อม state นั้น
+  /// หน้าจอต้องเก็บ state ไว้เทียบกับค่าที่ได้กลับมาหลังสแกน
+  /// [returnUrl] คือหน้า thaid_callback.html ของเว็บที่ผู้ใช้เปิดอยู่
+  Future<({String url, String state})> thaidStart(String returnUrl) async {
+    final r = await publicDio.get(
+      '/api/auth/public-thaid/start',
+      queryParameters: {'returnUrl': returnUrl},
+      options: Options(validateStatus: (status) => status! < 500),
+    );
+    if (r.statusCode == 200 &&
+        r.data is Map &&
+        r.data['url'] is String &&
+        r.data['state'] is String) {
+      return (url: r.data['url'] as String, state: r.data['state'] as String);
+    }
+    throw Exception(
+      _slipMessage(r.data) ?? 'เริ่มยืนยันตัวตนไม่สำเร็จ (${r.statusCode})',
+    );
+  }
+
+  /// เลขบัตรและชื่อจากการยืนยันตัวตนครั้งที่ใช้ [state] นี้ ได้ครั้งเดียว — ไม่ต้องล็อกอิน
+  Future<ThaidIdentity> thaidResult(String state) async {
+    final r = await publicDio.post(
+      '/api/auth/public-thaid/result',
+      data: {'state': state},
+      options: Options(validateStatus: (status) => status! < 500),
+    );
+    if (r.statusCode == 200 && r.data is Map) {
+      return ThaidIdentity.fromJson(Map<String, dynamic>.from(r.data));
+    }
+    throw Exception(
+      _slipMessage(r.data) ?? 'อ่านผลยืนยันตัวตนไม่สำเร็จ (${r.statusCode})',
+    );
+  }
+
   /// ยอดค่าบริการ ยอดที่ชำระแล้ว และยอดคงเหลือของใบจองรายย่อย — ไม่ต้องล็อกอิน
   Future<PaymentBalance> getPaymentBalance(int bookId) async {
     final r = await publicDio.get(
@@ -1968,12 +2008,12 @@ class ApiService {
     if (r.statusCode == 200 && r.data is Map && r.data['counts'] is Map) {
       final raw = Map<String, dynamic>.from(r.data['counts'] as Map);
       return {
-        for (final e in raw.entries)
-          int.parse(e.key): (e.value as num).toInt(),
+        for (final e in raw.entries) int.parse(e.key): (e.value as num).toInt(),
       };
     }
     throw Exception(
-      _slipMessage(r.data) ?? 'ดึงจำนวนหลักฐานรอตรวจไม่สำเร็จ (${r.statusCode})',
+      _slipMessage(r.data) ??
+          'ดึงจำนวนหลักฐานรอตรวจไม่สำเร็จ (${r.statusCode})',
     );
   }
 
