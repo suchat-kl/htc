@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:highway_training/services/api_service.dart';
 import 'package:highway_training/utils/snackbar_helper.dart';
-import 'package:highway_training/utils/thaid.dart';
-import 'package:universal_html/html.dart' as html;
 import 'package:highway_training/widgets/change_password_dialog.dart';
 import 'package:highway_training/widgets/register_user_dialog.dart';
 import 'package:highway_training/widgets/reset_password_dialog.dart';
@@ -96,8 +94,10 @@ class CustomHeader extends StatelessWidget implements PreferredSizeWidget {
         //   onPressed: () {},
         // ),
 
-        // ปุ่ม ThaID วางคู่ปุ่มเข้าสู่ระบบ ตอนนี้เปิดหน้า QR ของ ThaID ให้ทดสอบเท่านั้น
-        // ยังไม่ได้ใช้ผลเข้าสู่ระบบ (คู่มือกรมการปกครองข้อ 2.3 ห้ามใช้ ThaID เป็น login ประจำ)
+        // ปุ่ม ThaID กับปุ่มเข้าสู่ระบบใช้ได้ทีละปุ่ม
+        // เข้าสู่ระบบแล้วด้วยวิธีใดก็ตาม ทั้งสองปุ่มหายไป (แสดงเมนูผู้ใช้แทน) ออกจากระบบแล้วกลับมาใช้ได้ทั้งคู่
+        // ระหว่างรอสแกน ThaID ปุ่มเข้าสู่ระบบกดไม่ได้
+        // หน่วยงานได้รับอนุญาตจากกรมการปกครองให้ใช้ ThaID เข้าสู่ระบบแล้ว
         if (!authProvider.isLoggedIn) _buildThaidButton(context),
 
         // User Profile / Login
@@ -123,7 +123,9 @@ class CustomHeader extends StatelessWidget implements PreferredSizeWidget {
             color: Colors.transparent,
             child: InkWell(
               borderRadius: BorderRadius.circular(8),
-              onTap: () => _openThaid(context),
+              onTap: authProvider.thaidBusy
+                  ? null
+                  : () => _loginWithThaid(context),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(8),
                 child: Image.asset(
@@ -140,16 +142,22 @@ class CustomHeader extends StatelessWidget implements PreferredSizeWidget {
     );
   }
 
-  /// เปิดหน้า QR ของ ThaID ในหน้าต่างใหม่ URL มาจาก backend (client_id ใน env.conf และ state สุ่มใหม่)
-  /// เปิดหน้าต่างเปล่าก่อนตอนกด ไม่งั้นเบราว์เซอร์บล็อกหน้าต่างที่เปิดหลังรอ API
-  Future<void> _openThaid(BuildContext context) async {
+  /// เข้าสู่ระบบด้วย ThaID: เปิดหน้า QR ในหน้าต่างใหม่ สแกนแล้วได้เลขบัตร
+  /// เลขบัตรที่ผูกกับบัญชีเจ้าหน้าที่ = ได้ role ของบัญชีนั้น ไม่เจอ = ผู้ใช้ทั่วไป (สร้างใบจอง ดูรายการใบจอง)
+  Future<void> _loginWithThaid(BuildContext context) async {
     final messenger = ScaffoldMessenger.of(context);
-    final popup = html.window.open('', 'thaid', 'width=520,height=780');
     try {
-      final start = await ApiService().thaidStart(thaidReturnUrl());
-      popup.location.href = start.url;
+      final ok = await authProvider.loginWithThaid();
+      if (ok) {
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text(
+              'เข้าสู่ระบบด้วย ThaID แล้ว ยินดีต้อนรับ ${authProvider.displayName}',
+            ),
+          ),
+        );
+      }
     } catch (e) {
-      popup.close();
       messenger.showSnackBar(
         SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))),
       );
@@ -193,7 +201,10 @@ class CustomHeader extends StatelessWidget implements PreferredSizeWidget {
         borderRadius: BorderRadius.circular(20),
       ),
       child: TextButton.icon(
-        onPressed: () => _showLoginDialog(context),
+        // ระหว่างรอสแกน ThaID ห้ามเข้าสู่ระบบด้วยรหัสผ่านซ้อน
+        onPressed: authProvider.thaidBusy
+            ? null
+            : () => _showLoginDialog(context),
         icon: const Icon(Icons.person, color: Colors.white, size: 20),
         label: const Text(
           'เข้าสู่ระบบ',

@@ -284,72 +284,99 @@ class ApiService {
 
       if (response.statusCode == 200) {
         final data = response.data;
-
-        // Validate response data
-        if (data['access_token'] == null) {
-          throw Exception('ไม่พบ access_token ในการตอบกลับ');
-        }
-
-        await storage.write(key: accessTokenKey, value: data['access_token']);
-        await storage.write(key: refreshTokenKey, value: data['refresh_token']);
-        // await storage.write(key: empKey, value: data['empID']);
-        _username = data['username'];
-        _email = data['email'];
-        _fullName = data['full_name'];
-        _roles = List<String>.from(data['roles'] ?? []);
-        _isLoggedIn = true;
-        // _empID = data['empID'];
-        // In login method:
-        _empID = data['empID']; // ✅ empID is int, so this works
-        await storage.write(
-          key: empKey,
-          value: _empID?.toString(),
-        ); // Convert to String for storage
-
-        await storage.write(
-          key: userDataKey,
-          value:
-              '$_username|$_email|$_fullName|${_roles.join(',')}', //|$_empID',
-        );
-
-        onLoginStateChanged?.call(true);
-
-        if (AppLogger.on) AppLogger.i('🟢 Login Successful:');
-        if (AppLogger.on) AppLogger.d('   Username: $_username');
-        if (AppLogger.on) AppLogger.d('   Full Name: $_fullName');
-        if (AppLogger.on) AppLogger.d('   Roles: $_roles');
-
+        await _applyLogin(data);
         return data;
       } else {
         throw Exception('Login failed with status: ${response.statusCode}');
       }
     } on DioException catch (e) {
-      if (AppLogger.on) AppLogger.e('🔴 DioException:');
-      if (AppLogger.on) AppLogger.d('   Type: ${e.type}');
-      if (AppLogger.on) AppLogger.d('   Message: ${e.message}');
-      if (AppLogger.on) AppLogger.d('   Error: ${e.error}');
-
-      if (e.response != null) {
-        if (AppLogger.on) {
-          AppLogger.d('   Response Status: ${e.response?.statusCode}');
-        }
-        if (AppLogger.on) {
-          AppLogger.lazy(
-            () => '   Response Data: ${AppLogger.redact(e.response?.data)}',
-            tag: 'AUTH',
-          );
-        }
-        if (AppLogger.on) {
-          AppLogger.d('   Response Headers: ${e.response?.headers}');
-        }
-      }
-
-      String message = _getErrorMessage(e);
-      throw Exception(message);
+      _rethrowLoginError(e);
     } catch (e) {
       if (AppLogger.on) AppLogger.e('🔴 Unexpected Error: $e');
       throw Exception('เกิดข้อผิดพลาดที่ไม่คาดคิด: ${e.toString()}');
     }
+  }
+
+  /// เข้าสู่ระบบด้วยผลยืนยันตัวตน ThaID ของ [state] นี้ (ใช้ได้ครั้งเดียว)
+  ///
+  /// backend ค้นบัญชีที่ผูกเลขบัตรไว้ เจอ = role ของบัญชีนั้น ไม่เจอ = บัญชีผู้ใช้ทั่วไป (USER)
+  /// ได้ token แบบเดียวกับ [login] จึงเก็บผลด้วยขั้นตอนเดียวกัน
+  Future<Map<String, dynamic>> loginWithThaid(String state) async {
+    final r = await publicDio.post(
+      '/api/auth/public-thaid/login',
+      data: {'state': state},
+      options: Options(validateStatus: (status) => status! < 500),
+    );
+    if (r.statusCode == 200 && r.data is Map) {
+      final data = Map<String, dynamic>.from(r.data);
+      await _applyLogin(data);
+      return data;
+    }
+    throw Exception(
+      _slipMessage(r.data) ??
+          'เข้าสู่ระบบด้วย ThaID ไม่สำเร็จ (${r.statusCode})',
+    );
+  }
+
+  /// เก็บ token และข้อมูลผู้ใช้หลังเข้าสู่ระบบสำเร็จ ใช้ร่วมกันทั้งรหัสผ่านและ ThaID
+  Future<void> _applyLogin(dynamic data) async {
+    // Validate response data
+    if (data['access_token'] == null) {
+      throw Exception('ไม่พบ access_token ในการตอบกลับ');
+    }
+
+    await storage.write(key: accessTokenKey, value: data['access_token']);
+    await storage.write(key: refreshTokenKey, value: data['refresh_token']);
+    // await storage.write(key: empKey, value: data['empID']);
+    _username = data['username'];
+    _email = data['email'];
+    _fullName = data['full_name'];
+    _roles = List<String>.from(data['roles'] ?? []);
+    _isLoggedIn = true;
+    // _empID = data['empID'];
+    // In login method:
+    _empID = data['empID']; // ✅ empID is int, so this works
+    await storage.write(
+      key: empKey,
+      value: _empID?.toString(),
+    ); // Convert to String for storage
+
+    await storage.write(
+      key: userDataKey,
+      value: '$_username|$_email|$_fullName|${_roles.join(',')}', //|$_empID',
+    );
+
+    onLoginStateChanged?.call(true);
+
+    if (AppLogger.on) AppLogger.i('🟢 Login Successful:');
+    if (AppLogger.on) AppLogger.d('   Username: $_username');
+    if (AppLogger.on) AppLogger.d('   Full Name: $_fullName');
+    if (AppLogger.on) AppLogger.d('   Roles: $_roles');
+  }
+
+  Never _rethrowLoginError(DioException e) {
+    if (AppLogger.on) AppLogger.e('🔴 DioException:');
+    if (AppLogger.on) AppLogger.d('   Type: ${e.type}');
+    if (AppLogger.on) AppLogger.d('   Message: ${e.message}');
+    if (AppLogger.on) AppLogger.d('   Error: ${e.error}');
+
+    if (e.response != null) {
+      if (AppLogger.on) {
+        AppLogger.d('   Response Status: ${e.response?.statusCode}');
+      }
+      if (AppLogger.on) {
+        AppLogger.lazy(
+          () => '   Response Data: ${AppLogger.redact(e.response?.data)}',
+          tag: 'AUTH',
+        );
+      }
+      if (AppLogger.on) {
+        AppLogger.d('   Response Headers: ${e.response?.headers}');
+      }
+    }
+
+    String message = _getErrorMessage(e);
+    throw Exception(message);
   }
 
   // Get user-friendly error message

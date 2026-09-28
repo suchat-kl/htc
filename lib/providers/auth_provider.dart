@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import '../models/screen_permission.dart';
 import '../services/api_service.dart';
+import '../utils/thaid.dart';
 
 class AuthProvider extends ChangeNotifier {
   final ApiService _apiService = ApiService();
@@ -45,6 +46,29 @@ class AuthProvider extends ChangeNotifier {
     await _apiService.login(username, password);
     await _apiService.loadPermissions();
     notifyListeners();
+  }
+
+  /// กำลังรอสแกน ThaID อยู่ ระหว่างนี้ปุ่มเข้าสู่ระบบทั้งสองแบบกดไม่ได้
+  /// ใช้ได้ทีละปุ่ม ตามที่กำหนด
+  bool _thaidBusy = false;
+  bool get thaidBusy => _thaidBusy;
+
+  /// เข้าสู่ระบบด้วย ThaID คืน false ถ้าผู้ใช้ปิดหน้าต่างเองก่อนสแกนเสร็จ
+  /// ต้องเรียกจากการกดปุ่มโดยตรง เพราะต้องเปิดหน้าต่างใหม่
+  Future<bool> loginWithThaid() async {
+    if (_thaidBusy || isLoggedIn) return false;
+    _thaidBusy = true;
+    notifyListeners();
+    try {
+      final state = await thaidAuthorize(_apiService);
+      if (state == null) return false;
+      await _apiService.loginWithThaid(state);
+      await _apiService.loadPermissions();
+      return true;
+    } finally {
+      _thaidBusy = false;
+      notifyListeners();
+    }
   }
 
   Future<void> logout() async {
@@ -107,8 +131,18 @@ class AuthProvider extends ChangeNotifier {
   /// USER เป็น role พื้นฐานที่ทุกคนถือ จึงเป็นตัวสุดท้ายเสมอ
   String get highestRole {
     const rank = [
-      'ADMIN', 'MASTER', 'MANAGER', 'ACCOUNT', 'RECEPTION', 'RECEPTION2',
-      'NUTRITION', 'EQUIP_MASTER', 'SERVICE', 'ROOM_SERVICE', 'EQUIP', 'USER',
+      'ADMIN',
+      'MASTER',
+      'MANAGER',
+      'ACCOUNT',
+      'RECEPTION',
+      'RECEPTION2',
+      'NUTRITION',
+      'EQUIP_MASTER',
+      'SERVICE',
+      'ROOM_SERVICE',
+      'EQUIP',
+      'USER',
     ];
     for (final r in rank) {
       if (hasRole(r)) return _roleNames[r] ?? r;

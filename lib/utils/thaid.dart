@@ -56,6 +56,15 @@ String thaidReturnUrl() {
 ///   3. thaid_callback.html ส่ง state กลับมาทาง postMessage หน้านี้เทียบกับค่าที่เก็บไว้ ต้องตรงกัน
 ///   4. ขอเลขบัตรและชื่อจาก backend ด้วย state นั้น ได้ครั้งเดียว
 Future<ThaidIdentity?> verifyWithThaid(ApiService api) async {
+  final state = await thaidAuthorize(api);
+  if (state == null) return null;
+  return api.thaidResult(state);
+}
+
+/// เปิดหน้าต่าง ThaID ให้สแกน แล้วรอผล คืน state ที่ตรวจแล้วว่าตรงกับที่ส่งไป
+/// ผู้เรียกนำ state ไปขอผล ([ApiService.thaidResult]) หรือเข้าสู่ระบบ ([ApiService.loginWithThaid])
+/// คืน null ถ้าผู้ใช้ปิดหน้าต่างเอง
+Future<String?> thaidAuthorize(ApiService api) async {
   final popup = html.window.open(
     '',
     'thaid',
@@ -72,7 +81,7 @@ Future<ThaidIdentity?> verifyWithThaid(ApiService api) async {
     rethrow;
   }
 
-  final done = Completer<ThaidIdentity?>();
+  final done = Completer<String?>();
   late final StreamSubscription<html.MessageEvent> sub;
   Timer? watcher;
 
@@ -83,7 +92,7 @@ Future<ThaidIdentity?> verifyWithThaid(ApiService api) async {
     if (isError) {
       done.completeError(result!);
     } else {
-      done.complete(result as ThaidIdentity?);
+      done.complete(result as String?);
     }
   }
 
@@ -105,11 +114,7 @@ Future<ThaidIdentity?> verifyWithThaid(ApiService api) async {
       finish(Exception(error), isError: true);
       return;
     }
-    try {
-      finish(await api.thaidResult(sentState));
-    } catch (e) {
-      finish(e, isError: true);
-    }
+    finish(sentState);
   });
 
   // ผู้ใช้ปิดหน้าต่างเองก่อนยืนยันเสร็จ = ยกเลิก
