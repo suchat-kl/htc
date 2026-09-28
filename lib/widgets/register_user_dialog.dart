@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../config/theme.dart';
 import '../services/api_service.dart';
 import '../utils/snackbar_helper.dart';
+import '../utils/util.dart';
 import 'package:highway_training/utils/logger.dart';
 
 class RegisterUserDialog extends StatefulWidget {
@@ -25,6 +26,7 @@ class _RegisterUserDialogState extends State<RegisterUserDialog> {
   final _positionController = TextEditingController();
   final _departmentController = TextEditingController();
   final _phoneController = TextEditingController();
+  final _idcardController = TextEditingController();
 
   // State
   bool _isLoading = false;
@@ -61,6 +63,7 @@ class _RegisterUserDialogState extends State<RegisterUserDialog> {
     _positionController.dispose();
     _departmentController.dispose();
     _phoneController.dispose();
+    _idcardController.dispose();
     super.dispose();
   }
 
@@ -127,6 +130,7 @@ class _RegisterUserDialogState extends State<RegisterUserDialog> {
         position: _positionController.text.trim(),
         department: _departmentController.text.trim(),
         phone: _phoneController.text.trim(),
+        idcard: _idcardController.text.replaceAll(RegExp(r'[^0-9]'), ''),
         roles: _selectedRoles,
       );
 
@@ -157,6 +161,7 @@ class _RegisterUserDialogState extends State<RegisterUserDialog> {
     _positionController.clear();
     _departmentController.clear();
     _phoneController.clear();
+    _idcardController.clear();
     setState(() {
       _selectedRoles = [];
       _errorMessage = null;
@@ -221,6 +226,8 @@ class _RegisterUserDialogState extends State<RegisterUserDialog> {
                       _buildDepartmentField(isDesktop),
                       const SizedBox(height: 16),
                       _buildPhoneField(isDesktop),
+                      const SizedBox(height: 16),
+                      _buildIdcardField(isDesktop),
                       const SizedBox(height: 16),
                       _buildRolesSelection(isDesktop),
                       const SizedBox(height: 24),
@@ -566,6 +573,41 @@ class _RegisterUserDialogState extends State<RegisterUserDialog> {
       isDesktop: isDesktop,
       keyboardType: TextInputType.phone,
       validator: (v) => v?.isEmpty == true ? 'กรุณากรอกเบอร์โทรศัพท์' : null,
+    );
+  }
+
+  /// เลขบัตรประชาชน ไม่บังคับ ใส่แล้วเจ้าหน้าที่สแกน ThaID เข้าสู่ระบบได้ด้วยสิทธิ์ของบัญชีนี้
+  /// ไม่ใส่ = เข้าได้ด้วยรหัสผ่านอย่างเดียว ถ้าสแกน ThaID จะได้แค่สิทธิ์ผู้ใช้ทั่วไป
+  Widget _buildIdcardField(bool isDesktop) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildTextField(
+          label: 'เลขบัตรประชาชน (ไม่บังคับ)',
+          hint: 'ตัวเลข 13 หลัก สำหรับเข้าสู่ระบบด้วย ThaID',
+          icon: Icons.badge_outlined,
+          controller: _idcardController,
+          isDesktop: isDesktop,
+          keyboardType: TextInputType.number,
+          validator: (v) {
+            final d = (v ?? '').replaceAll(RegExp(r'[^0-9]'), '');
+            if (d.isEmpty) return null;
+            if (d.length != 13) return 'เลขบัตรประชาชนต้องมี 13 หลัก';
+            if (!Util.isValidThaiId(d)) {
+              return 'เลขบัตรประชาชนไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง';
+            }
+            return null;
+          },
+        ),
+        const SizedBox(height: 6),
+        Text(
+          'ใส่แล้วผู้ใช้สแกน ThaID เข้าสู่ระบบได้ด้วยสิทธิ์ของบัญชีนี้',
+          style: TextStyle(
+            fontSize: isDesktop ? 12 : 11,
+            color: AppTheme.textSecondary,
+          ),
+        ),
+      ],
     );
   }
 
