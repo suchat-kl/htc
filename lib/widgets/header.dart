@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:highway_training/services/api_service.dart';
+import 'package:highway_training/utils/logger.dart';
 import 'package:highway_training/utils/snackbar_helper.dart';
+import 'package:highway_training/utils/thaid.dart';
 import 'package:highway_training/widgets/change_password_dialog.dart';
 import 'package:highway_training/widgets/register_user_dialog.dart';
 import 'package:highway_training/widgets/reset_password_dialog.dart';
@@ -74,7 +76,7 @@ class CustomHeader extends StatelessWidget implements PreferredSizeWidget {
             padding: const EdgeInsets.symmetric(horizontal: 8),
             child: Center(
               child: Text(
-                'ยินดีต้อนรับ, ${authProvider.displayName}',
+                'ยินดีต้อนรับ ${authProvider.displayName}',
                 style: const TextStyle(color: Colors.white70, fontSize: 14),
               ),
             ),
@@ -145,21 +147,62 @@ class CustomHeader extends StatelessWidget implements PreferredSizeWidget {
   /// เข้าสู่ระบบด้วย ThaID: เปิดหน้า QR ในหน้าต่างใหม่ สแกนแล้วได้เลขบัตร
   /// เลขบัตรที่ผูกกับบัญชีเจ้าหน้าที่ = ได้ role ของบัญชีนั้น ไม่เจอ = ผู้ใช้ทั่วไป (สร้างใบจอง ดูรายการใบจอง)
   Future<void> _loginWithThaid(BuildContext context) async {
+    // จับ messenger ไว้ก่อนรอผล หน้าแถบบนสร้างใหม่หลังเข้าสู่ระบบ context เดิมอาจใช้ไม่ได้แล้ว
     final messenger = ScaffoldMessenger.of(context);
-    try {
-      final ok = await authProvider.loginWithThaid();
-      if (ok) {
-        messenger.showSnackBar(
+    void notify(String message, Color color, IconData icon, int seconds) {
+      messenger
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
           SnackBar(
-            content: Text(
-              'เข้าสู่ระบบด้วย ThaID แล้ว ยินดีต้อนรับ ${authProvider.displayName}',
+            content: Row(
+              children: [
+                Icon(icon, color: Colors.white, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    message,
+                    style: const TextStyle(fontFamily: 'Sarabun'),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: color,
+            behavior: SnackBarBehavior.floating,
+            duration: Duration(seconds: seconds),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
             ),
           ),
         );
+    }
+
+    try {
+      final ok = await authProvider.loginWithThaid();
+      if (ok) {
+        notify(
+          'เข้าสู่ระบบด้วย ThaID สำเร็จ ยินดีต้อนรับ ${authProvider.displayName}',
+          AppTheme.successColor,
+          Icons.check_circle,
+          4,
+        );
+      } else if (!authProvider.isLoggedIn) {
+        // กดยกเลิกในแอป ThaID หรือปิดหน้าต่าง ThaID เอง กลับสู่หน้าจอปกติ
+        notify(
+          thaidCancelledMessage,
+          AppTheme.infoColor,
+          Icons.info_outline,
+          4,
+        );
       }
     } catch (e) {
-      messenger.showSnackBar(
-        SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))),
+      if (AppLogger.on) {
+        AppLogger.e('เข้าสู่ระบบด้วย ThaID ไม่สำเร็จ', error: e);
+      }
+      notify(
+        'เข้าสู่ระบบด้วย ThaID ไม่สำเร็จ: ${e.toString().replaceAll('Exception: ', '')}',
+        AppTheme.dangerColor,
+        Icons.error_outline,
+        8,
       );
     }
   }
@@ -338,16 +381,22 @@ class CustomHeader extends StatelessWidget implements PreferredSizeWidget {
               ],
             ),
           ),
-          const PopupMenuItem(
-            value: 'change_password',
-            child: Row(
-              children: [
-                Icon(Icons.lock_reset, color: AppTheme.primaryColor, size: 20),
-                SizedBox(width: 12),
-                Text('เปลี่ยนรหัสผ่าน'),
-              ],
+          // บัญชีที่ ThaID สร้างให้ไม่มีรหัสผ่านที่ผู้ใช้รู้ เปลี่ยนรหัสผ่านไม่ได้
+          if (!authProvider.isThaidOnly)
+            const PopupMenuItem(
+              value: 'change_password',
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.lock_reset,
+                    color: AppTheme.primaryColor,
+                    size: 20,
+                  ),
+                  SizedBox(width: 12),
+                  Text('เปลี่ยนรหัสผ่าน'),
+                ],
+              ),
             ),
-          ),
           if (authProvider.isAdmin) ...[
             const PopupMenuDivider(),
             PopupMenuItem(

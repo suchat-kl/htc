@@ -52,7 +52,11 @@ class _BookingEditScreenState extends State<BookingEditScreen> {
     setState(() => _thaidBusy = true);
     try {
       final id = await verifyWithThaid(widget.apiService);
-      if (!mounted || id == null) return;
+      if (!mounted) return;
+      if (id == null) {
+        context.showInfoSnackBar(thaidCancelledMessage);
+        return;
+      }
       setState(() {
         _thaidPid = id.pid;
         _thaidAddress = id.address;
@@ -179,6 +183,32 @@ class _BookingEditScreenState extends State<BookingEditScreen> {
     if (isEdit) {
       _loadExistingData();
       _loadTfoods();
+    } else if (widget.apiService.isThaidLogin) {
+      _fillBookerFromThaidLogin();
+    }
+  }
+
+  /// ใบจองใหม่ของผู้ที่เข้าสู่ระบบด้วย ThaID: เติมชื่อ-สกุลผู้จองและเลขบัตรให้
+  ///
+  /// พบเลขบัตรในตาราง users (บัญชีเจ้าหน้าที่) ชื่อ-สกุลมาจากพนักงานที่ผูกไว้ (empID)
+  /// ไม่พบ (บัญชีที่ ThaID สร้างให้) ชื่อ-สกุลตามบัตร
+  /// เลขบัตรผ่านการยืนยันด้วย ThaID ตอนเข้าสู่ระบบแล้ว จึงขึ้นป้ายยืนยันตัวตนแล้วด้วย
+  /// เติมเฉพาะช่องที่ยังว่าง ผู้ใช้แก้ต่อได้
+  Future<void> _fillBookerFromThaidLogin() async {
+    try {
+      final b = await widget.apiService.getMyBooker();
+      if (!mounted || b == null || isEdit) return;
+      setState(() {
+        if (_contractNameCtrl.text.trim().isEmpty && b.name.isNotEmpty) {
+          _contractNameCtrl.text = b.name;
+        }
+        if (_idcardCtrl.text.trim().isEmpty && b.idcard.isNotEmpty) {
+          _thaidPid = b.idcard;
+          _idcardCtrl.text = b.idcard;
+        }
+      });
+    } catch (e) {
+      if (AppLogger.on) AppLogger.w('เติมข้อมูลผู้จองจาก ThaID ไม่สำเร็จ: $e');
     }
   }
 

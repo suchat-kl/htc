@@ -186,17 +186,21 @@ class _SidebarMenuState extends State<SidebarMenu> {
               // เมนูของผู้ใช้ที่ล็อกอินแล้ว ไม่เช็ค role USER อีกแล้ว
               // เพราะสิทธิ์จริงอยู่ที่ตารางสิทธิ์รายหน้าจอ แต่ละกลุ่มซ่อนตัวเองอยู่แล้ว
               if (widget.authProvider.isLoggedIn) ...[
-                const Divider(indent: 16, endIndent: 16),
-                _buildMenuItem(
-                  context,
-                  icon: Icons.lock_reset,
-                  title: 'เปลี่ยนรหัสผ่าน',
-                  onTap: () => {
-                    Navigator.pop(context),
-                    _showChangePasswordDialog(context),
-                  },
-                  compact: true,
-                ),
+                // บัญชีที่ ThaID สร้างให้ไม่มีรหัสผ่านที่ผู้ใช้รู้ เปลี่ยนรหัสผ่านไม่ได้
+                // ซ่อนเส้นคั่นไปพร้อมกัน ไม่งั้นเส้นซ้อนกับเส้นของกลุ่มถัดไปเป็นสองเส้น
+                if (!widget.authProvider.isThaidOnly) ...[
+                  const Divider(indent: 16, endIndent: 16),
+                  _buildMenuItem(
+                    context,
+                    icon: Icons.lock_reset,
+                    title: 'เปลี่ยนรหัสผ่าน',
+                    onTap: () => {
+                      Navigator.pop(context),
+                      _showChangePasswordDialog(context),
+                    },
+                    compact: true,
+                  ),
+                ],
                 _buildExpandableMenuItem(
                   context,
                   icon: Icons.settings,

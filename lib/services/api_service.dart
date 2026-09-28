@@ -71,11 +71,16 @@ class ApiService {
   static const String refreshTokenKey = 'refresh_token';
   static const String userDataKey = 'user_data';
 
+  /// วิธีเข้าสู่ระบบของ session นี้ ไม่มี = รหัสผ่าน, 'thaid' = ThaID บัญชีเจ้าหน้าที่,
+  /// 'thaid_only' = ThaID บัญชีที่ระบบสร้างให้ (ไม่พบเลขบัตรในตาราง users)
+  static const String loginMethodKey = 'login_method';
+
   String? _username;
   String? _email;
   String? _fullName;
   int? _empID;
   List<String> _roles = [];
+  String? _loginMethod;
 
   /// สิทธิ์รายหน้าจอของผู้ใช้ที่ล็อกอินอยู่ คีย์คือ screen_code
   /// ว่างเปล่า = ยังไม่ได้โหลด หรือผู้ใช้ไม่มีสิทธิ์หน้าจอไหนเลย
@@ -195,6 +200,15 @@ class ApiService {
   String? get fullName => _fullName;
   int? get empID => _empID;
 
+  /// เข้าสู่ระบบด้วย ThaID (ทั้งบัญชีเจ้าหน้าที่ที่ผูกเลขบัตรไว้ และบัญชีที่ ThaID สร้างให้)
+  bool get isThaidLogin => _loginMethod != null;
+
+  /// บัญชีที่ ThaID สร้างให้ (username ขึ้นต้น thaid_) ไม่มีรหัสผ่านที่ผู้ใช้รู้ จึงไม่มีเมนูเปลี่ยนรหัสผ่าน
+  /// ดูจาก username ด้วย session ที่เข้าไว้ก่อนมีช่อง thaid_only ก็ซ่อนได้
+  bool get isThaidOnly =>
+      _loginMethod == 'thaid_only' ||
+      (_username?.startsWith('thaid_') ?? false);
+
   List<String> get roles => _roles;
   bool get isLoggedIn => _isLoggedIn;
 
@@ -206,9 +220,12 @@ class ApiService {
 
   /// ผู้ใช้ทำ [action] กับหน้าจอ [screenCode] ได้หรือไม่
   ///
-  /// ยังโหลดสิทธิ์ไม่เสร็จให้ถือว่าทำได้ไปก่อน เพื่อไม่ให้เมนูกะพริบหายตอนเปิดแอป
+  /// ยังไม่ได้เข้าสู่ระบบ (รวมถึงหลังออกจากระบบ) = ทำไม่ได้ทุกหน้าจอ
+  /// เดิมตอนออกจากระบบ สิทธิ์ถูกล้างเป็น "ยังโหลดไม่เสร็จ" แล้วได้ค่าจริง เมนูผู้ดูแลระบบจึงค้างอยู่
+  /// เข้าสู่ระบบแล้วแต่ยังโหลดสิทธิ์ไม่เสร็จให้ถือว่าทำได้ไปก่อน เพื่อไม่ให้เมนูกะพริบหายตอนเปิดแอป
   /// ส่วนการกันจริงอยู่ที่ backend อยู่แล้ว
   bool can(String screenCode, String action) {
+    if (!_isLoggedIn) return false;
     if (!_permissionsLoaded) return true;
     final p = _permissions[screenCode];
     if (p == null) return false;
@@ -217,6 +234,7 @@ class ApiService {
 
   /// เปลี่ยนสถานะการจองเป็นสถานะนี้ได้หรือไม่
   bool canChangeBookStatus(int statusId) {
+    if (!_isLoggedIn) return false;
     if (!_permissionsLoaded) return true;
     return _bookStatusIds.contains(statusId);
   }
@@ -346,6 +364,17 @@ class ApiService {
       key: userDataKey,
       value: '$_username|$_email|$_fullName|${_roles.join(',')}', //|$_empID',
     );
+
+    // thaid_only มากับผลเข้าสู่ระบบด้วย ThaID เท่านั้น เข้าด้วยรหัสผ่านจะไม่มีช่องนี้
+    final thaidOnly = data['thaid_only'];
+    _loginMethod = thaidOnly == null
+        ? null
+        : (thaidOnly == true ? 'thaid_only' : 'thaid');
+    if (_loginMethod == null) {
+      await storage.delete(key: loginMethodKey);
+    } else {
+      await storage.write(key: loginMethodKey, value: _loginMethod);
+    }
 
     onLoginStateChanged?.call(true);
 
@@ -543,6 +572,7 @@ class ApiService {
       _email = null;
       _fullName = null;
       _roles = [];
+      _loginMethod = null;
       _permissions = {};
       _bookStatusIds = [];
       _permissionsLoaded = false;
@@ -574,6 +604,7 @@ class ApiService {
           _email = parts[1];
           _fullName = parts[2];
           _roles = parts[3].split(',').where((r) => r.isNotEmpty).toList();
+          _loginMethod = await storage.read(key: loginMethodKey);
           _isLoggedIn = true;
           onLoginStateChanged?.call(true);
           if (AppLogger.on) AppLogger.i('🟢 Session loaded: $_username');
@@ -1937,6 +1968,24 @@ class ApiService {
     throw Exception(
       _slipMessage(r.data) ?? 'อ่านผลยืนยันตัวตนไม่สำเร็จ (${r.statusCode})',
     );
+  }
+
+  /// ชื่อ-สกุลและเลขบัตรของผู้ใช้ที่ล็อกอิน ใช้เติมใบจองใหม่หลังเข้าด้วย ThaID
+  ///
+  /// บัญชีเจ้าหน้าที่ได้ชื่อ-สกุลจากพนักงานที่ผูกไว้ (empID) บัญชีที่ ThaID สร้างให้ได้ชื่อตามบัตร
+  /// เลขบัตรไม่เก็บไว้ในเครื่อง ขอจาก backend ทุกครั้งที่เปิดใบจองใหม่
+  Future<({String name, String idcard})?> getMyBooker() async {
+    final r = await dio.get(
+      '/api/auth/my-booker',
+      options: Options(validateStatus: (status) => status! < 500),
+    );
+    if (r.statusCode == 200 && r.data is Map) {
+      return (
+        name: (r.data['name'] as String?) ?? '',
+        idcard: (r.data['idcard'] as String?) ?? '',
+      );
+    }
+    return null;
   }
 
   /// ยอดค่าบริการ ยอดที่ชำระแล้ว และยอดคงเหลือของใบจองรายย่อย — ไม่ต้องล็อกอิน

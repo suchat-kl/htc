@@ -83,6 +83,12 @@ class AuthProvider extends ChangeNotifier {
     return result;
   }
 
+  /// เข้าสู่ระบบด้วย ThaID
+  bool get isThaidLogin => _apiService.isThaidLogin;
+
+  /// บัญชีที่ ThaID สร้างให้ (ไม่พบเลขบัตรในตาราง users) ไม่มีเมนูเปลี่ยนรหัสผ่าน
+  bool get isThaidOnly => _apiService.isThaidOnly;
+
   // Get user's display name
   String get displayName {
     if (fullName != null && fullName!.isNotEmpty) {

@@ -88,5 +88,6 @@ flutter:
     - assets/images/line.png
     - assets/images/map500.png
     - assets/images/view.jpg
+    - assets/images/thaid.png
     # - assets/icons/       # ถ้ามีไฟล์ icon.png ก็เปิดใช้งานด้วย
     # - assets/icons/icon.png

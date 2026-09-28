@@ -23,15 +23,18 @@
       var params = new URLSearchParams(location.hash.substring(1));
       var state = params.get('state');
       var error = params.get('error');
+      // ผู้ใช้กดยกเลิกในแอป ThaID (รหัส user_denied) backend ส่ง cancelled=1 มาแทน error
+      var cancelled = params.get('cancelled') === '1';
       history.replaceState(null, '', location.pathname);
       var msg = document.getElementById('msg');
       if (window.opener && !window.opener.closed) {
-        window.opener.postMessage({ type: 'thaid', state: state, error: error }, location.origin);
-        msg.textContent = error ? error : 'ยืนยันตัวตนเรียบร้อย ปิดหน้าต่างนี้ได้';
+        window.opener.postMessage({ type: 'thaid', state: state, error: error, cancelled: cancelled }, location.origin);
+        msg.textContent = cancelled ? 'ผู้ใช้งานยกเลิกการใช้ ThaID'
+          : error ? error : 'ยืนยันตัวตนเรียบร้อย ปิดหน้าต่างนี้ได้';
         msg.className = error ? 'err' : 'ok';
         setTimeout(function () { window.close(); }, error ? 3000 : 500);
       } else {
-        msg.textContent = error ? error
+        msg.textContent = cancelled ? 'ผู้ใช้งานยกเลิกการใช้ ThaID' : error ? error
           : 'ยืนยันตัวตนเรียบร้อย แต่ไม่พบหน้าจองที่เปิดหน้าต่างนี้ กรุณากลับไปที่หน้าจองแล้วกดยืนยันตัวตนใหม่';
         msg.className = error ? 'err' : 'ok';
       }

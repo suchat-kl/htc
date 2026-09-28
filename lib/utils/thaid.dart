@@ -39,12 +39,15 @@ class ThaidIdentity {
 
 /// หน้า thaid_callback.html ของเว็บที่เปิดอยู่ ใช้ base href ของแอป (/htc/)
 /// เข้าผ่าน inf.doh.go.th dbdoh หรือ backupdoh ก็กลับมาที่เดิม
+/// ข้อความเมื่อผู้ใช้ยกเลิก ใช้ข้อความเดียวกันทุกหน้าจอ
+const String thaidCancelledMessage = 'ผู้ใช้งานยกเลิกการใช้ ThaID';
+
 String thaidReturnUrl() {
   final base = html.document.baseUri ?? html.window.location.href;
   return Uri.parse(base).resolve('thaid_callback.html').toString();
 }
 
-/// ยืนยันตัวตนด้วย ThaID ในหน้าต่างใหม่ คืน null ถ้าผู้ใช้ปิดหน้าต่างเอง
+/// ยืนยันตัวตนด้วย ThaID ในหน้าต่างใหม่ คืน null ถ้าผู้ใช้ยกเลิก ([thaidCancelledMessage])
 ///
 /// เปิดหน้าต่างใหม่แทนการพาหน้านี้ไป ฟอร์มที่กรอกไว้จะได้ไม่หาย
 /// ต้องเรียกจากการกดปุ่มโดยตรง เพราะเบราว์เซอร์บล็อกหน้าต่างที่ไม่ได้เปิดจากการกด
@@ -63,7 +66,7 @@ Future<ThaidIdentity?> verifyWithThaid(ApiService api) async {
 
 /// เปิดหน้าต่าง ThaID ให้สแกน แล้วรอผล คืน state ที่ตรวจแล้วว่าตรงกับที่ส่งไป
 /// ผู้เรียกนำ state ไปขอผล ([ApiService.thaidResult]) หรือเข้าสู่ระบบ ([ApiService.loginWithThaid])
-/// คืน null ถ้าผู้ใช้ปิดหน้าต่างเอง
+/// คืน null ถ้าผู้ใช้ยกเลิก: กดยกเลิกในแอป ThaID หรือปิดหน้าต่างเอง
 Future<String?> thaidAuthorize(ApiService api) async {
   final popup = html.window.open(
     '',
@@ -107,6 +110,11 @@ Future<String?> thaidAuthorize(ApiService api) async {
         Exception('ค่าตรวจสอบไม่ตรงกับที่ส่งไป กรุณายืนยันตัวตนใหม่'),
         isError: true,
       );
+      return;
+    }
+    // ผู้ใช้กดยกเลิกในแอป ThaID (รหัส user_denied) = ยกเลิก ไม่ใช่ข้อผิดพลาด
+    if (data['cancelled'] == true) {
+      finish(null);
       return;
     }
     final error = data['error'];
