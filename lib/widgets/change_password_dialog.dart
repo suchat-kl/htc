@@ -8,10 +8,15 @@ class ChangePasswordDialog extends StatefulWidget {
   final String username;
   final ApiService apiService;
 
+  /// บังคับเปลี่ยน (ยังใช้รหัสผ่านตั้งต้น): ปิดหน้านี้ไม่ได้
+  /// ปุ่มยกเลิกเปลี่ยนเป็นออกจากระบบ คืนค่า false ให้ผู้เรียกไปออกจากระบบ
+  final bool forced;
+
   const ChangePasswordDialog({
     super.key,
     required this.username,
     required this.apiService,
+    this.forced = false,
   });
 
   @override
@@ -109,71 +114,75 @@ class _ChangePasswordDialogState extends State<ChangePasswordDialog> {
     final screenWidth = MediaQuery.of(context).size.width;
     final isDesktop = screenWidth > 768;
 
-    return Dialog(
-      backgroundColor: Colors.transparent,
-      insetPadding: EdgeInsets.all(isDesktop ? 40 : 16),
-      child: Container(
-        width: isDesktop ? 600 : screenWidth * 0.95,
-        constraints: const BoxConstraints(maxWidth: 650),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: AppTheme.primaryColor.withValues(alpha: 0.2),
-              blurRadius: 30,
-              offset: const Offset(0, 10),
-            ),
-          ],
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Header
-            _buildHeader(isDesktop),
-            // Form Content
-            Flexible(
-              child: SingleChildScrollView(
-                padding: EdgeInsets.all(isDesktop ? 32 : 20),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      // Error Message
-                      if (_errorMessage != null) ...[
-                        _buildErrorBanner(),
+    return PopScope(
+      // บังคับเปลี่ยน: กด Esc หรือย้อนกลับแล้วไม่ปิด
+      canPop: !widget.forced,
+      child: Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: EdgeInsets.all(isDesktop ? 40 : 16),
+        child: Container(
+          width: isDesktop ? 600 : screenWidth * 0.95,
+          constraints: const BoxConstraints(maxWidth: 650),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: AppTheme.primaryColor.withValues(alpha: 0.2),
+                blurRadius: 30,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Header
+              _buildHeader(isDesktop),
+              // Form Content
+              Flexible(
+                child: SingleChildScrollView(
+                  padding: EdgeInsets.all(isDesktop ? 32 : 20),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        // Error Message
+                        if (_errorMessage != null) ...[
+                          _buildErrorBanner(),
+                          const SizedBox(height: 16),
+                        ],
+
+                        // Username Field (Read-only)
+                        _buildUsernameField(isDesktop),
                         const SizedBox(height: 16),
+
+                        // Old Password Field
+                        _buildOldPasswordField(isDesktop),
+                        const SizedBox(height: 16),
+
+                        // New Password Field
+                        _buildNewPasswordField(isDesktop),
+                        const SizedBox(height: 16),
+
+                        // Confirm Password Field
+                        _buildConfirmPasswordField(isDesktop),
+                        const SizedBox(height: 20),
+
+                        // Password Requirements
+                        _buildPasswordRequirements(isDesktop),
+                        const SizedBox(height: 24),
+
+                        // Buttons
+                        _buildActionButtons(isDesktop),
                       ],
-
-                      // Username Field (Read-only)
-                      _buildUsernameField(isDesktop),
-                      const SizedBox(height: 16),
-
-                      // Old Password Field
-                      _buildOldPasswordField(isDesktop),
-                      const SizedBox(height: 16),
-
-                      // New Password Field
-                      _buildNewPasswordField(isDesktop),
-                      const SizedBox(height: 16),
-
-                      // Confirm Password Field
-                      _buildConfirmPasswordField(isDesktop),
-                      const SizedBox(height: 20),
-
-                      // Password Requirements
-                      _buildPasswordRequirements(isDesktop),
-                      const SizedBox(height: 24),
-
-                      // Buttons
-                      _buildActionButtons(isDesktop),
-                    ],
+                    ),
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -229,7 +238,9 @@ class _ChangePasswordDialogState extends State<ChangePasswordDialog> {
                   ),
                 ),
                 Text(
-                  'กรุณากรอกรหัสผ่านให้ตรงตามเงื่อนไข',
+                  widget.forced
+                      ? 'ยังใช้รหัสผ่านตั้งต้นอยู่ กรุณาเปลี่ยนรหัสผ่านก่อนใช้งาน'
+                      : 'กรุณากรอกรหัสผ่านให้ตรงตามเงื่อนไข',
                   style: TextStyle(
                     fontSize: isDesktop ? 12 : 11,
                     color: Colors.white70,
@@ -636,7 +647,7 @@ class _ChangePasswordDialogState extends State<ChangePasswordDialog> {
                 ),
               ),
               child: Text(
-                'ยกเลิก',
+                widget.forced ? 'ออกจากระบบ' : 'ยกเลิก',
                 style: TextStyle(fontSize: isDesktop ? 16 : 14),
               ),
             ),

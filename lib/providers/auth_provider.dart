@@ -86,6 +86,9 @@ class AuthProvider extends ChangeNotifier {
   /// เข้าสู่ระบบด้วย ThaID
   bool get isThaidLogin => _apiService.isThaidLogin;
 
+  /// ยังใช้รหัสผ่านตั้งต้น ต้องเปลี่ยนรหัสผ่านก่อนใช้งาน
+  bool get mustChangePassword => _apiService.mustChangePassword;
+
   /// บัญชีที่ ThaID สร้างให้ (ไม่พบเลขบัตรในตาราง users) ไม่มีเมนูเปลี่ยนรหัสผ่าน
   bool get isThaidOnly => _apiService.isThaidOnly;
 

@@ -6,6 +6,8 @@ import 'package:highway_training/screens/home_screen.dart';
 import 'package:highway_training/screens/training_screen.dart';
 // import 'package:google_fonts/google_fonts.dart';
 import 'package:highway_training/widgets/header.dart';
+import 'package:highway_training/widgets/change_password_dialog.dart';
+import 'package:highway_training/services/api_service.dart';
 import 'package:highway_training/widgets/sidebar_menu.dart';
 import 'package:highway_training/providers/auth_provider.dart';
 // import 'package:intl/date_symbol_data_file.dart';
@@ -126,6 +128,66 @@ class MainNavigation extends StatefulWidget {
 
 class _MainNavigationState extends State<MainNavigation> {
   int _currentIndex = 0;
+
+  /// กำลังเปิดหน้าบังคับเปลี่ยนรหัสผ่านอยู่ กันเปิดซ้อน
+  bool _forcingPasswordChange = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // ตรวจทุกครั้งที่สถานะเข้าสู่ระบบเปลี่ยน ครอบคลุมทั้งปุ่มเข้าสู่ระบบที่แถบบน เมนูข้าง
+    // และการกู้ session ตอนเปิดหน้าเว็บใหม่
+    widget.authProvider.addListener(_checkMustChangePassword);
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => _checkMustChangePassword(),
+    );
+  }
+
+  @override
+  void dispose() {
+    widget.authProvider.removeListener(_checkMustChangePassword);
+    super.dispose();
+  }
+
+  /// ยังใช้รหัสผ่านตั้งต้น: เปิดหน้าเปลี่ยนรหัสผ่านที่ปิดไม่ได้ เลือกได้แค่เปลี่ยนหรือออกจากระบบ
+  void _checkMustChangePassword() {
+    if (_forcingPasswordChange || !widget.authProvider.mustChangePassword) {
+      return;
+    }
+    _forcingPasswordChange = true;
+    // รอให้หน้าต่างเข้าสู่ระบบปิดก่อน แล้วค่อยเปิดหน้าเปลี่ยนรหัสผ่าน
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted || !widget.authProvider.mustChangePassword) {
+        _forcingPasswordChange = false;
+        return;
+      }
+      // ยังมีหน้าต่างอื่นเปิดทับอยู่ (เช่นหน้าต่างเข้าสู่ระบบที่ยังโหลดสิทธิ์ไม่เสร็จ) รอให้ปิดก่อน
+      // ถ้าเปิดซ้อนไป หน้าต่างเข้าสู่ระบบจะ pop ตัวบนสุด = หน้าเปลี่ยนรหัสผ่านทิ้งแทนตัวเอง
+      // แล้วค้างหมุนอยู่ (เจอจริง 28 ก.ย. 2569)
+      if (!(ModalRoute.of(context)?.isCurrent ?? true)) {
+        _forcingPasswordChange = false;
+        Future.delayed(
+          const Duration(milliseconds: 300),
+          _checkMustChangePassword,
+        );
+        return;
+      }
+      final changed = await showDialog<bool>(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => ChangePasswordDialog(
+          username: widget.authProvider.username ?? '',
+          apiService: ApiService(),
+          forced: true,
+        ),
+      );
+      _forcingPasswordChange = false;
+      if (changed != true) {
+        await widget.authProvider.logout();
+      }
+    });
+  }
+
   void _onTabChanged(int index) {
     setState(() {
       _currentIndex = index;

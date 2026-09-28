@@ -75,12 +75,16 @@ class ApiService {
   /// 'thaid_only' = ThaID บัญชีที่ระบบสร้างให้ (ไม่พบเลขบัตรในตาราง users)
   static const String loginMethodKey = 'login_method';
 
+  /// เข้าด้วยรหัสผ่านตั้งต้น ต้องเปลี่ยนรหัสผ่านก่อนใช้งาน เก็บไว้ให้รอดการโหลดหน้าใหม่
+  static const String mustChangePasswordKey = 'must_change_password';
+
   String? _username;
   String? _email;
   String? _fullName;
   int? _empID;
   List<String> _roles = [];
   String? _loginMethod;
+  bool _mustChangePassword = false;
 
   /// สิทธิ์รายหน้าจอของผู้ใช้ที่ล็อกอินอยู่ คีย์คือ screen_code
   /// ว่างเปล่า = ยังไม่ได้โหลด หรือผู้ใช้ไม่มีสิทธิ์หน้าจอไหนเลย
@@ -202,6 +206,10 @@ class ApiService {
 
   /// เข้าสู่ระบบด้วย ThaID (ทั้งบัญชีเจ้าหน้าที่ที่ผูกเลขบัตรไว้ และบัญชีที่ ThaID สร้างให้)
   bool get isThaidLogin => _loginMethod != null;
+
+  /// ยังใช้รหัสผ่านตั้งต้นอยู่ (backend ตัดสินจาก must_change_password และ password_changed_at)
+  /// หน้าเว็บจะเปิดหน้าเปลี่ยนรหัสผ่านแบบปิดไม่ได้จนกว่าจะเปลี่ยน
+  bool get mustChangePassword => _isLoggedIn && _mustChangePassword;
 
   /// บัญชีที่ ThaID สร้างให้ (username ขึ้นต้น thaid_) ไม่มีรหัสผ่านที่ผู้ใช้รู้ จึงไม่มีเมนูเปลี่ยนรหัสผ่าน
   /// ดูจาก username ด้วย session ที่เข้าไว้ก่อนมีช่อง thaid_only ก็ซ่อนได้
@@ -364,6 +372,13 @@ class ApiService {
       key: userDataKey,
       value: '$_username|$_email|$_fullName|${_roles.join(',')}', //|$_empID',
     );
+
+    _mustChangePassword = data['must_change_password'] == true;
+    if (_mustChangePassword) {
+      await storage.write(key: mustChangePasswordKey, value: 'true');
+    } else {
+      await storage.delete(key: mustChangePasswordKey);
+    }
 
     // thaid_only มากับผลเข้าสู่ระบบด้วย ThaID เท่านั้น เข้าด้วยรหัสผ่านจะไม่มีช่องนี้
     final thaidOnly = data['thaid_only'];
@@ -573,6 +588,7 @@ class ApiService {
       _fullName = null;
       _roles = [];
       _loginMethod = null;
+      _mustChangePassword = false;
       _permissions = {};
       _bookStatusIds = [];
       _permissionsLoaded = false;
@@ -605,6 +621,8 @@ class ApiService {
           _fullName = parts[2];
           _roles = parts[3].split(',').where((r) => r.isNotEmpty).toList();
           _loginMethod = await storage.read(key: loginMethodKey);
+          _mustChangePassword =
+              await storage.read(key: mustChangePasswordKey) == 'true';
           _isLoggedIn = true;
           onLoginStateChanged?.call(true);
           if (AppLogger.on) AppLogger.i('🟢 Session loaded: $_username');
@@ -659,6 +677,9 @@ class ApiService {
         if (data['success'] == false || data['success'] == 'false') {
           throw Exception(data['message'] ?? 'เปลี่ยนรหัสผ่านไม่สำเร็จ');
         }
+        // เปลี่ยนเองแล้ว เลิกบังคับ (backend ตั้ง must_change_password เป็นเท็จแล้ว)
+        _mustChangePassword = false;
+        await storage.delete(key: mustChangePasswordKey);
       } else {
         throw Exception('เปลี่ยนรหัสผ่านไม่สำเร็จ (${response.statusCode})');
       }
