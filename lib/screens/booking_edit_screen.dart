@@ -183,18 +183,20 @@ class _BookingEditScreenState extends State<BookingEditScreen> {
     if (isEdit) {
       _loadExistingData();
       _loadTfoods();
-    } else if (widget.apiService.isThaidLogin) {
-      _fillBookerFromThaidLogin();
+    } else if (widget.apiService.isLoggedIn) {
+      _fillBookerFromLogin();
     }
   }
 
-  /// ใบจองใหม่ของผู้ที่เข้าสู่ระบบด้วย ThaID: เติมชื่อ-สกุลผู้จองและเลขบัตรให้
+  /// ใบจองใหม่ของผู้ที่เข้าสู่ระบบแล้ว (ทั้ง ThaID และรหัสผ่าน): เติมชื่อ-สกุลผู้จองและเลขบัตรให้
   ///
-  /// พบเลขบัตรในตาราง users (บัญชีเจ้าหน้าที่) ชื่อ-สกุลมาจากพนักงานที่ผูกไว้ (empID)
-  /// ไม่พบ (บัญชีที่ ThaID สร้างให้) ชื่อ-สกุลตามบัตร
-  /// เลขบัตรผ่านการยืนยันด้วย ThaID ตอนเข้าสู่ระบบแล้ว จึงขึ้นป้ายยืนยันตัวตนแล้วด้วย
-  /// เติมเฉพาะช่องที่ยังว่าง ผู้ใช้แก้ต่อได้
-  Future<void> _fillBookerFromThaidLogin() async {
+  /// ชื่อ-สกุล: พนักงานที่ผูกกับบัญชี (empID) ไม่มีพนักงานใช้ชื่อในตาราง users
+  ///           (บัญชีที่ ThaID สร้างให้ ชื่อในตาราง users คือชื่อตามบัตร)
+  /// เลขบัตร:   users.idcard ของบัญชี บัญชีที่ยังไม่ผูกเลขบัตรช่องนี้ว่างไว้
+  /// ป้าย "ยืนยันตัวตนแล้ว" ขึ้นเฉพาะเข้าด้วย ThaID เพราะเลขบัตรผ่านการยืนยันตอนเข้าสู่ระบบ
+  /// เข้าด้วยรหัสผ่านเลขบัตรมาจากที่ผู้ดูแลกรอกไว้ ยังไม่ได้ยืนยัน
+  /// เติมเฉพาะช่องที่ยังว่าง จองแทนคนอื่นก็แก้ทับได้
+  Future<void> _fillBookerFromLogin() async {
     try {
       final b = await widget.apiService.getMyBooker();
       if (!mounted || b == null || isEdit) return;
@@ -203,12 +205,12 @@ class _BookingEditScreenState extends State<BookingEditScreen> {
           _contractNameCtrl.text = b.name;
         }
         if (_idcardCtrl.text.trim().isEmpty && b.idcard.isNotEmpty) {
-          _thaidPid = b.idcard;
+          if (widget.apiService.isThaidLogin) _thaidPid = b.idcard;
           _idcardCtrl.text = b.idcard;
         }
       });
     } catch (e) {
-      if (AppLogger.on) AppLogger.w('เติมข้อมูลผู้จองจาก ThaID ไม่สำเร็จ: $e');
+      if (AppLogger.on) AppLogger.w('เติมข้อมูลผู้จองไม่สำเร็จ: $e');
     }
   }
 
