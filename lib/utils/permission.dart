@@ -36,4 +36,7 @@ class Perm {
 
   /// กราฟรายงานประจำปี (เมนูรายงาน) หน้าจอเดียวเลือกได้หลายหัวข้อ
   static const String annualReport = 'RPT_17';
+
+  /// แก้ไขผู้ใช้งาน (เมนูผู้ดูแลระบบ)
+  static const String userEdit = 'USR_EDIT';
 }

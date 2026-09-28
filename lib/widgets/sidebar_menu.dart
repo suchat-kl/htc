@@ -40,6 +40,7 @@ import 'package:highway_training/screens/roomtype_screen.dart';
 import 'package:highway_training/screens/section_screen.dart';
 import 'package:highway_training/screens/statuscheck_screen.dart';
 import 'package:highway_training/screens/tpart_screen.dart';
+import 'package:highway_training/screens/user_edit_screen.dart';
 // import 'package:highway_training/screens/home_screen.dart';
 import 'package:highway_training/services/api_service.dart';
 import 'package:highway_training/utils/snackbar_helper.dart';
@@ -985,6 +986,7 @@ class _SidebarMenuState extends State<SidebarMenu> {
               // เมนูผู้ดูแลระบบ — ยึดตารางสิทธิ์รายหน้าจอ ไม่ใช่ role ตรง ๆ
               // MANAGER ได้สองหน้าจอนี้เหมือน ADMIN ตามที่ศูนย์ฯ กำหนด
               if (widget.authProvider.canView('USR_CREATE') ||
+                  widget.authProvider.canView('USR_EDIT') ||
                   widget.authProvider.canView('USR_RESET_PWD')) ...[
                 const Divider(indent: 16, endIndent: 16),
                 _buildMenuSection(
@@ -997,6 +999,21 @@ class _SidebarMenuState extends State<SidebarMenu> {
                         Navigator.pop(context);
                         _showRegisterUserDialog(context);
                       }),
+                    if (widget.authProvider.canView('USR_EDIT'))
+                      _MenuItemData(
+                        Icons.manage_accounts,
+                        'แก้ไขผู้ใช้งาน',
+                        () {
+                          Navigator.pop(context);
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  UserEditScreen(apiService: ApiService()),
+                            ),
+                          );
+                        },
+                      ),
                     if (widget.authProvider.canView('USR_RESET_PWD'))
                       _MenuItemData(
                         Icons.admin_panel_settings,

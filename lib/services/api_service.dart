@@ -38,6 +38,7 @@ import 'package:highway_training/models/statuscheck.dart';
 import 'package:highway_training/models/tfood.dart';
 import 'package:highway_training/models/ticker_message.dart';
 import 'package:highway_training/models/tpart.dart';
+import 'package:highway_training/models/user_admin.dart';
 import 'package:highway_training/services/auth_interceptor.dart';
 import 'package:highway_training/utils/logger.dart';
 import 'package:highway_training/utils/thaid.dart';
@@ -813,6 +814,7 @@ class ApiService {
     required String position,
     required String department,
     required String phone,
+    String? idcard,
     required List<String> roles,
   }) async {
     try {
@@ -835,6 +837,8 @@ class ApiService {
           'position': position,
           'department': department,
           'phone': phone,
+          // ไม่บังคับ ใส่แล้วบัญชีนี้เข้าสู่ระบบด้วย ThaID ได้
+          if (idcard != null && idcard.isNotEmpty) 'idcard': idcard,
           'roles': roles,
         },
         options: Options(
@@ -2665,6 +2669,58 @@ class ApiService {
     if (response.statusCode != 200 || response.data['success'] != true) {
       throw Exception(response.data['message'] ?? 'ลบไม่สำเร็จ');
     }
+  }
+
+  // ============ แก้ไขผู้ใช้งาน (เมนูผู้ดูแลระบบ) ============
+
+  /// รายการผู้ใช้ [status] = all / active / inactive
+  Future<Map<String, dynamic>> searchAdminUsers({
+    String? keyword,
+    String status = 'all',
+    int page = 0,
+    int size = 10,
+  }) async {
+    await _ensureToken();
+    final r = await dio.get(
+      '/api/auth/admin/users',
+      queryParameters: {
+        if (keyword != null && keyword.isNotEmpty) 'keyword': keyword,
+        'status': status,
+        'page': page,
+        'size': size,
+      },
+      options: Options(validateStatus: (s) => s! < 500),
+    );
+    if (r.statusCode == 200 && r.data is Map) {
+      return Map<String, dynamic>.from(r.data);
+    }
+    throw Exception(_slipMessage(r.data) ?? 'โหลดรายชื่อผู้ใช้ไม่สำเร็จ');
+  }
+
+  /// ผู้ใช้หนึ่งบัญชี มีเลขบัตรครบ 13 หลัก ใช้ตอนเปิดแก้ไข
+  Future<UserAdmin> getAdminUser(int id) async {
+    await _ensureToken();
+    final r = await dio.get(
+      '/api/auth/admin/users/$id',
+      options: Options(validateStatus: (s) => s! < 500),
+    );
+    if (r.statusCode == 200 && r.data is Map) {
+      return UserAdmin.fromJson(Map<String, dynamic>.from(r.data));
+    }
+    throw Exception(_slipMessage(r.data) ?? 'โหลดข้อมูลผู้ใช้ไม่สำเร็จ');
+  }
+
+  Future<UserAdmin> updateAdminUser(UserAdmin u) async {
+    await _ensureToken();
+    final r = await dio.put(
+      '/api/auth/admin/users/${u.id}',
+      data: u.toJson(),
+      options: Options(validateStatus: (s) => s! < 500),
+    );
+    if (r.statusCode == 200 && r.data is Map && r.data['user'] != null) {
+      return UserAdmin.fromJson(Map<String, dynamic>.from(r.data['user']));
+    }
+    throw Exception(_slipMessage(r.data) ?? 'บันทึกข้อมูลผู้ใช้ไม่สำเร็จ');
   }
 
   // Get user list for dropdown

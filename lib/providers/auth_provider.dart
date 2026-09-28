@@ -123,6 +123,9 @@ class AuthProvider extends ChangeNotifier {
     'USER': 'ผู้ใช้งาน',
   };
 
+  /// ชื่อ role ภาษาไทยของรหัส role ใด ๆ ไม่รู้จัก = คืนรหัสเดิม
+  static String roleName(String code) => _roleNames[code] ?? code;
+
   List<String> get roleDisplayNames =>
       roles.map((role) => _roleNames[role] ?? role).toList();
 
