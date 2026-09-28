@@ -164,7 +164,6 @@ class _HomeScreenState extends State<HomeScreen> {
           _buildTickerBar(context, isDesktop),
           _buildBannerSection(context, isDesktop),
           _buildStatsSection(context, isDesktop),
-          _buildBookingCta(context, isDesktop),
           _buildNewsSection(context, isDesktop),
           _buildRoomSection(context, isDesktop),
           const CustomFooter(),
@@ -180,8 +179,12 @@ class _HomeScreenState extends State<HomeScreen> {
   /// ถ้าลิงก์ไว้ วันที่ระบบเดิมถูกปิด หน้าแรกจะกลายเป็นช่องว่างทันที
   ///
   /// มีชั้นไล่สีทับภาพเพื่อให้ตัวหนังสือสีขาวอ่านออกทุกส่วนของภาพ
+  ///
+  /// ชื่อศูนย์ฯ และส่วนจองห้องพักอยู่ในภาพเดียวกัน จัดกลางภาพ เว้นระหว่างกันราวหนึ่งบรรทัด
+  /// เดิมส่วนจองเป็นการ์ดแยกใต้แถบสถิติ ผู้ใช้ให้ย้ายขึ้นมาอยู่ในภาพวิว (28 ก.ย. 2569)
   Widget _buildBannerSection(BuildContext context, bool isDesktop) {
-    final height = isDesktop ? 460.0 : 320.0;
+    // สูงขึ้นจากเดิม (460/320) ให้ส่วนจองห้องพักอยู่ในภาพได้ครบบนจอมือถือ
+    final height = isDesktop ? 540.0 : 480.0;
 
     return SizedBox(
       height: height,
@@ -210,56 +213,154 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           Padding(
-            padding: EdgeInsets.symmetric(horizontal: isDesktop ? 32 : 20),
+            padding: EdgeInsets.fromLTRB(
+              isDesktop ? 32 : 16,
+              isDesktop ? 40 : 24,
+              isDesktop ? 32 : 16,
+              isDesktop ? 40 : 24,
+            ),
             child: Column(
+              // ชื่อศูนย์ฯ กับส่วนจองห้องพักอยู่กลางภาพ เว้นระหว่างกันราวหนึ่งบรรทัด
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(
-                  Icons.apartment,
-                  size: isDesktop ? 52 : 38,
-                  color: Colors.white.withValues(alpha: 0.9),
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.apartment,
+                      size: isDesktop ? 48 : 34,
+                      color: Colors.white.withValues(alpha: 0.9),
+                    ),
+                    SizedBox(height: isDesktop ? 12 : 8),
+                    Text(
+                      'ศูนย์พัฒนาทรัพยากรบุคคลงานทาง',
+                      style: Theme.of(context).textTheme.headlineLarge
+                          ?.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: isDesktop ? 34 : 24,
+                            shadows: const [
+                              Shadow(blurRadius: 8, color: Colors.black54),
+                            ],
+                          ),
+                      textAlign: TextAlign.center,
+                    ),
+                    SizedBox(height: isDesktop ? 10 : 8),
+                    Text(
+                      'กรมทางหลวง  อำเภอศรีราชา จังหวัดชลบุรี',
+                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                        color: Colors.white,
+                        fontSize: isDesktop ? 17 : 14,
+                        shadows: const [
+                          Shadow(blurRadius: 6, color: Colors.black54),
+                        ],
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    SizedBox(height: isDesktop ? 12 : 10),
+                    Text(
+                      'ห้องพัก ห้องประชุม และห้องกิจกรรม สำหรับการฝึกอบรมและสัมมนา',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Colors.white70,
+                        fontSize: isDesktop ? 15 : 13,
+                        shadows: const [
+                          Shadow(blurRadius: 6, color: Colors.black54),
+                        ],
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
                 ),
-                SizedBox(height: isDesktop ? 14 : 10),
-                Text(
-                  'ศูนย์พัฒนาทรัพยากรบุคคลงานทาง',
-                  style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: isDesktop ? 34 : 24,
-                    shadows: const [
-                      Shadow(blurRadius: 8, color: Colors.black54),
-                    ],
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                SizedBox(height: isDesktop ? 10 : 8),
-                Text(
-                  'กรมทางหลวง  อำเภอศรีราชา จังหวัดชลบุรี',
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: Colors.white,
-                    fontSize: isDesktop ? 17 : 14,
-                    shadows: const [
-                      Shadow(blurRadius: 6, color: Colors.black54),
-                    ],
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                SizedBox(height: isDesktop ? 12 : 10),
-                Text(
-                  'ห้องพัก ห้องประชุม และห้องกิจกรรม สำหรับการฝึกอบรมและสัมมนา',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Colors.white70,
-                    fontSize: isDesktop ? 15 : 13,
-                    shadows: const [
-                      Shadow(blurRadius: 6, color: Colors.black54),
-                    ],
-                  ),
-                  textAlign: TextAlign.center,
-                ),
+                // ระยะห่างราวหนึ่งบรรทัดตามที่ผู้ใช้ขอ
+                SizedBox(height: isDesktop ? 28 : 22),
+                _buildBannerBooking(context, isDesktop),
               ],
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  /// ส่วนจองห้องพักในภาพวิว พื้นดำโปร่งให้อ่านออกไม่ว่าภาพช่วงล่างจะสว่างแค่ไหน
+  Widget _buildBannerBooking(BuildContext context, bool isDesktop) {
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 640),
+      child: Container(
+        width: double.infinity,
+        padding: EdgeInsets.symmetric(
+          horizontal: isDesktop ? 28 : 16,
+          vertical: isDesktop ? 22 : 16,
+        ),
+        decoration: BoxDecoration(
+          color: Colors.black.withValues(alpha: 0.38),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppTheme.secondaryColor,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(
+                    Icons.event_available,
+                    size: isDesktop ? 24 : 20,
+                    color: AppTheme.onSecondaryColor,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Flexible(
+                  child: Text(
+                    'จองห้องพักและห้องกิจกรรม',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: isDesktop ? 22 : 18,
+                      shadows: const [
+                        Shadow(blurRadius: 6, color: Colors.black54),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: isDesktop ? 10 : 8),
+            Text(
+              'กรอกแบบฟอร์มจองออนไลน์ได้ทันที\nเลือกวันที่ ประเภทผู้จอง ห้องพัก และรายการอาหาร',
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.92),
+                fontSize: isDesktop ? 15 : 13,
+                height: 1.5,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            SizedBox(height: isDesktop ? 16 : 12),
+            ElevatedButton.icon(
+              onPressed: () => _openBooking(context),
+              icon: const Icon(Icons.edit_calendar, size: 20),
+              label: const Text('เริ่มจองห้อง'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.secondaryColor,
+                foregroundColor: AppTheme.onSecondaryColor,
+                padding: EdgeInsets.symmetric(
+                  horizontal: isDesktop ? 28 : 22,
+                  vertical: isDesktop ? 14 : 12,
+                ),
+                textStyle: TextStyle(
+                  fontSize: isDesktop ? 16 : 14,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -545,156 +646,6 @@ class _HomeScreenState extends State<HomeScreen> {
   ///
   /// พาไปหน้าจองตัวเดียวกับเมนู "จอง" ในแถบเมนูด้านข้าง ไม่ได้ทำฟอร์มซ้ำ
   /// จอกว้างวางภาพไว้ซ้าย ข้อความขวา จอแคบวางภาพไว้บนแล้วข้อความอยู่ล่าง
-  Widget _buildBookingCta(BuildContext context, bool isDesktop) {
-    final image = ClipRRect(
-      borderRadius: isDesktop
-          ? const BorderRadius.horizontal(left: Radius.circular(18))
-          : const BorderRadius.vertical(top: Radius.circular(18)),
-      child: SizedBox(
-        width: isDesktop ? 340 : double.infinity,
-        height: isDesktop ? 220 : 170,
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            Image.asset(
-              'assets/images/meeting.png',
-              fit: BoxFit.cover,
-              errorBuilder: (_, _, _) => Container(color: AppTheme.primaryDark),
-            ),
-            // ไล่สีบาง ๆ ให้ภาพกลืนกับพื้นการ์ด ไม่ตัดกันเป็นสองก้อน
-            DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: isDesktop ? Alignment.centerLeft : Alignment.topCenter,
-                  end: isDesktop
-                      ? Alignment.centerRight
-                      : Alignment.bottomCenter,
-                  colors: [
-                    Colors.transparent,
-                    AppTheme.primaryDark.withValues(alpha: 0.55),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-
-    final text = Padding(
-      padding: EdgeInsets.all(isDesktop ? 28 : 20),
-      child: Column(
-        crossAxisAlignment: isDesktop
-            ? CrossAxisAlignment.start
-            : CrossAxisAlignment.center,
-        mainAxisAlignment: MainAxisAlignment.center,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: AppTheme.secondaryColor,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  Icons.event_available,
-                  size: isDesktop ? 26 : 22,
-                  color: AppTheme.onSecondaryColor,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Flexible(
-                child: Text(
-                  'จองห้องพักและห้องกิจกรรม',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: isDesktop ? 24 : 19,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: isDesktop ? 12 : 10),
-          Text(
-            'กรอกแบบฟอร์มจองออนไลน์ได้ทันที\nเลือกวันที่ ประเภทผู้จอง ห้องพัก และรายการอาหาร',
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.9),
-              fontSize: isDesktop ? 15 : 13,
-              height: 1.5,
-            ),
-            textAlign: isDesktop ? TextAlign.start : TextAlign.center,
-          ),
-          SizedBox(height: isDesktop ? 20 : 16),
-          ElevatedButton.icon(
-            onPressed: () => _openBooking(context),
-            icon: const Icon(Icons.edit_calendar, size: 20),
-            label: const Text('เริ่มจองห้อง'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.secondaryColor,
-              foregroundColor: AppTheme.onSecondaryColor,
-              padding: EdgeInsets.symmetric(
-                horizontal: isDesktop ? 28 : 22,
-                vertical: isDesktop ? 16 : 12,
-              ),
-              textStyle: TextStyle(
-                fontSize: isDesktop ? 16 : 14,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-
-    return Padding(
-      padding: EdgeInsets.fromLTRB(
-        isDesktop ? 32 : 20,
-        0,
-        isDesktop ? 32 : 20,
-        isDesktop ? 40 : 28,
-      ),
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 960),
-          child: Material(
-            borderRadius: BorderRadius.circular(18),
-            elevation: 6,
-            shadowColor: AppTheme.primaryColor.withValues(alpha: 0.35),
-            child: InkWell(
-              borderRadius: BorderRadius.circular(18),
-              onTap: () => _openBooking(context),
-              child: Ink(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(18),
-                  gradient: const LinearGradient(
-                    begin: Alignment.centerLeft,
-                    end: Alignment.centerRight,
-                    colors: [AppTheme.primaryDark, AppTheme.accentColor],
-                  ),
-                ),
-                child: isDesktop
-                    ? Row(
-                        children: [
-                          image,
-                          Expanded(child: text),
-                        ],
-                      )
-                    : Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [image, text],
-                      ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
   /// เปิดหน้าจอง หน้าเดียวกับเมนู "จอง" ในแถบเมนูด้านข้าง
   void _openBooking(BuildContext context) {
     Navigator.push(
