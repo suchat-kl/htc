@@ -159,11 +159,19 @@ class PaymentBalance {
   final double pending;
   final double remaining;
 
+  /// เจ้าหน้าที่รับจองแล้ว (สถานะรับจองแล้วหรือขั้นถัดไป) จึงออกใบ Pay-in และแนบหลักฐานได้
+  final bool accepted;
+
+  /// ข้อความจาก backend เมื่อยังไม่รับจอง
+  final String? message;
+
   const PaymentBalance({
     required this.totalDue,
     required this.confirmed,
     required this.pending,
     required this.remaining,
+    this.accepted = true,
+    this.message,
   });
 
   factory PaymentBalance.fromJson(Map<String, dynamic> json) {
@@ -173,6 +181,9 @@ class PaymentBalance {
       confirmed: n('confirmed'),
       pending: n('pending'),
       remaining: n('remaining'),
+      // backend รุ่นเก่าไม่มีช่องนี้ ถือว่าชำระได้เหมือนเดิม
+      accepted: json['accepted'] != false,
+      message: json['message'] as String?,
     );
   }
 }

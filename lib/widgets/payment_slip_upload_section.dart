@@ -295,6 +295,9 @@ class _PaymentSlipUploadSectionState extends State<PaymentSlipUploadSection> {
 
   @override
   Widget build(BuildContext context) {
+    // เจ้าหน้าที่ยังไม่รับจอง: แสดงข้อความแทนใบ Pay-in และช่องแนบหลักฐานทั้งหมด
+    final b = _balance;
+    final notAccepted = b != null && !b.accepted;
     return Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 720),
@@ -302,14 +305,81 @@ class _PaymentSlipUploadSectionState extends State<PaymentSlipUploadSection> {
           padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              widget.showPromptPay ? _qrCard() : _payInCard(),
-              const SizedBox(height: 16),
-              _uploadCard(),
-              const SizedBox(height: 16),
-              _historyCard(),
-            ],
+            children: notAccepted
+                ? [_notAcceptedCard(b.message)]
+                : [
+                    widget.showPromptPay ? _qrCard() : _payInCard(),
+                    const SizedBox(height: 16),
+                    _uploadCard(),
+                    const SizedBox(height: 16),
+                    _historyCard(),
+                  ],
           ),
+        ),
+      ),
+    );
+  }
+
+  /// ใบจองที่เจ้าหน้าที่ยังไม่ได้ตรวจและกำหนดสถานะเป็น "รับจองแล้ว"
+  Widget _notAcceptedCard(String? message) {
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _title(Icons.hourglass_top, 'ยังออกใบ Pay-in ไม่ได้'),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: Colors.amber.shade50,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.amber.shade300),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(Icons.info_outline, color: Colors.amber.shade800),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      message ??
+                          'การออกใบ Pay-in ทำได้เมื่อเจ้าหน้าที่ตรวจสอบและกำหนดสถานะการจองเป็น "รับจองแล้ว" แล้วเท่านั้น',
+                      style: const TextStyle(
+                        fontFamily: _font,
+                        fontSize: 15,
+                        height: 1.5,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              'เมื่อเจ้าหน้าที่รับจองแล้ว กลับมาที่แท็บนี้อีกครั้งเพื่อสร้างใบ Pay-in และแนบใบเสร็จ',
+              style: TextStyle(
+                fontFamily: _font,
+                fontSize: 13,
+                color: Colors.grey.shade700,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton.icon(
+                onPressed: _balanceLoading ? null : _loadBalance,
+                icon: const Icon(Icons.refresh, size: 18),
+                label: const Text(
+                  'ตรวจสถานะอีกครั้ง',
+                  style: TextStyle(fontFamily: _font),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
