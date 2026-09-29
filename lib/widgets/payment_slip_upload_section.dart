@@ -434,13 +434,14 @@ class _PaymentSlipUploadSectionState extends State<PaymentSlipUploadSection> {
               ),
             )
           else ...[
-            const Text(
+            Text(
               '1. กดสร้างใบ Pay-in แล้วดาวน์โหลดไฟล์ PDF พิมพ์ออกมา\n'
               '2. นำไปชำระที่เคาน์เตอร์ธนาคารกรุงไทย '
-              '(ผู้ชำระเป็นผู้รับผิดชอบค่าธรรมเนียมเอง) '
-              'หรือสแกน QR บนใบด้วยแอปธนาคาร\n'
+              '(ผู้ชำระเป็นผู้รับผิดชอบค่าธรรมเนียมเอง)'
+              // บอกเรื่องสแกนเฉพาะตอนใบ Pay-in มี QR จริง (ตั้ง Biller ID แล้ว)
+              '${b.payInQr ? ' หรือสแกน QR บนใบด้วยแอปธนาคาร' : ''}\n'
               '3. แนบรูปใบเสร็จหรือสลิปที่ได้จากธนาคารในช่องด้านล่าง',
-              style: TextStyle(
+              style: const TextStyle(
                 fontFamily: _font,
                 fontSize: 14,
                 color: AppTheme.textSecondary,

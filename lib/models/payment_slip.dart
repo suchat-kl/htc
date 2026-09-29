@@ -165,6 +165,9 @@ class PaymentBalance {
   /// ข้อความจาก backend เมื่อยังไม่รับจอง
   final String? message;
 
+  /// ใบ Pay-in พิมพ์ QR ชำระเงินหรือไม่ (ตั้ง Biller ID แล้ว)
+  final bool payInQr;
+
   const PaymentBalance({
     required this.totalDue,
     required this.confirmed,
@@ -172,6 +175,7 @@ class PaymentBalance {
     required this.remaining,
     this.accepted = true,
     this.message,
+    this.payInQr = false,
   });
 
   factory PaymentBalance.fromJson(Map<String, dynamic> json) {
@@ -184,6 +188,7 @@ class PaymentBalance {
       // backend รุ่นเก่าไม่มีช่องนี้ ถือว่าชำระได้เหมือนเดิม
       accepted: json['accepted'] != false,
       message: json['message'] as String?,
+      payInQr: json['payInQr'] == true,
     );
   }
 }
