@@ -3391,7 +3391,11 @@ class ApiService {
     //   }
     // }
     try {
-      final r = await publicDio.put('/api/auth/bookings/$id', data: d.toJson());
+      // ล็อกอินอยู่ต้องแนบ token ไปด้วย backend จึงรู้ว่าใครเปลี่ยนสถานะการจอง
+      // และตรวจสิทธิ์ตาม m_role_bookstatus ได้ เดิมส่งแบบไม่มี token ทุกกรณี
+      // สถานะจึงไม่เคยถูกบันทึก ผู้จองที่ไม่ล็อกอินยังส่งแบบเดิม
+      final client = _isLoggedIn ? dio : publicDio;
+      final r = await client.put('/api/auth/bookings/$id', data: d.toJson());
       if (r.statusCode == 200 && r.data['success'] == true) {
         return Bookroom.fromJson(r.data['booking']);
       }
