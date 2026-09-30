@@ -3394,6 +3394,10 @@ class ApiService {
       // ล็อกอินอยู่ต้องแนบ token ไปด้วย backend จึงรู้ว่าใครเปลี่ยนสถานะการจอง
       // และตรวจสิทธิ์ตาม m_role_bookstatus ได้ เดิมส่งแบบไม่มี token ทุกกรณี
       // สถานะจึงไม่เคยถูกบันทึก ผู้จองที่ไม่ล็อกอินยังส่งแบบเดิม
+      // ล็อกอินอยู่ต้องต่ออายุ token ก่อนส่ง — path นี้ backend เปิดให้คนไม่ล็อกอินด้วย
+      // token หมดอายุจึงไม่ได้ 401 ให้ interceptor ต่ออายุ แต่ถูกมองเป็นคนไม่ล็อกอิน
+      // แล้วเปลี่ยนสถานะไม่ได้ (400) — เจอบน production หลังล็อกอินเกิน 5 นาที
+      if (_isLoggedIn) await _ensureToken();
       final client = _isLoggedIn ? dio : publicDio;
       final r = await client.put('/api/auth/bookings/$id', data: d.toJson());
       if (r.statusCode == 200 && r.data['success'] == true) {
