@@ -60,11 +60,39 @@ import 'package:highway_training/utils/logger.dart';
 class SidebarMenu extends StatefulWidget {
   final AuthProvider authProvider;
   final VoidCallback? onTickerSaved; // ✅ Add callback
+
+  /// ตรึงเมนูไว้ข้างซ้ายของหน้าจอ (ไม่ใช่ drawer ที่เลื่อนออกมาแล้วปิด)
+  final bool docked;
+
+  /// ตอนตรึง: true = แสดงเฉพาะไอคอน, false = ขยายเห็นทั้งไอคอนและชื่อ
+  final bool collapsed;
+
+  /// จอกว้างพอให้ตรึงเมนูได้ (แสดงปุ่มตรึง)
+  final bool canPin;
+
+  /// สลับแสดงเฉพาะไอคอน / ขยาย (ตอนตรึง)
+  final VoidCallback? onToggleCollapsed;
+
+  /// ตรึง / เลิกตรึงเมนู
+  final VoidCallback? onTogglePinned;
+
+  /// ตอนตรึง หน้าจอที่เปิดจากเมนูไปแสดงใน navigator ด้านขวาของเมนู เมนูจึงยังเห็นอยู่
+  final GlobalKey<NavigatorState>? contentNavigator;
+
   const SidebarMenu({
     super.key,
     required this.authProvider,
     this.onTickerSaved,
+    this.docked = false,
+    this.collapsed = false,
+    this.canPin = false,
+    this.onToggleCollapsed,
+    this.onTogglePinned,
+    this.contentNavigator,
   });
+
+  /// ความกว้างของเมนูตอนแสดงเฉพาะไอคอน
+  static const double railWidth = 72;
   // const SidebarMenu({super.key, required this.authProvider, required Null Function() onTickerSaved});
 
   @override
@@ -75,9 +103,55 @@ class _SidebarMenuState extends State<SidebarMenu> {
   // Track expanded state for submenus
   final Set<String> _expandedMenus = {};
 
+  /// แสดงเฉพาะไอคอน (ตรึงอยู่และยุบ)
+  bool get _rail => widget.docked && widget.collapsed;
+
+  /// ปิด drawer หลังเลือกเมนู ตอนตรึงไม่มี drawer ให้ปิด
+  /// (เดิมทุกเมนูเรียก Navigator.pop ตรง ๆ ถ้าตรึงอยู่จะไปปิดหน้าหลักทิ้งแทน)
+  void _closeMenu(BuildContext context) {
+    if (widget.docked) return;
+    final scaffold = Scaffold.maybeOf(context);
+    if (scaffold != null && scaffold.isDrawerOpen) Navigator.pop(context);
+  }
+
+  /// เปิดหน้าจอจากเมนู ตอนตรึงเปิดในพื้นที่ด้านขวาแทนหน้าที่เปิดอยู่ (ไม่ซ้อนกันไปเรื่อย ๆ)
+  /// ไม่ตรึงเปิดเต็มจอแบบเดิม
+  Future<T?> _open<T extends Object?>(BuildContext context, Route<T> route) {
+    final nav = widget.docked ? widget.contentNavigator?.currentState : null;
+    if (nav != null) return nav.pushAndRemoveUntil<T>(route, (r) => r.isFirst);
+    return Navigator.of(context).push<T>(route);
+  }
+
+  /// กลับหน้าหลัก ตอนตรึงปิดหน้าที่เปิดค้างในพื้นที่ด้านขวา
+  void _goHome(BuildContext context) {
+    final nav = widget.docked ? widget.contentNavigator?.currentState : null;
+    if (nav != null) {
+      nav.popUntil((r) => r.isFirst);
+    } else {
+      _closeMenu(context);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
+
+    if (widget.docked) {
+      // ตรึงอยู่: เป็นแถบข้างซ้ายของหน้าจอ ยุบ = กว้างพอสำหรับไอคอน ขยาย = กว้างเท่า drawer
+      return Material(
+        color: Colors.white,
+        elevation: 2,
+        child: SizedBox(
+          width: widget.collapsed
+              ? SidebarMenu.railWidth
+              : _getDrawerWidth(screenWidth),
+          child: LayoutBuilder(
+            builder: (context, constraints) =>
+                _buildResponsiveDrawer(context, constraints),
+          ),
+        ),
+      );
+    }
 
     return Drawer(
       width: _getDrawerWidth(screenWidth),
@@ -109,8 +183,11 @@ class _SidebarMenuState extends State<SidebarMenu> {
 
     return Column(
       children: [
-        // User profile or login section
-        if (widget.authProvider.isLoggedIn)
+        _buildPinBar(context),
+        // User profile or login section (ตอนยุบเหลือแค่ไอคอน ไม่มีที่ให้แสดง)
+        if (_rail)
+          const SizedBox.shrink()
+        else if (widget.authProvider.isLoggedIn)
           isWide
               ? _buildUserProfileHeader(context)
               : _buildCompactUserHeader(context)
@@ -131,7 +208,7 @@ class _SidebarMenuState extends State<SidebarMenu> {
                     _MenuItemData(
                       Icons.home,
                       'หน้าหลัก',
-                      () => Navigator.pop(context),
+                      () => _goHome(context),
                     ),
                   ],
                 ) //is wide
@@ -141,7 +218,7 @@ class _SidebarMenuState extends State<SidebarMenu> {
                   icon: Icons.home,
                   title: 'หน้าหลัก',
                   onTap: () => {
-                    Navigator.pop(context),
+                    _goHome(context),
                     // Navigator.push(
                     //   context,
                     //   MaterialPageRoute(
@@ -168,17 +245,17 @@ class _SidebarMenuState extends State<SidebarMenu> {
               //     _SubMenuItemData(
               //       Icons.description,
               //       'คู่มือการใช้งาน',
-              //       () => Navigator.pop(context),
+              //       () => _closeMenu(context),
               //     ),
               //     _SubMenuItemData(
               //       Icons.book,
               //       'เอกสารประกอบการอบรม',
-              //       () => Navigator.pop(context),
+              //       () => _closeMenu(context),
               //     ),
               //     _SubMenuItemData(
               //       Icons.assignment_outlined,
               //       'แบบฟอร์ม',
-              //       () => Navigator.pop(context),
+              //       () => _closeMenu(context),
               //     ),
               //   ],
               // ),
@@ -195,7 +272,7 @@ class _SidebarMenuState extends State<SidebarMenu> {
                     icon: Icons.lock_reset,
                     title: 'เปลี่ยนรหัสผ่าน',
                     onTap: () => {
-                      Navigator.pop(context),
+                      _closeMenu(context),
                       _showChangePasswordDialog(context),
                     },
                     compact: true,
@@ -209,8 +286,8 @@ class _SidebarMenuState extends State<SidebarMenu> {
                   divider: true,
                   children: [
                     _SubMenuItemData(Icons.room, 'สถานะห้องพัก', () {
-                      Navigator.pop(context);
-                      Navigator.push(
+                      _closeMenu(context);
+                      _open(
                         context,
                         MaterialPageRoute(
                           builder: (_) =>
@@ -219,8 +296,8 @@ class _SidebarMenuState extends State<SidebarMenu> {
                       );
                     }, screenCode: 'MS_ROOM_STATUS'),
                     _SubMenuItemData(Icons.date_range, 'สถานะการจอง', () {
-                      Navigator.pop(context);
-                      Navigator.push(
+                      _closeMenu(context);
+                      _open(
                         context,
                         MaterialPageRoute(
                           builder: (_) =>
@@ -229,8 +306,8 @@ class _SidebarMenuState extends State<SidebarMenu> {
                       );
                     }, screenCode: 'MS_DOC_STATUS'),
                     _SubMenuItemData(Icons.restaurant, 'กลุ่มรายการอาหาร', () {
-                      Navigator.pop(context);
-                      Navigator.push(
+                      _closeMenu(context);
+                      _open(
                         context,
                         MaterialPageRoute(
                           builder: (_) =>
@@ -239,8 +316,8 @@ class _SidebarMenuState extends State<SidebarMenu> {
                       );
                     }, screenCode: 'MS_FOOD_GROUP'),
                     _SubMenuItemData(Icons.bed, 'เครื่องนอน-ของใช้', () {
-                      Navigator.pop(context);
-                      Navigator.push(
+                      _closeMenu(context);
+                      _open(
                         context,
                         MaterialPageRoute(
                           builder: (_) =>
@@ -249,8 +326,8 @@ class _SidebarMenuState extends State<SidebarMenu> {
                       );
                     }, screenCode: 'MS_COMMODITY'),
                     _SubMenuItemData(Icons.bed, 'สิ่งอำนวยความสะดวก', () {
-                      Navigator.pop(context);
-                      Navigator.push(
+                      _closeMenu(context);
+                      _open(
                         context,
                         MaterialPageRoute(
                           builder: (_) =>
@@ -259,8 +336,8 @@ class _SidebarMenuState extends State<SidebarMenu> {
                       );
                     }, screenCode: 'MS_FACILITY'),
                     _SubMenuItemData(Icons.bed, 'ประเภทห้อง', () {
-                      Navigator.pop(context);
-                      Navigator.push(
+                      _closeMenu(context);
+                      _open(
                         context,
                         MaterialPageRoute(
                           builder: (_) =>
@@ -269,8 +346,8 @@ class _SidebarMenuState extends State<SidebarMenu> {
                       );
                     }, screenCode: 'MS_ROOMTYPE'),
                     _SubMenuItemData(Icons.bed, 'ห้อง', () {
-                      Navigator.pop(context);
-                      Navigator.push(
+                      _closeMenu(context);
+                      _open(
                         context,
                         MaterialPageRoute(
                           builder: (_) => RoomScreen(apiService: ApiService()),
@@ -278,8 +355,8 @@ class _SidebarMenuState extends State<SidebarMenu> {
                       );
                     }, screenCode: 'MS_ROOM'),
                     _SubMenuItemData(Icons.build, 'วัสดุซ่อมบำรุง', () {
-                      Navigator.pop(context);
-                      Navigator.push(
+                      _closeMenu(context);
+                      _open(
                         context,
                         MaterialPageRoute(
                           builder: (_) => PartScreen(apiService: ApiService()),
@@ -287,8 +364,8 @@ class _SidebarMenuState extends State<SidebarMenu> {
                       );
                     }, screenCode: 'MS_PART'),
                     _SubMenuItemData(Icons.business, 'รหัสหน่วยงาน', () {
-                      Navigator.pop(context);
-                      Navigator.push(
+                      _closeMenu(context);
+                      _open(
                         context,
                         MaterialPageRoute(
                           builder: (_) =>
@@ -297,8 +374,8 @@ class _SidebarMenuState extends State<SidebarMenu> {
                       );
                     }, screenCode: 'MS_ORG'),
                     _SubMenuItemData(Icons.group, 'กลุ่ม', () {
-                      Navigator.pop(context);
-                      Navigator.push(
+                      _closeMenu(context);
+                      _open(
                         context,
                         MaterialPageRoute(
                           builder: (_) =>
@@ -307,8 +384,8 @@ class _SidebarMenuState extends State<SidebarMenu> {
                       );
                     }, screenCode: 'MS_SECTION'),
                     _SubMenuItemData(Icons.people, 'บุคลากร', () {
-                      Navigator.pop(context);
-                      Navigator.push(
+                      _closeMenu(context);
+                      _open(
                         context,
                         MaterialPageRoute(
                           builder: (_) =>
@@ -320,7 +397,7 @@ class _SidebarMenuState extends State<SidebarMenu> {
                 ),
 
                 //  _MenuItemData(Icons.lock_reset, 'เปลี่ยนรหัสผ่าน', () {
-                //   Navigator.pop(context);
+                //   _closeMenu(context);
                 //   _showChangePasswordDialog(context);
                 // }),
                 _buildExpandableMenuItem(
@@ -331,8 +408,8 @@ class _SidebarMenuState extends State<SidebarMenu> {
                   divider: true,
                   children: [
                     _SubMenuItemData(Icons.bed, 'ใบรื้อเครื่องนอน', () {
-                      Navigator.pop(context);
-                      Navigator.push(
+                      _closeMenu(context);
+                      _open(
                         context,
                         MaterialPageRoute(
                           builder: (_) =>
@@ -344,8 +421,8 @@ class _SidebarMenuState extends State<SidebarMenu> {
                       Icons.receipt_long,
                       'บันทึกรับจ่ายของใช้',
                       () {
-                        Navigator.pop(context);
-                        Navigator.push(
+                        _closeMenu(context);
+                        _open(
                           context,
                           MaterialPageRoute(
                             builder: (_) => CommodityInScreen(
@@ -358,8 +435,8 @@ class _SidebarMenuState extends State<SidebarMenu> {
                       screenCode: 'OP_SUPPLY_IO',
                     ),
                     _SubMenuItemData(Icons.build_circle, 'แจ้งซ่อม', () {
-                      Navigator.pop(context);
-                      Navigator.push(
+                      _closeMenu(context);
+                      _open(
                         context,
                         MaterialPageRoute(
                           builder: (_) => MaintenanceScreen(
@@ -373,8 +450,8 @@ class _SidebarMenuState extends State<SidebarMenu> {
                       Icons.handyman,
                       'บันทึกรับจ่ายวัสดุซ่อมบำรุง',
                       () {
-                        Navigator.pop(context);
-                        Navigator.push(
+                        _closeMenu(context);
+                        _open(
                           context,
                           MaterialPageRoute(
                             builder: (_) => TpartScreen(
@@ -387,8 +464,8 @@ class _SidebarMenuState extends State<SidebarMenu> {
                       screenCode: 'OP_PART_IO',
                     ),
                     _SubMenuItemData(Icons.headset_mic, 'รายการขอใช้โสตฯ', () {
-                      Navigator.pop(context);
-                      Navigator.push(
+                      _closeMenu(context);
+                      _open(
                         context,
                         MaterialPageRoute(
                           builder: (_) =>
@@ -397,7 +474,7 @@ class _SidebarMenuState extends State<SidebarMenu> {
                       );
                     }, screenCode: 'OP_AV_REQUEST'),
                     _SubMenuItemData(Icons.campaign, 'ข้อความวิ่ง', () {
-                      Navigator.pop(context);
+                      _closeMenu(context);
                       _showTickerMessageDialog(context);
                     }, screenCode: 'OP_TICKER'),
                     // ยกกลับมาจากระบบเดิม ต่างจากข้อความวิ่งตรงที่มีหัวเรื่อง
@@ -406,8 +483,8 @@ class _SidebarMenuState extends State<SidebarMenu> {
                       Icons.article_outlined,
                       'ประกาศประชาสัมพันธ์',
                       () {
-                        Navigator.pop(context);
-                        Navigator.push(
+                        _closeMenu(context);
+                        _open(
                           context,
                           MaterialPageRoute(
                             builder: (_) =>
@@ -427,8 +504,8 @@ class _SidebarMenuState extends State<SidebarMenu> {
                   divider: true,
                   children: [
                     _SubMenuItemData(Icons.search, 'ค้นหาห้องกิจกรรม', () {
-                      Navigator.pop(context);
-                      Navigator.push(
+                      _closeMenu(context);
+                      _open(
                         context,
                         MaterialPageRoute(
                           builder: (_) => ActivityRoomSearchScreen(
@@ -439,8 +516,8 @@ class _SidebarMenuState extends State<SidebarMenu> {
                       );
                     }, screenCode: 'RM_ACT_SEARCH'),
                     _SubMenuItemData(Icons.hotel, 'ค้นหาห้องพัก', () {
-                      Navigator.pop(context);
-                      Navigator.push(
+                      _closeMenu(context);
+                      _open(
                         context,
                         MaterialPageRoute(
                           builder: (_) => LodgingRoomSearchScreen(
@@ -454,8 +531,8 @@ class _SidebarMenuState extends State<SidebarMenu> {
                       Icons.restaurant_menu,
                       'ใบแจ้งค่าอาหาร',
                       () {
-                        Navigator.pop(context);
-                        Navigator.push(
+                        _closeMenu(context);
+                        _open(
                           context,
                           MaterialPageRoute(
                             builder: (_) => FoodListScreen(
@@ -468,8 +545,8 @@ class _SidebarMenuState extends State<SidebarMenu> {
                       screenCode: 'RM_FOOD_INVOICE',
                     ),
                     _SubMenuItemData(Icons.receipt_long, 'Folio', () {
-                      Navigator.pop(context);
-                      Navigator.push(
+                      _closeMenu(context);
+                      _open(
                         context,
                         MaterialPageRoute(
                           builder: (_) => FolioListScreen(
@@ -483,8 +560,8 @@ class _SidebarMenuState extends State<SidebarMenu> {
                       Icons.payments_outlined,
                       'รับชำระเงิน',
                       () {
-                        Navigator.pop(context);
-                        Navigator.push(
+                        _closeMenu(context);
+                        _open(
                           context,
                           MaterialPageRoute(
                             builder: (_) => PaymentListScreen(
@@ -512,8 +589,8 @@ class _SidebarMenuState extends State<SidebarMenu> {
                       Icons.event_available,
                       'รายงานการใช้ห้องกิจกรรม (ค้นหา)',
                       () {
-                        Navigator.pop(context);
-                        Navigator.push(
+                        _closeMenu(context);
+                        _open(
                           context,
                           MaterialPageRoute(
                             builder: (_) => ActivityUsageReportScreen(
@@ -530,8 +607,8 @@ class _SidebarMenuState extends State<SidebarMenu> {
                       Icons.hotel,
                       'รายงานการใช้ห้องพัก (ค้นหา)',
                       () {
-                        Navigator.pop(context);
-                        Navigator.push(
+                        _closeMenu(context);
+                        _open(
                           context,
                           MaterialPageRoute(
                             builder: (_) => LodgingUsageReportScreen(
@@ -548,8 +625,8 @@ class _SidebarMenuState extends State<SidebarMenu> {
                       Icons.calendar_month,
                       'แผนการใช้ศูนย์',
                       () {
-                        Navigator.pop(context);
-                        Navigator.push(
+                        _closeMenu(context);
+                        _open(
                           context,
                           MaterialPageRoute(
                             builder: (_) => CenterPlanScreen(
@@ -566,9 +643,9 @@ class _SidebarMenuState extends State<SidebarMenu> {
                       Icons.table_chart,
                       'ตารางการใช้ห้องพัก (ประจำเดือน)',
                       () {
-                        Navigator.pop(context);
+                        _closeMenu(context);
                         final api = ApiService();
-                        Navigator.push(
+                        _open(
                           context,
                           MaterialPageRoute(
                             builder: (_) => MonthlyReportScreen(
@@ -590,9 +667,9 @@ class _SidebarMenuState extends State<SidebarMenu> {
                       Icons.summarize,
                       'สรุปการใช้ห้องพัก (ประจำเดือน)',
                       () {
-                        Navigator.pop(context);
+                        _closeMenu(context);
                         final api = ApiService();
-                        Navigator.push(
+                        _open(
                           context,
                           MaterialPageRoute(
                             builder: (_) => MonthlyReportScreen(
@@ -614,9 +691,9 @@ class _SidebarMenuState extends State<SidebarMenu> {
                       Icons.meeting_room,
                       'รายงานการใช้ห้องกิจกรรม (ประจำเดือน)',
                       () {
-                        Navigator.pop(context);
+                        _closeMenu(context);
                         final api = ApiService();
-                        Navigator.push(
+                        _open(
                           context,
                           MaterialPageRoute(
                             builder: (_) => MonthlyReportScreen(
@@ -639,9 +716,9 @@ class _SidebarMenuState extends State<SidebarMenu> {
                       Icons.event_note,
                       'รายงานการใช้ห้องกิจกรรม (ประจำปีงบประมาณ)',
                       () {
-                        Navigator.pop(context);
+                        _closeMenu(context);
                         final api = ApiService();
-                        Navigator.push(
+                        _open(
                           context,
                           MaterialPageRoute(
                             builder: (_) => FiscalYearReportScreen(
@@ -660,8 +737,8 @@ class _SidebarMenuState extends State<SidebarMenu> {
                       Icons.bar_chart,
                       'กราฟการใช้ห้องกิจกรรม (ประจำปีงบประมาณ)',
                       () {
-                        Navigator.pop(context);
-                        Navigator.push(
+                        _closeMenu(context);
+                        _open(
                           context,
                           MaterialPageRoute(
                             builder: (_) => ActivityFiscalChartScreen(
@@ -677,9 +754,9 @@ class _SidebarMenuState extends State<SidebarMenu> {
                       Icons.grid_on,
                       'ตารางการใช้ห้องกิจกรรม (ประจำเดือน)',
                       () {
-                        Navigator.pop(context);
+                        _closeMenu(context);
                         final api = ApiService();
-                        Navigator.push(
+                        _open(
                           context,
                           MaterialPageRoute(
                             builder: (_) => MonthlyReportScreen(
@@ -701,8 +778,8 @@ class _SidebarMenuState extends State<SidebarMenu> {
                       Icons.assignment,
                       'แบบขออนุญาตใช้สถานที่และบริการ',
                       () {
-                        Navigator.pop(context);
-                        Navigator.push(
+                        _closeMenu(context);
+                        _open(
                           context,
                           MaterialPageRoute(
                             builder: (_) => PlaceRequestReportScreen(
@@ -719,8 +796,8 @@ class _SidebarMenuState extends State<SidebarMenu> {
                       Icons.assignment_turned_in,
                       'แบบขออนุญาตใช้สถานที่และบริการ (โครงการ)',
                       () {
-                        Navigator.pop(context);
-                        Navigator.push(
+                        _closeMenu(context);
+                        _open(
                           context,
                           MaterialPageRoute(
                             builder: (_) => PlaceProjectReportScreen(
@@ -734,9 +811,9 @@ class _SidebarMenuState extends State<SidebarMenu> {
                     ),
                     // 10
                     _SubMenuItemData(Icons.headphones, 'สรุปการใช้บริการโสตฯ', () {
-                      Navigator.pop(context);
+                      _closeMenu(context);
                       final api = ApiService();
-                      Navigator.push(
+                      _open(
                         context,
                         MaterialPageRoute(
                           builder: (_) => AnnualReportScreen(
@@ -756,9 +833,9 @@ class _SidebarMenuState extends State<SidebarMenu> {
                       Icons.bed,
                       'สรุปจำนวนเครื่องนอนและเติมของใช้ประจำเดือน',
                       () {
-                        Navigator.pop(context);
+                        _closeMenu(context);
                         final api = ApiService();
-                        Navigator.push(
+                        _open(
                           context,
                           MaterialPageRoute(
                             builder: (_) => MonthlyReportScreen(
@@ -777,9 +854,9 @@ class _SidebarMenuState extends State<SidebarMenu> {
                     ),
                     // 12
                     _SubMenuItemData(Icons.build, 'สรุปงานซ่อมบำรุง', () {
-                      Navigator.pop(context);
+                      _closeMenu(context);
                       final api = ApiService();
-                      Navigator.push(
+                      _open(
                         context,
                         MaterialPageRoute(
                           builder: (_) => AnnualReportScreen(
@@ -798,9 +875,9 @@ class _SidebarMenuState extends State<SidebarMenu> {
                       Icons.home_repair_service,
                       'รายการซ่อมบำรุง อาคารเรียน',
                       () {
-                        Navigator.pop(context);
+                        _closeMenu(context);
                         final api = ApiService();
-                        Navigator.push(
+                        _open(
                           context,
                           MaterialPageRoute(
                             builder: (_) => MonthlyReportScreen(
@@ -819,8 +896,8 @@ class _SidebarMenuState extends State<SidebarMenu> {
                     ),
                     // 14
                     _SubMenuItemData(Icons.inventory_2, 'ใบรับจ่ายวัสดุ', () {
-                      Navigator.pop(context);
-                      Navigator.push(
+                      _closeMenu(context);
+                      _open(
                         context,
                         MaterialPageRoute(
                           builder: (_) => MaterialLedgerScreen(
@@ -832,8 +909,8 @@ class _SidebarMenuState extends State<SidebarMenu> {
                     }, screenCode: 'RPT_14'),
                     // 17 — หน้าจอเดียวเลือกได้หลายหัวข้อ ถอดแบบจากรายงานประจำปีของศูนย์ฯ
                     _SubMenuItemData(Icons.insights, 'กราฟรายงานประจำปี', () {
-                      Navigator.pop(context);
-                      Navigator.push(
+                      _closeMenu(context);
+                      _open(
                         context,
                         MaterialPageRoute(
                           builder: (_) =>
@@ -852,7 +929,7 @@ class _SidebarMenuState extends State<SidebarMenu> {
                     icon: Icons.lock_reset,
                     title: 'เปลี่ยนรหัสผ่าน',
                     onTap: () => {
-                      Navigator.pop(context),
+                      _closeMenu(context),
                       _showChangePasswordDialog(context),
                     },
                     compact: true,
@@ -864,20 +941,16 @@ class _SidebarMenuState extends State<SidebarMenu> {
                     menuKey: 'master',
                     children: [
                       _SubMenuItemData(Icons.bed, 'เครื่องนอน-ของใช้', () {
-                        Navigator.pop(context);
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
+                        _closeMenu(context);
+                        _open(context, MaterialPageRoute(
                             builder: (_) =>
                                 CommodityScreen(apiService: ApiService()),
                           ),
                         );
                       }, screenCode: 'MS_COMMODITY'),
                       _SubMenuItemData(Icons.bed, 'สิ่งอำนวยความสะดวก', () {
-                        Navigator.pop(context);
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
+                        _closeMenu(context);
+                        _open(context, MaterialPageRoute(
                             builder: (_) =>
                                 FacilityScreen(apiService: ApiService()),
                           ),
@@ -885,10 +958,8 @@ class _SidebarMenuState extends State<SidebarMenu> {
                       }, screenCode: 'MS_FACILITY'),
                      
                       _SubMenuItemData(Icons.bed, 'ประเภทห้อง', () {
-                        Navigator.pop(context);
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
+                        _closeMenu(context);
+                        _open(context, MaterialPageRoute(
                             builder: (_) =>
                                 RoomtypeScreen(apiService: ApiService()),
                           ),
@@ -896,50 +967,40 @@ class _SidebarMenuState extends State<SidebarMenu> {
                       }, screenCode: 'MS_ROOMTYPE'),
 
                       _SubMenuItemData(Icons.bed, 'ห้อง', () {
-                        Navigator.pop(context);
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
+                        _closeMenu(context);
+                        _open(context, MaterialPageRoute(
                             builder: (_) =>
                                 RoomScreen(apiService: ApiService()),
                           ),
                         );
                       }, screenCode: 'MS_ROOM'),
                       _SubMenuItemData(Icons.build, 'วัสดุซ่อมบำรุง', () {
-                        Navigator.pop(context);
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
+                        _closeMenu(context);
+                        _open(context, MaterialPageRoute(
                             builder: (_) =>
                                 PartScreen(apiService: ApiService()),
                           ),
                         );
                       }, screenCode: 'MS_PART'),
                        _SubMenuItemData(Icons.business, 'รหัสหน่วยงาน', () {
-                        Navigator.pop(context);
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
+                        _closeMenu(context);
+                        _open(context, MaterialPageRoute(
                             builder: (_) =>
                                 OrganizationScreen(apiService: ApiService()),
                           ),
                         );
                       }, screenCode: 'MS_ORG'),
                        _SubMenuItemData(Icons.group, 'กลุ่ม', () {
-                        Navigator.pop(context);
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
+                        _closeMenu(context);
+                        _open(context, MaterialPageRoute(
                             builder: (_) =>
                                 SectionScreen(apiService: ApiService()),
                           ),
                         );
                       }, screenCode: 'MS_SECTION'),
                        _SubMenuItemData(Icons.people, 'บุคลากร', () {
-                        Navigator.pop(context);
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
+                        _closeMenu(context);
+                        _open(context, MaterialPageRoute(
                             builder: (_) =>
                                 EmployeeScreen(apiService: ApiService()),
                           ),
@@ -955,10 +1016,8 @@ class _SidebarMenuState extends State<SidebarMenu> {
                     compact: true,
                     children: [
                        _SubMenuItemData(Icons.bed, 'ใบรื้อเครื่องนอน', () {
-                        Navigator.pop(context);
-                          Navigator.push(
-                          context,
-                          MaterialPageRoute(
+                        _closeMenu(context);
+                          _open(context, MaterialPageRoute(
                             builder: (_) =>
                                 CommodityReportScreen(apiService: ApiService()),
                           ),
@@ -968,10 +1027,8 @@ class _SidebarMenuState extends State<SidebarMenu> {
                         Icons.receipt_long,
                         'บันทึกรับจ่ายของใช้',
                         () {
-                          Navigator.pop(context);
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
+                          _closeMenu(context);
+                          _open(context, MaterialPageRoute(
                               builder: (_) =>
                                   CommodityInScreen(apiService: ApiService()),
                             ),
@@ -979,7 +1036,7 @@ class _SidebarMenuState extends State<SidebarMenu> {
                         }, screenCode: 'OP_SUPPLY_IO',
                       ),
                       _SubMenuItemData(Icons.campaign, 'ข้อความวิ่ง', () {
-                        Navigator.pop(context);
+                        _closeMenu(context);
                         _showTickerMessageDialog(context);
                       }, screenCode: 'OP_TICKER'),
                     ],
@@ -1000,7 +1057,7 @@ class _SidebarMenuState extends State<SidebarMenu> {
                   items: [
                     if (widget.authProvider.canView('USR_CREATE'))
                       _MenuItemData(Icons.person_add, 'สร้างผู้ใช้งาน', () {
-                        Navigator.pop(context);
+                        _closeMenu(context);
                         _showRegisterUserDialog(context);
                       }),
                     if (widget.authProvider.canView('USR_EDIT'))
@@ -1008,8 +1065,8 @@ class _SidebarMenuState extends State<SidebarMenu> {
                         Icons.manage_accounts,
                         'แก้ไขผู้ใช้งาน',
                         () {
-                          Navigator.pop(context);
-                          Navigator.push(
+                          _closeMenu(context);
+                          _open(
                             context,
                             MaterialPageRoute(
                               builder: (_) =>
@@ -1023,7 +1080,7 @@ class _SidebarMenuState extends State<SidebarMenu> {
                         Icons.admin_panel_settings,
                         'กำหนดรหัสผ่านใหม่',
                         () {
-                          Navigator.pop(context);
+                          _closeMenu(context);
                           _showResetPasswordDialog(context);
                         },
                       ),
@@ -1046,7 +1103,7 @@ class _SidebarMenuState extends State<SidebarMenu> {
                     icon: Icons.person_add,
                     title: 'สร้างผู้ใช้งาน',
                     onTap: () => {
-                      Navigator.pop(context),
+                      _closeMenu(context),
                       _showRegisterUserDialog(context),
                     },
                     compact: true,
@@ -1056,7 +1113,7 @@ class _SidebarMenuState extends State<SidebarMenu> {
                     icon: Icons.admin_panel_settings,
                     title: 'กำหนดรหัสผ่านใหม่',
                     onTap: () => {
-                      Navigator.pop(context),
+                      _closeMenu(context),
                       _showResetPasswordDialog(context),
                     },
                     compact: true,
@@ -1071,8 +1128,8 @@ class _SidebarMenuState extends State<SidebarMenu> {
                 icon: Icons.date_range,
                 title: 'จอง',
                 onTap: () => {
-                  Navigator.pop(context),
-                  Navigator.push(
+                  _closeMenu(context),
+                  _open(
                     context,
                     MaterialPageRoute(
                       builder: (_) =>
@@ -1088,8 +1145,8 @@ class _SidebarMenuState extends State<SidebarMenu> {
                 icon: Icons.date_range,
                 title: 'รายการการจอง',
                 onTap: () => {
-                  Navigator.pop(context),
-                  Navigator.push(
+                  _closeMenu(context),
+                  _open(
                     context,
                     MaterialPageRoute(
                       builder: (_) => BookingListScreen(
@@ -1110,8 +1167,8 @@ class _SidebarMenuState extends State<SidebarMenu> {
                 menuKey: 'about_us',
                 children: [
                   _SubMenuItemData(Icons.hotel, 'ราคาห้อง', () {
-                    Navigator.pop(context);
-                    Navigator.push(
+                    _closeMenu(context);
+                    _open(
                       context,
                       MaterialPageRoute(
                         builder: (_) => const RoomRatesScreen(),
@@ -1119,15 +1176,15 @@ class _SidebarMenuState extends State<SidebarMenu> {
                     );
                   }),
                   _SubMenuItemData(Icons.contact_phone, 'ติดต่อเรา', () {
-                    Navigator.pop(context); // ปิด Drawer
-                    Navigator.push(
+                    _closeMenu(context); // ปิด Drawer
+                    _open(
                       context,
                       MaterialPageRoute(builder: (_) => const ContactScreen()),
                     );
                   }),
                   _SubMenuItemData(Icons.spa, 'สิ่งอำนวยความสะดวก', () {
-                    Navigator.pop(context); // ปิด Drawer
-                    Navigator.push(
+                    _closeMenu(context); // ปิด Drawer
+                    _open(
                       context,
                       MaterialPageRoute(
                         builder: (_) => const FacilitiesScreen(),
@@ -1145,17 +1202,17 @@ class _SidebarMenuState extends State<SidebarMenu> {
                       Icons.price_check,
                       'ราคาห้อง',
                       () {
-                        Navigator.pop(context);}
+                        _closeMenu(context);}
                     ),
                     _MenuItemData(
                       Icons.help,
                       'ติดต่อเรา',
-                      () => Navigator.pop(context),
+                      () => _closeMenu(context),
                     ),
                     _MenuItemData(
                       Icons.tv,
                       'สิ่งอำนวยความสะดวก',
-                      () => Navigator.pop(context),
+                      () => _closeMenu(context),
                     ),
                   ],
                 )
@@ -1165,31 +1222,69 @@ class _SidebarMenuState extends State<SidebarMenu> {
                   context,
                   icon: Icons.contact_mail,
                   title: 'ติดต่อเรา',
-                  onTap: () => Navigator.pop(context),
+                  onTap: () => _closeMenu(context),
                   compact: true,
                 ),
                 _buildMenuItem(
                   context,
                   icon: Icons.help,
                   title: 'ช่วยเหลือ',
-                  onTap: () => Navigator.pop(context),
+                  onTap: () => _closeMenu(context),
                   compact: true,
                 ),
               ],
 */
-              // Version info
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Text(
-                  'เวอร์ชัน 1.0.0',
-                  style: TextStyle(fontSize: 11, color: Colors.grey.shade400),
-                  textAlign: TextAlign.center,
+              // Version info (ตอนยุบเหลือแต่ไอคอน แถบแคบเกินไป ข้อความจะตัดบรรทัดเละ)
+              if (!_rail)
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Text(
+                    'เวอร์ชัน 1.0.0',
+                    style: TextStyle(fontSize: 11, color: Colors.grey.shade400),
+                    textAlign: TextAlign.center,
+                  ),
                 ),
-              ),
             ],
           ),
         ),
       ],
+    );
+  }
+
+  /// แถบบนสุดของเมนู: ปุ่มยุบ/ขยาย และปุ่มตรึง/เลิกตรึง
+  /// ไม่ตรึง (drawer) แสดงปุ่มตรึงเฉพาะจอที่กว้างพอ
+  Widget _buildPinBar(BuildContext context) {
+    if (!widget.docked && !widget.canPin) return const SizedBox.shrink();
+
+    final toggle = IconButton(
+      tooltip: _rail ? 'ขยายเมนู' : 'ย่อเมนูเหลือแต่ไอคอน',
+      icon: Icon(
+        _rail ? Icons.menu : Icons.menu_open,
+        color: AppTheme.primaryColor,
+      ),
+      onPressed: widget.onToggleCollapsed,
+    );
+    final pin = IconButton(
+      tooltip: widget.docked ? 'เลิกตรึงเมนู' : 'ตรึงเมนูไว้ข้างจอ',
+      icon: Icon(
+        widget.docked ? Icons.push_pin : Icons.push_pin_outlined,
+        color: AppTheme.primaryColor,
+      ),
+      onPressed: () {
+        _closeMenu(context);
+        widget.onTogglePinned?.call();
+      },
+    );
+
+    if (_rail) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 6),
+        child: Center(child: toggle),
+      );
+    }
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(8, 6, 8, 0),
+      child: Row(children: [if (widget.docked) toggle, const Spacer(), pin]),
     );
   }
 
@@ -1203,6 +1298,41 @@ class _SidebarMenuState extends State<SidebarMenu> {
     } else {
       return screenWidth * 0.85;
     }
+  }
+
+  /// ไอคอนเมนูตอนยุบ ชี้แล้วขึ้นชื่อเมนู
+  Widget _railIcon({
+    required IconData icon,
+    required String title,
+    required VoidCallback onTap,
+  }) {
+    return Tooltip(
+      message: title,
+      preferBelow: false,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(8),
+          hoverColor: AppTheme.primaryColor.withValues(alpha: 0.05),
+          splashColor: AppTheme.primaryColor.withValues(alpha: 0.1),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: Center(
+              child: Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryColor.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(icon, color: AppTheme.primaryColor, size: 22),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   // Toggle submenu expansion
@@ -1964,7 +2094,7 @@ const Divider(indent: 16, endIndent: 16),
             width: double.infinity,
             child: OutlinedButton.icon(
               onPressed: () async {
-                Navigator.pop(context);
+                _closeMenu(context);
                 await widget.authProvider.logout();
               },
               icon: const Icon(Icons.logout, size: 18),
@@ -2035,7 +2165,7 @@ const Divider(indent: 16, endIndent: 16),
           ),
           IconButton(
             onPressed: () async {
-              Navigator.pop(context);
+              _closeMenu(context);
               await widget.authProvider.logout();
             },
             icon: Icon(
@@ -2100,7 +2230,7 @@ const Divider(indent: 16, endIndent: 16),
             width: double.infinity,
             child: ElevatedButton.icon(
               onPressed: () {
-                Navigator.pop(context);
+                _closeMenu(context);
                 showDialog(
                   context: context,
                   barrierDismissible: false,
@@ -2138,18 +2268,19 @@ const Divider(indent: 16, endIndent: 16),
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 4),
-          child: Text(
-            title,
-            style: TextStyle(
-              fontSize: 12,
-              color: titleColor ?? Colors.grey.shade600,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 0.5,
+        if (!_rail)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 4),
+            child: Text(
+              title,
+              style: TextStyle(
+                fontSize: 12,
+                color: titleColor ?? Colors.grey.shade600,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 0.5,
+              ),
             ),
           ),
-        ),
         ...items.map(
           (item) => _buildMenuItem(
             context,
@@ -2218,6 +2349,9 @@ const Divider(indent: 16, endIndent: 16),
     required VoidCallback onTap,
     bool compact = false,
   }) {
+    if (_rail) {
+      return _railIcon(icon: icon, title: title, onTap: onTap);
+    }
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -2299,6 +2433,23 @@ const Divider(indent: 16, endIndent: 16),
     if (children.isEmpty) return const SizedBox.shrink();
 
     final isExpanded = _expandedMenus.contains(menuKey);
+
+    if (_rail) {
+      // เมนูย่อยต้องเห็นชื่อจึงเลือกได้ กดไอคอนกลุ่มแล้วขยายเมนูพร้อมเปิดกลุ่มนั้นให้
+      return Column(
+        children: [
+          if (divider) const Divider(indent: 12, endIndent: 12),
+          _railIcon(
+            icon: icon,
+            title: title,
+            onTap: () {
+              setState(() => _expandedMenus.add(menuKey));
+              widget.onToggleCollapsed?.call();
+            },
+          ),
+        ],
+      );
+    }
 
     return Column(
       children: [

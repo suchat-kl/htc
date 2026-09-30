@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:universal_html/html.dart' as html;
 import 'package:highway_training/screens/contact_screen.dart';
 import 'package:highway_training/screens/home_screen.dart';
 import 'package:highway_training/screens/training_screen.dart';
@@ -129,6 +130,38 @@ class MainNavigation extends StatefulWidget {
 class _MainNavigationState extends State<MainNavigation> {
   int _currentIndex = 0;
 
+  /// ตรึงเมนูไว้ข้างซ้าย จำไว้ในเบราว์เซอร์ (localStorage ไม่หายตอนออกจากระบบ
+  /// ต่างจาก secure storage ที่ถูกล้างทุกครั้งที่ออกจากระบบ)
+  static const String _pinnedKey = 'htc_menu_pinned';
+  bool _menuPinned = _readPinned();
+
+  /// ตอนตรึง: true = แสดงเฉพาะไอคอน กดปุ่มหรือไอคอนกลุ่มเมนูแล้วขยายเห็นชื่อ
+  bool _menuCollapsed = true;
+
+  /// ตรึงเมนูได้เฉพาะจอกว้าง จอแคบ (มือถือ/แท็บเล็ตแนวตั้ง) ใช้เมนูเลื่อนออกแบบเดิม
+  static const double _pinMinWidth = 900;
+
+  /// ตอนตรึง หน้าจอที่เปิดจากเมนูไปอยู่ใน navigator นี้ (ด้านขวาของเมนู) เมนูจึงยังเห็นอยู่
+  final GlobalKey<NavigatorState> _contentNav = GlobalKey<NavigatorState>();
+
+  static bool _readPinned() {
+    try {
+      return html.window.localStorage[_pinnedKey] == '1';
+    } catch (_) {
+      return false;
+    }
+  }
+
+  void _togglePinned() {
+    setState(() {
+      _menuPinned = !_menuPinned;
+      _menuCollapsed = true;
+    });
+    try {
+      html.window.localStorage[_pinnedKey] = _menuPinned ? '1' : '0';
+    } catch (_) {}
+  }
+
   /// กำลังเปิดหน้าบังคับเปลี่ยนรหัสผ่านอยู่ กันเปิดซ้อน
   bool _forcingPasswordChange = false;
 
@@ -189,6 +222,8 @@ class _MainNavigationState extends State<MainNavigation> {
   }
 
   void _onTabChanged(int index) {
+    // ตรึงเมนูอยู่: ปิดหน้าที่เปิดค้างในพื้นที่ด้านขวา ให้เห็นแท็บที่เลือก
+    _contentNav.currentState?.popUntil((r) => r.isFirst);
     setState(() {
       _currentIndex = index;
     });
@@ -204,18 +239,50 @@ class _MainNavigationState extends State<MainNavigation> {
 
   @override
   Widget build(BuildContext context) {
+    final canPin = MediaQuery.of(context).size.width >= _pinMinWidth;
+    final docked = _menuPinned && canPin;
+
     return Scaffold(
       appBar: CustomHeader(authProvider: widget.authProvider),
-      drawer: SidebarMenu(
-        authProvider: widget.authProvider,
-        // onTickerSaved: () {
-        //   AppLogger.d('📢 onTickerSaved callback!');
-        //   // Switch to home tab and refresh
-        //   _onTabChanged(0);
-        // },
-      ),
+      // ตรึงอยู่ไม่มี drawer ปุ่มเมนูที่แถบบนจึงหายไป ใช้ปุ่มบนแถบเมนูข้างแทน
+      drawer: docked
+          ? null
+          : SidebarMenu(
+              authProvider: widget.authProvider,
+              canPin: canPin,
+              onTogglePinned: _togglePinned,
+            ),
 
-      body: _buildBody(),
+      body: docked
+          ? Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                SidebarMenu(
+                  authProvider: widget.authProvider,
+                  docked: true,
+                  collapsed: _menuCollapsed,
+                  canPin: true,
+                  contentNavigator: _contentNav,
+                  onToggleCollapsed: () =>
+                      setState(() => _menuCollapsed = !_menuCollapsed),
+                  onTogglePinned: _togglePinned,
+                ),
+                // หน้าจอจากเมนูเปิดซ้อนอยู่ในนี้ หน้าแรกคือแท็บที่เลือกอยู่ (อัปเดตตาม _currentIndex)
+                Expanded(
+                  child: Navigator(
+                    key: _contentNav,
+                    pages: [
+                      MaterialPage(
+                        key: const ValueKey('main-tab'),
+                        child: _buildBody(),
+                      ),
+                    ],
+                    onDidRemovePage: (_) {},
+                  ),
+                ),
+              ],
+            )
+          : _buildBody(),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         onTap: _onTabChanged, // Use the new method,
