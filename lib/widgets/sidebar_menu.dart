@@ -280,7 +280,7 @@ class _SidebarMenuState extends State<SidebarMenu> {
                 ],
                 _buildExpandableMenuItem(
                   context,
-                  icon: Icons.settings,
+                  icon: Icons.storage,
                   title: 'รายการหลัก',
                   menuKey: 'master',
                   divider: true,
@@ -402,7 +402,7 @@ class _SidebarMenuState extends State<SidebarMenu> {
                 // }),
                 _buildExpandableMenuItem(
                   context,
-                  icon: Icons.settings,
+                  icon: Icons.assignment,
                   title: 'การดำเนินงาน',
                   menuKey: 'operations',
                   divider: true,
@@ -936,7 +936,7 @@ class _SidebarMenuState extends State<SidebarMenu> {
                   ),
                   _buildExpandableMenuItem(
                     context,
-                    icon: Icons.settings,
+                    icon: Icons.storage,
                     title: 'Master',
                     menuKey: 'master',
                     children: [
@@ -1010,7 +1010,7 @@ class _SidebarMenuState extends State<SidebarMenu> {
                   ),
                   _buildExpandableMenuItem(
                     context,
-                    icon: Icons.settings,
+                    icon: Icons.assignment,
                     title: 'การดำเนินงาน',
                     menuKey: 'operations',
                     compact: true,
@@ -1397,7 +1397,7 @@ class _SidebarMenuState extends State<SidebarMenu> {
                 // Download menu with SUBMENU
                 _buildExpandableMenuItem(
                   context,
-                  icon: Icons.settings,
+                  icon: Icons.assignment,
                   title: 'Operations',
                   menuKey: 'operations',
                   children: [
@@ -1444,7 +1444,7 @@ class _SidebarMenuState extends State<SidebarMenu> {
                 ),
                 _buildExpandableMenuItem(
                   context,
-                  icon: Icons.settings,
+                  icon: Icons.storage,
                   title: 'Master',
                   menuKey: 'master',
                   children: [
@@ -1746,7 +1746,7 @@ class _SidebarMenuState extends State<SidebarMenu> {
                 ),
                 _buildExpandableMenuItem(
                   context,
-                  icon: Icons.settings,
+                  icon: Icons.assignment,
                   title: 'การดำเนินงาน',
                   menuKey: 'operations',
                   children: [
@@ -1799,7 +1799,7 @@ const Divider(indent: 16, endIndent: 16),
                 ),
                 _buildExpandableMenuItem(
                   context,
-                  icon: Icons.settings,
+                  icon: Icons.storage,
                   title: 'Master',
                   menuKey: 'master',
                   children: [
