@@ -10,6 +10,7 @@ import 'room_rates_screen.dart';
 import '../widgets/footer.dart';
 import 'package:highway_training/models/home_stats.dart';
 import 'package:highway_training/models/notification_item.dart';
+import 'package:highway_training/widgets/hover_lift.dart';
 import 'package:highway_training/utils/logger.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -163,6 +164,8 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           _buildTickerBar(context, isDesktop),
           _buildBannerSection(context, isDesktop),
+          // ประกาศของศูนย์ฯ อยู่ใต้ภาพหัว เห็นทันทีไม่ต้องเลื่อนลงไปถึงส่วนข่าว
+          _buildNotificationSection(isDesktop),
           _buildStatsSection(context, isDesktop),
           _buildNewsSection(context, isDesktop),
           _buildRoomSection(context, isDesktop),
@@ -584,58 +587,75 @@ class _HomeScreenState extends State<HomeScreen> {
     required Color color,
     required bool isDesktop,
   }) {
-    return Container(
-      width: isDesktop ? 240 : 150,
-      padding: EdgeInsets.all(isDesktop ? 24 : 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.grey.shade200),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
+    // ชี้เมาส์: การ์ดลอยขึ้นและขยายเล็กน้อย เงาเข้มขึ้น ขอบเป็นสีเดียวกับไอคอน
+    return HoverLift(
+      builder: (hovered) => AnimatedContainer(
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOutCubic,
+        width: isDesktop ? 240 : 150,
+        padding: EdgeInsets.all(isDesktop ? 24 : 16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: hovered
+                ? color.withValues(alpha: 0.45)
+                : Colors.grey.shade200,
           ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Icon(icon, size: isDesktop ? 34 : 26, color: color),
-          SizedBox(height: isDesktop ? 12 : 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic,
-            children: [
-              Text(
-                value,
-                style: TextStyle(
-                  color: color,
-                  fontWeight: FontWeight.bold,
-                  fontSize: isDesktop ? 32 : 24,
-                ),
-              ),
-              const SizedBox(width: 6),
-              Flexible(
-                child: Text(
-                  unit,
+          boxShadow: [
+            BoxShadow(
+              color: hovered
+                  ? color.withValues(alpha: 0.18)
+                  : Colors.black.withValues(alpha: 0.04),
+              blurRadius: hovered ? 22 : 10,
+              offset: Offset(0, hovered ? 10 : 3),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            // ชี้เมาส์: ไอคอนหมุนหนึ่งรอบ (เลยไปนิดแล้วเด้งกลับ) พร้อมกับการ์ดลอยขึ้น
+            AnimatedRotation(
+              turns: hovered ? 1 : 0,
+              duration: const Duration(milliseconds: 700),
+              curve: Curves.easeOutBack,
+              child: Icon(icon, size: isDesktop ? 34 : 26, color: color),
+            ),
+            SizedBox(height: isDesktop ? 12 : 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.baseline,
+              textBaseline: TextBaseline.alphabetic,
+              children: [
+                Text(
+                  value,
                   style: TextStyle(
-                    color: AppTheme.textSecondary,
-                    fontSize: isDesktop ? 13 : 11,
+                    color: color,
+                    fontWeight: FontWeight.bold,
+                    fontSize: isDesktop ? 32 : 24,
                   ),
-                  overflow: TextOverflow.ellipsis,
                 ),
-              ),
-            ],
-          ),
-          SizedBox(height: isDesktop ? 6 : 4),
-          Text(
-            label,
-            style: TextStyle(fontSize: isDesktop ? 14 : 12),
-            textAlign: TextAlign.center,
-          ),
-        ],
+                const SizedBox(width: 6),
+                Flexible(
+                  child: Text(
+                    unit,
+                    style: TextStyle(
+                      color: AppTheme.textSecondary,
+                      fontSize: isDesktop ? 13 : 11,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: isDesktop ? 6 : 4),
+            Text(
+              label,
+              style: TextStyle(fontSize: isDesktop ? 14 : 12),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -685,23 +705,6 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           SizedBox(height: isDesktop ? 24 : 18),
-          // ประกาศของศูนย์ฯ เองอยู่บนสุด ตามด้วยข่าวจากเพจ Facebook
-          // ประกาศเหมาะกับเรื่องที่เป็นทางการและมีวันหมดอายุ
-          // ส่วนเพจใช้ลงข่าวและภาพกิจกรรมซึ่งศูนย์ฯ โพสต์อยู่แล้ว
-          if (_notifications.isNotEmpty) ...[
-            Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 760),
-                child: Column(
-                  children: [
-                    for (final n in _notifications)
-                      _buildNotificationCard(n, isDesktop),
-                  ],
-                ),
-              ),
-            ),
-            SizedBox(height: isDesktop ? 28 : 20),
-          ],
           Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 520),
@@ -709,6 +712,36 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  /// ประกาศประชาสัมพันธ์ของศูนย์ฯ (เมนูการดำเนินงาน > ประกาศประชาสัมพันธ์)
+  ///
+  /// อยู่ใต้ภาพหัว แสดงเฉพาะประกาศที่ใช้งานและอยู่ในช่วงวันที่ (backend กรองให้)
+  /// ไม่มีประกาศก็ไม่แสดงส่วนนี้เลย หน้าแรกจะไม่มีช่องว่าง
+  /// ประกาศเหมาะกับเรื่องที่เป็นทางการและมีวันหมดอายุ ส่วนข่าว/ภาพกิจกรรมอยู่ที่เพจ Facebook ด้านล่าง
+  Widget _buildNotificationSection(bool isDesktop) {
+    if (_notifications.isEmpty) return const SizedBox.shrink();
+    return Container(
+      width: double.infinity,
+      color: AppTheme.backgroundColor,
+      padding: EdgeInsets.fromLTRB(
+        isDesktop ? 32 : 16,
+        isDesktop ? 28 : 20,
+        isDesktop ? 32 : 16,
+        isDesktop ? 16 : 8,
+      ),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 900),
+          child: Column(
+            children: [
+              for (final n in _notifications)
+                _buildNotificationCard(n, isDesktop),
+            ],
+          ),
+        ),
       ),
     );
   }
