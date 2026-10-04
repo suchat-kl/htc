@@ -96,7 +96,7 @@ class _FolioScreenState extends State<FolioScreen> {
   /// ตารางกว้างอย่างน้อยเท่านี้ จอแคบกว่าให้เลื่อนแนวนอน
   static const double _minTableWidth = 1150;
 
-  static final Color _line = AppTheme.primaryColor.withValues(alpha: 0.45);
+  static Color get _line => AppTheme.primaryColor.withValues(alpha: 0.45);
 
   bool _loading = true;
   bool _saving = false;
@@ -774,7 +774,12 @@ class _FolioScreenState extends State<FolioScreen> {
   }
 
   /// ปุ่มท้ายหน้า ส่ง null แทน callback เมื่อไม่มีสิทธิ์ ปุ่มจะเป็นสีเทากดไม่ได้
-  Widget _button(String label, IconData icon, Color color, VoidCallback? onTap) {
+  Widget _button(
+    String label,
+    IconData icon,
+    Color color,
+    VoidCallback? onTap,
+  ) {
     return ElevatedButton.icon(
       onPressed: onTap,
       icon: Icon(icon, size: 18),
@@ -806,7 +811,7 @@ class _HeadText extends StatelessWidget {
       child: Text(
         text,
         textAlign: TextAlign.center,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 15,
           fontWeight: FontWeight.bold,
           color: AppTheme.primaryDark,

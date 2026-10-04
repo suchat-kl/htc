@@ -595,14 +595,22 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
                   onPressed: row.isNew
                       ? null
                       : () => _showAddEditDialog(employee: row.toEmployee()),
-                  icon: Icon(Icons.edit, size: icon, color: AppTheme.primaryColor),
+                  icon: Icon(
+                    Icons.edit,
+                    size: icon,
+                    color: AppTheme.primaryColor,
+                  ),
                   tooltip: 'แก้ไขในหน้าต่าง',
                 ),
                 IconButton(
                   onPressed: row.isNew
                       ? null
                       : () => _deleteEmployee(row.toEmployee()),
-                  icon: Icon(Icons.delete, size: icon, color: AppTheme.deleteColor),
+                  icon: Icon(
+                    Icons.delete,
+                    size: icon,
+                    color: AppTheme.deleteColor,
+                  ),
                   tooltip: 'ลบทันที',
                 ),
               ],

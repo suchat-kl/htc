@@ -234,7 +234,7 @@ class _NoAuthBookingDetailScreenState extends State<NoAuthBookingDetailScreen>
                         ),
                       ),
                       const SizedBox(width: 12),
-                      const Text(
+                      Text(
                         'ข้อมูลการจอง',
                         style: TextStyle(
                           fontSize: 20,

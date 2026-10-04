@@ -665,10 +665,7 @@ class _BookingInfoTabState extends State<BookingInfoTab> {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
-              borderSide: const BorderSide(
-                color: AppTheme.primaryColor,
-                width: 1.6,
-              ),
+              borderSide: BorderSide(color: AppTheme.primaryColor, width: 1.6),
             ),
             filled: true,
             fillColor: AppTheme.fieldFillColor,
@@ -863,7 +860,7 @@ class _BookingInfoTabState extends State<BookingInfoTab> {
       ),
       child: Row(
         children: [
-          const Icon(
+          Icon(
             Icons.confirmation_number_outlined,
             size: 22,
             color: AppTheme.primaryColor,
@@ -881,7 +878,7 @@ class _BookingInfoTabState extends State<BookingInfoTab> {
           ),
           Text(
             '$_bookID',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.bold,
               color: AppTheme.primaryColor,
@@ -940,7 +937,7 @@ class _BookingInfoTabState extends State<BookingInfoTab> {
         Expanded(
           child: Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
               color: AppTheme.primaryColor,
@@ -1034,10 +1031,7 @@ class _BookingInfoTabState extends State<BookingInfoTab> {
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(10),
-            borderSide: const BorderSide(
-              color: AppTheme.primaryColor,
-              width: 1.6,
-            ),
+            borderSide: BorderSide(color: AppTheme.primaryColor, width: 1.6),
           ),
           filled: true,
           fillColor: AppTheme.fieldFillColor,

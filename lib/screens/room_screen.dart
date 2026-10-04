@@ -600,12 +600,20 @@ class _RoomScreenState extends State<RoomScreen> {
                   onPressed: row.isNew
                       ? null
                       : () => _showAddEditDialog(room: row.toRoom()),
-                  icon: Icon(Icons.edit, size: icon, color: AppTheme.primaryColor),
+                  icon: Icon(
+                    Icons.edit,
+                    size: icon,
+                    color: AppTheme.primaryColor,
+                  ),
                   tooltip: 'แก้ไขในหน้าต่าง',
                 ),
                 IconButton(
                   onPressed: row.isNew ? null : () => _deleteRoom(row.toRoom()),
-                  icon: Icon(Icons.delete, size: icon, color: AppTheme.deleteColor),
+                  icon: Icon(
+                    Icons.delete,
+                    size: icon,
+                    color: AppTheme.deleteColor,
+                  ),
                   tooltip: 'ลบทันที',
                 ),
               ],

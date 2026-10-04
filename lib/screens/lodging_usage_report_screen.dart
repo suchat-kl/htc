@@ -34,8 +34,7 @@ class LodgingUsageReportScreen extends StatefulWidget {
       _LodgingUsageReportScreenState();
 }
 
-class _LodgingUsageReportScreenState
-    extends State<LodgingUsageReportScreen> {
+class _LodgingUsageReportScreenState extends State<LodgingUsageReportScreen> {
   // Pagination
   int _currentPage = 0;
   int _pageSize = 5;

@@ -72,7 +72,9 @@ class _NotificationDialogState extends State<NotificationDialog> {
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
 
-    if (_startDate != null && _stopDate != null && _stopDate!.isBefore(_startDate!)) {
+    if (_startDate != null &&
+        _stopDate != null &&
+        _stopDate!.isBefore(_startDate!)) {
       setState(() => _error = 'วันที่สิ้นสุดต้องไม่ก่อนวันที่เริ่มประกาศ');
       return;
     }
@@ -125,7 +127,7 @@ class _NotificationDialogState extends State<NotificationDialog> {
               children: [
                 Row(
                   children: [
-                    const Icon(Icons.campaign, color: AppTheme.primaryColor),
+                    Icon(Icons.campaign, color: AppTheme.primaryColor),
                     const SizedBox(width: 10),
                     Text(
                       isEdit ? 'แก้ไขประกาศ' : 'เพิ่มประกาศ',
@@ -155,8 +157,11 @@ class _NotificationDialogState extends State<NotificationDialog> {
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.error_outline,
-                            color: AppTheme.dangerColor, size: 20),
+                        const Icon(
+                          Icons.error_outline,
+                          color: AppTheme.dangerColor,
+                          size: 20,
+                        ),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
@@ -308,21 +313,20 @@ class _NotificationDialogState extends State<NotificationDialog> {
   }
 
   Widget _label(String text) => Text(
-        text,
-        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-      );
+    text,
+    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+  );
 
   InputDecoration _input(String hint) => InputDecoration(
-        hintText: hint.isEmpty ? null : hint,
-        hintStyle: const TextStyle(fontSize: 13),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-        filled: true,
-        fillColor: AppTheme.fieldFillColor,
-        isDense: true,
-        counterText: '',
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-      );
+    hintText: hint.isEmpty ? null : hint,
+    hintStyle: const TextStyle(fontSize: 13),
+    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+    filled: true,
+    fillColor: AppTheme.fieldFillColor,
+    isDense: true,
+    counterText: '',
+    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+  );
 
   Widget _dateField(
     String label,
@@ -349,8 +353,11 @@ class _NotificationDialogState extends State<NotificationDialog> {
             ),
             child: Row(
               children: [
-                const Icon(Icons.calendar_today,
-                    size: 16, color: AppTheme.textSecondary),
+                const Icon(
+                  Icons.calendar_today,
+                  size: 16,
+                  color: AppTheme.textSecondary,
+                ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
@@ -367,8 +374,11 @@ class _NotificationDialogState extends State<NotificationDialog> {
                 if (value != null)
                   InkWell(
                     onTap: () => onPicked(null),
-                    child: const Icon(Icons.clear,
-                        size: 16, color: AppTheme.textSecondary),
+                    child: const Icon(
+                      Icons.clear,
+                      size: 16,
+                      color: AppTheme.textSecondary,
+                    ),
                   ),
               ],
             ),

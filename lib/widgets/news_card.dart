@@ -57,7 +57,7 @@ class NewsCard extends StatelessWidget {
                     ],
                   ),
                 ),
-                child: const Center(
+                child: Center(
                   child: Icon(
                     Icons.article,
                     size: 48,

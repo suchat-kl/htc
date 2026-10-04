@@ -462,14 +462,22 @@ class _DocumentStatusScreenState extends State<DocumentStatusScreen> {
                         ? null
                         : () =>
                               _showAddEditDialog(item: row.toDocumentStatus()),
-                    icon: const Icon(Icons.edit, size: 20, color: AppTheme.primaryColor),
+                    icon: Icon(
+                      Icons.edit,
+                      size: 20,
+                      color: AppTheme.primaryColor,
+                    ),
                     tooltip: 'แก้ไขในหน้าต่าง',
                   ),
                   IconButton(
                     onPressed: row.isNew
                         ? null
                         : () => _deleteDocumentStatus(row.toDocumentStatus()),
-                    icon: const Icon(Icons.delete, size: 20, color: AppTheme.deleteColor),
+                    icon: const Icon(
+                      Icons.delete,
+                      size: 20,
+                      color: AppTheme.deleteColor,
+                    ),
                     tooltip: 'ลบทันที',
                   ),
                 ],

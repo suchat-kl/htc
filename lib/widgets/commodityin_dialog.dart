@@ -409,7 +409,8 @@ class _CommodityInDialogState extends State<CommodityInDialog> {
 
               _selectedDate, // Christian year DateTime
             );
-            if (picked != null && picked != _selectedDate) setState(() => _selectedDate = picked);
+            if (picked != null && picked != _selectedDate)
+              setState(() => _selectedDate = picked);
             /*
             final picked = await showDatePicker(
               context: context,

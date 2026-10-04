@@ -367,12 +367,7 @@ class _ActivityFiscalChartScreenState extends State<ActivityFiscalChartScreen> {
               ],
             ),
             const SizedBox(height: 12),
-            SimpleChart(
-              points: points,
-              type: _type,
-              color: color,
-              unit: unit,
-            ),
+            SimpleChart(points: points, type: _type, color: color, unit: unit),
           ],
         ),
       ),
@@ -403,7 +398,10 @@ class _ActivityFiscalChartScreenState extends State<ActivityFiscalChartScreen> {
                 columns: const [
                   DataColumn(label: Text('เดือน')),
                   DataColumn(label: Text('จำนวนใบจอง'), numeric: true),
-                  DataColumn(label: Text('จำนวนผู้ใช้บริการ (คน)'), numeric: true),
+                  DataColumn(
+                    label: Text('จำนวนผู้ใช้บริการ (คน)'),
+                    numeric: true,
+                  ),
                 ],
                 rows: [
                   for (final m in data.months)

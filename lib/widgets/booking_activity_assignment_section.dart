@@ -342,14 +342,14 @@ class _BookingActivityAssignmentSectionState
             color: AppTheme.primaryColor.withValues(alpha: 0.09),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: const Icon(
+          child: Icon(
             Icons.groups_outlined,
             color: AppTheme.primaryColor,
             size: 18,
           ),
         ),
         const SizedBox(width: 10),
-        const Expanded(
+        Expanded(
           child: Text(
             'ห้องกิจกรรมที่กำหนดแล้ว',
             style: TextStyle(
@@ -672,7 +672,7 @@ class _ColHead extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       text,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 14,
         fontWeight: FontWeight.bold,
         color: AppTheme.primaryColor,

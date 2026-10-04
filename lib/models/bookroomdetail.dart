@@ -48,15 +48,11 @@ class BookRoomDetail {
     return BookRoomDetail(
       bookRoomId: _int(_pick(json, ['bookRoomId', 'bookroomid', 'BookRoomId'])),
       bookId: _int(_pick(json, ['bookId', 'bookid', 'BookId'])),
-      roomTypeId: _int(
-        _pick(json, ['roomTypeId', 'roomtypeid', 'RoomTypeId']),
-      ),
+      roomTypeId: _int(_pick(json, ['roomTypeId', 'roomtypeid', 'RoomTypeId'])),
       numberMember: _int(
         _pick(json, ['numberMember', 'numbermember', 'NumberMember']),
       ),
-      numberRoom: _int(
-        _pick(json, ['numberRoom', 'numberroom', 'NumberRoom']),
-      ),
+      numberRoom: _int(_pick(json, ['numberRoom', 'numberroom', 'NumberRoom'])),
       status: _str(_pick(json, ['status', 'Status'])),
       price: _int(_pick(json, ['price', 'Price'])),
       sequence: _int(_pick(json, ['sequence', 'Sequence'])),

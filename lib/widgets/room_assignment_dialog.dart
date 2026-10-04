@@ -395,7 +395,7 @@ class _RoomAssignmentDialogState extends State<RoomAssignmentDialog> {
   Widget _header(RoomAssignment a) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: AppTheme.primaryColor,
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),

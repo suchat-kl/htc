@@ -7,6 +7,7 @@ import 'package:highway_training/screens/home_screen.dart';
 import 'package:highway_training/screens/training_screen.dart';
 // import 'package:google_fonts/google_fonts.dart';
 import 'package:highway_training/widgets/header.dart';
+import 'package:highway_training/widgets/test_phase_banner.dart';
 import 'package:highway_training/widgets/change_password_dialog.dart';
 import 'package:highway_training/services/api_service.dart';
 import 'package:highway_training/widgets/sidebar_menu.dart';
@@ -48,6 +49,11 @@ void main() async {
   //   GoogleFonts.sarabun(),
   //   GoogleFonts.notoSansThai(),
   // ]);
+  // ธีมที่ผู้ใช้เลือกไว้ครั้งก่อน (ไม่มี = ธีมที่ 1) ต้องตั้งก่อนวาดหน้าจอแรก
+  try {
+    AppTheme.select(html.window.localStorage[AppTheme.storageKey]);
+  } catch (_) {}
+
   // Initialize auth and load session
   final authProvider = AuthProvider();
   await authProvider.loadSession();
@@ -76,6 +82,7 @@ class _HighwayTrainingAppState extends State<HighwayTrainingApp> {
     super.initState();
     // Listen for auth state changes
     widget.authProvider.addListener(_onAuthChanged);
+    AppTheme.themeId.addListener(_onThemeChanged);
   }
 
   @override
@@ -83,7 +90,25 @@ class _HighwayTrainingAppState extends State<HighwayTrainingApp> {
     // ต้องถอด listener ออก ไม่งั้น AuthProvider (มีอายุยืนกว่า State นี้)
     // จะยังถือ closure ที่อ้างถึง State ที่ถูก dispose ไปแล้วอยู่
     widget.authProvider.removeListener(_onAuthChanged);
+    AppTheme.themeId.removeListener(_onThemeChanged);
     super.dispose();
+  }
+
+  /// ผู้ใช้เลือกธีมใหม่: จำไว้ในเบราว์เซอร์ แล้ววาดทุกหน้าจอที่เปิดอยู่ใหม่
+  /// สีของ AppTheme เป็นค่า static ไม่ได้ผูกกับ Theme.of(context) widget ที่เป็น const
+  /// หรือหน้าจอที่ซ้อนอยู่ใน Navigator จึงไม่วาดใหม่เอง ต้องไล่สั่งทีละตัว (state ของหน้าจอไม่หาย)
+  void _onThemeChanged() {
+    try {
+      html.window.localStorage[AppTheme.storageKey] = AppTheme.themeId.value;
+    } catch (_) {}
+    if (!mounted) return;
+    setState(() {});
+    void rebuild(Element el) {
+      el.markNeedsBuild();
+      el.visitChildren(rebuild);
+    }
+
+    context.visitChildElements(rebuild);
   }
 
   void _onAuthChanged() {
@@ -113,6 +138,13 @@ class _HighwayTrainingAppState extends State<HighwayTrainingApp> {
       //   GlobalCupertinoLocalizations.delegate,
       // ],
       theme: AppTheme.lightTheme,
+      // ป้ายช่วงทดสอบ อยู่เหนือทุกหน้าจอ (รวมหน้าที่เปิดจากเมนูและ dialog เต็มจอ)
+      builder: (context, child) => Column(
+        children: [
+          const TestPhaseBanner(),
+          Expanded(child: child ?? const SizedBox.shrink()),
+        ],
+      ),
       home: MainNavigation(authProvider: widget.authProvider),
     );
   }

@@ -69,7 +69,8 @@ class AuthInterceptor extends Interceptor {
 
       // ✅ CRITICAL: If already refreshing, queue the request
       if (_isRefreshing) {
-        if (AppLogger.on) AppLogger.d('⏳ Refresh already in progress, queuing: $requestPath');
+        if (AppLogger.on)
+          AppLogger.d('⏳ Refresh already in progress, queuing: $requestPath');
         _pendingRequests.add({
           'options': err.requestOptions,
           'handler': handler,

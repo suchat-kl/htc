@@ -268,7 +268,7 @@ class _PaymentSlipReviewSectionState extends State<PaymentSlipReviewSection> {
         children: [
           Row(
             children: [
-              const Icon(Icons.receipt_long, color: AppTheme.primaryColor),
+              Icon(Icons.receipt_long, color: AppTheme.primaryColor),
               const SizedBox(width: 8),
               const Expanded(
                 child: Text(

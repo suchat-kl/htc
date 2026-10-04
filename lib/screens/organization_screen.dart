@@ -473,14 +473,22 @@ class _OrganizationScreenState extends State<OrganizationScreen> {
                   onPressed: row.isNew
                       ? null
                       : () => _showAddEditDialog(org: row.toOrganization()),
-                  icon: const Icon(Icons.edit, size: 20, color: AppTheme.primaryColor),
+                  icon: Icon(
+                    Icons.edit,
+                    size: 20,
+                    color: AppTheme.primaryColor,
+                  ),
                   tooltip: 'แก้ไขในหน้าต่าง',
                 ),
                 IconButton(
                   onPressed: row.isNew
                       ? null
                       : () => _deleteOrg(row.toOrganization()),
-                  icon: const Icon(Icons.delete, size: 20, color: AppTheme.deleteColor),
+                  icon: const Icon(
+                    Icons.delete,
+                    size: 20,
+                    color: AppTheme.deleteColor,
+                  ),
                   tooltip: 'ลบทันที',
                 ),
               ],

@@ -966,7 +966,7 @@ class _BookingEditScreenState extends State<BookingEditScreen> {
         const SizedBox(width: 8),
         Text(
           title,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 17,
             fontWeight: FontWeight.bold,
             color: AppTheme.primaryColor,
@@ -1046,10 +1046,7 @@ class _BookingEditScreenState extends State<BookingEditScreen> {
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(10),
-            borderSide: const BorderSide(
-              color: AppTheme.primaryColor,
-              width: 1.6,
-            ),
+            borderSide: BorderSide(color: AppTheme.primaryColor, width: 1.6),
           ),
           filled: true,
           fillColor: AppTheme.fieldFillColor,

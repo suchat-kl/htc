@@ -33,6 +33,7 @@ class _RegisterUserDialogState extends State<RegisterUserDialog> {
   bool _obscurePassword = true;
   String? _errorMessage;
   List<Map<String, String>> _availableRoles = [];
+
   /// บทบาทที่เลือกไว้ ไม่ติ๊กอะไรให้ล่วงหน้า
   ///
   /// เดิมติ๊ก USER ไว้ให้ แต่ตั้งแต่ 24 ก.ย. 2569 role USER ไม่มีสิทธิ์หน้าจอใด ๆ
@@ -413,10 +414,7 @@ class _RegisterUserDialogState extends State<RegisterUserDialog> {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(
-                color: AppTheme.primaryColor,
-                width: 2,
-              ),
+              borderSide: BorderSide(color: AppTheme.primaryColor, width: 2),
             ),
             filled: true,
             fillColor: AppTheme.fieldFillColor,
@@ -750,10 +748,7 @@ class _RegisterUserDialogState extends State<RegisterUserDialog> {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(
-                color: AppTheme.primaryColor,
-                width: 2,
-              ),
+              borderSide: BorderSide(color: AppTheme.primaryColor, width: 2),
             ),
             filled: true,
             fillColor: AppTheme.fieldFillColor,

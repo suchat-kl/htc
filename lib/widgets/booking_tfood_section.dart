@@ -297,14 +297,10 @@ class _BookingTfoodSectionState extends State<BookingTfoodSection> {
             color: AppTheme.primaryColor.withValues(alpha: 0.09),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: const Icon(
-            Icons.restaurant,
-            color: AppTheme.primaryColor,
-            size: 18,
-          ),
+          child: Icon(Icons.restaurant, color: AppTheme.primaryColor, size: 18),
         ),
         const SizedBox(width: 10),
-        const Expanded(
+        Expanded(
           child: Text(
             'รายการอาหาร',
             style: TextStyle(
@@ -483,7 +479,7 @@ class _BookingTfoodSectionState extends State<BookingTfoodSection> {
           alignment: Alignment.centerRight,
           child: Text(
             'รวมหน้านี้ ${_money.format(_grandTotal)} บาท',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.bold,
               color: AppTheme.primaryColor,
@@ -522,7 +518,7 @@ class _ColHead extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       text,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 14,
         fontWeight: FontWeight.bold,
         color: AppTheme.primaryColor,
