@@ -242,7 +242,8 @@ class _BookRoomDetailDialogState extends State<BookRoomDetailDialog> {
                           context,
                           _startDate,
                         );
-                        if (p != null && p != _startDate) setState(() => _startDate = p);
+                        if (p != null && p != _startDate)
+                          setState(() => _startDate = p);
                       }),
                       const SizedBox(height: 18),
                       _dateField('วันที่สิ้นสุด', _stopDate, () async {
@@ -250,7 +251,8 @@ class _BookRoomDetailDialogState extends State<BookRoomDetailDialog> {
                           context,
                           _stopDate,
                         );
-                        if (p != null && p != _stopDate) setState(() => _stopDate = p);
+                        if (p != null && p != _stopDate)
+                          setState(() => _stopDate = p);
                       }),
                     ],
                   ),
@@ -267,7 +269,7 @@ class _BookRoomDetailDialogState extends State<BookRoomDetailDialog> {
   Widget _header() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: AppTheme.primaryColor,
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
@@ -348,7 +350,7 @@ class _BookRoomDetailDialogState extends State<BookRoomDetailDialog> {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
-        borderSide: const BorderSide(color: AppTheme.primaryColor, width: 1.6),
+        borderSide: BorderSide(color: AppTheme.primaryColor, width: 1.6),
       ),
       filled: true,
       fillColor: AppTheme.fieldFillColor,

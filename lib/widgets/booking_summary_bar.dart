@@ -264,10 +264,7 @@ class _BookingSummaryBarState extends State<BookingSummaryBar> {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
-              borderSide: const BorderSide(
-                color: AppTheme.primaryColor,
-                width: 1.6,
-              ),
+              borderSide: BorderSide(color: AppTheme.primaryColor, width: 1.6),
             ),
             filled: true,
             fillColor: AppTheme.fieldFillColor,

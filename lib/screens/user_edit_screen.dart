@@ -701,7 +701,7 @@ class _UserEditDialogState extends State<_UserEditDialog> {
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.manage_accounts,
                       color: AppTheme.primaryColor,
                     ),

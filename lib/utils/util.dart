@@ -55,7 +55,7 @@ class Util {
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
+            colorScheme: ColorScheme.light(
               primary: AppTheme.primaryColor,
               onPrimary: Colors.white,
               surface: Colors.white,

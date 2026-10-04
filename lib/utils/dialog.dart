@@ -313,7 +313,7 @@ class AppDialog {
               color: AppTheme.primaryPale,
               shape: BoxShape.circle,
             ),
-            child: const Icon(
+            child: Icon(
               Icons.question_mark,
               size: 64,
               color: AppTheme.primaryColor,

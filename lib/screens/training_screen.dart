@@ -45,7 +45,7 @@ class TrainingScreen extends StatelessWidget {
                     children: [
                       Row(
                         children: [
-                          const Icon(
+                          Icon(
                             Icons.school,
                             color: AppTheme.primaryColor,
                             size: 30,

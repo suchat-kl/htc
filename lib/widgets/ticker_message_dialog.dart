@@ -317,7 +317,7 @@ class _TickerMessageDialogState extends State<TickerMessageDialog> {
                   child: Center(
                     child: Text(
                       '${index + 1}',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
                         color: AppTheme.primaryColor,
@@ -484,11 +484,7 @@ class _TickerMessageDialogState extends State<TickerMessageDialog> {
                 ),
                 if (isSelected) ...[
                   const Spacer(),
-                  const Icon(
-                    Icons.check,
-                    size: 18,
-                    color: AppTheme.primaryColor,
-                  ),
+                  Icon(Icons.check, size: 18, color: AppTheme.primaryColor),
                 ],
               ],
             ),
@@ -561,11 +557,7 @@ class _TickerMessageDialogState extends State<TickerMessageDialog> {
                 ),
                 if (isSelected) ...[
                   const Spacer(),
-                  const Icon(
-                    Icons.check,
-                    size: 18,
-                    color: AppTheme.primaryColor,
-                  ),
+                  Icon(Icons.check, size: 18, color: AppTheme.primaryColor),
                 ],
               ],
             ),

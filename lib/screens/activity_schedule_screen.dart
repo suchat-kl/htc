@@ -278,7 +278,7 @@ class _ActivityScheduleScreenState extends State<ActivityScheduleScreen> {
         ),
         Text(
           value,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 15,
             fontWeight: FontWeight.bold,
             color: AppTheme.primaryColor,
@@ -471,7 +471,7 @@ class _ColHead extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       text,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 14,
         fontWeight: FontWeight.bold,
         color: AppTheme.primaryColor,

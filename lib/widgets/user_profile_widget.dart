@@ -94,10 +94,7 @@ class UserProfileWidget extends StatelessWidget {
                 ),
                 child: Text(
                   role,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: AppTheme.primaryColor,
-                  ),
+                  style: TextStyle(fontSize: 12, color: AppTheme.primaryColor),
                 ),
               );
             }).toList(),

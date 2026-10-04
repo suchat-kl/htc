@@ -72,7 +72,7 @@ extension SnackBarHelper on BuildContext {
   void showOverlayMessage(
     String message, {
     IconData icon = Icons.info_outline,
-    Color background = AppTheme.primaryColor,
+    Color? background,
     Duration duration = const Duration(seconds: 3),
   }) {
     final overlay = Overlay.maybeOf(this, rootOverlay: true);
@@ -108,7 +108,7 @@ extension SnackBarHelper on BuildContext {
             ),
             child: Center(
               child: Material(
-                color: background,
+                color: background ?? AppTheme.primaryColor,
                 elevation: 8,
                 borderRadius: BorderRadius.circular(10),
                 child: InkWell(

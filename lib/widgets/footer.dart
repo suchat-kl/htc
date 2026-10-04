@@ -169,7 +169,11 @@ class CustomFooter extends StatelessWidget {
         ),
         const SizedBox(height: 20),
         // Contact Details
-        _buildContactItem(Icons.phone, 'โทร: 02 354 6668 ต่อ 55101,55107', isMobile: isMobile),
+        _buildContactItem(
+          Icons.phone,
+          'โทร: 02 354 6668 ต่อ 55101,55107',
+          isMobile: isMobile,
+        ),
         const SizedBox(height: 10),
         _buildContactItem(Icons.phone, 'โทร: 038 314005', isMobile: isMobile),
         const SizedBox(height: 10),
@@ -370,7 +374,7 @@ class CustomFooter extends StatelessWidget {
             color: Colors.white,
             borderRadius: BorderRadius.circular(10),
           ),
-          child: const Icon(
+          child: Icon(
             Icons.account_balance,
             color: AppTheme.primaryColor,
             size: 24,

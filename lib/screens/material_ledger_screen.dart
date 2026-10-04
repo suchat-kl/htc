@@ -272,7 +272,7 @@ class _MaterialLedgerScreenState extends State<MaterialLedgerScreen> {
     padding: const EdgeInsets.only(bottom: 10),
     child: Text(
       text,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 15,
         fontWeight: FontWeight.bold,
         color: AppTheme.primaryColor,
@@ -294,7 +294,11 @@ class _MaterialLedgerScreenState extends State<MaterialLedgerScreen> {
   ///
   /// ใช้ [Util.dateFieldPickerNullable] เพราะช่องค้นหาว่างได้ กดยกเลิกแล้ว
   /// ต้องไม่กลายเป็นกรองวันนี้โดยไม่ตั้งใจ ปุ่มกากบาทล้างค่าในช่องนั้น
-  Widget _dateField(String label, DateTime? value, ValueChanged<DateTime?> set) {
+  Widget _dateField(
+    String label,
+    DateTime? value,
+    ValueChanged<DateTime?> set,
+  ) {
     return SizedBox(
       width: 220,
       child: TextField(

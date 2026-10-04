@@ -35,8 +35,7 @@ class ActivityUsageReportScreen extends StatefulWidget {
       _ActivityUsageReportScreenState();
 }
 
-class _ActivityUsageReportScreenState
-    extends State<ActivityUsageReportScreen> {
+class _ActivityUsageReportScreenState extends State<ActivityUsageReportScreen> {
   // Pagination
   int _currentPage = 0;
   int _pageSize = 5;

@@ -240,7 +240,7 @@ class _LoginDialogState extends State<LoginDialog> {
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(
+                            borderSide: BorderSide(
                               color: AppTheme.primaryColor,
                               width: 2,
                             ),
@@ -289,7 +289,7 @@ class _LoginDialogState extends State<LoginDialog> {
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(
+                            borderSide: BorderSide(
                               color: AppTheme.primaryColor,
                               width: 2,
                             ),

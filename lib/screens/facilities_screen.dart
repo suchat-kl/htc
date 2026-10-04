@@ -6,14 +6,54 @@ class FacilitiesScreen extends StatelessWidget {
 
   // ข้อมูลสิ่งอำนวยความสะดวก
   final List<Map<String, dynamic>> _facilities = const [
-    {'icon': Icons.wifi, 'title': 'WiFi', 'description': 'อินเทอร์เน็ตไร้สายความเร็วสูง ครอบคลุมทุกพื้นที่', 'color': Colors.blue},
-    {'icon': Icons.room_service, 'title': 'รูมเซอร์วิซ', 'description': 'บริการอาหารและเครื่องดื่มถึงห้องพัก', 'color': Colors.orange},
-    {'icon': Icons.elevator, 'title': 'ลิฟท์', 'description': 'ลิฟท์โดยสารอำนวยความสะดวกครบทุกชั้น', 'color': Colors.purple},
-    {'icon': Icons.support_agent, 'title': 'พนักงานต้อนรับ', 'description': 'บริการให้คำแนะนำตลอด 24 ชั่วโมง', 'color': Colors.green},
-    {'icon': Icons.bed, 'title': 'ห้องพัก', 'description': 'ห้องพักสะอาด สะดวกสบาย พร้อมสิ่งอำนวยความสะดวก', 'color': Colors.teal},
-    {'icon': Icons.star, 'title': 'ห้องพักชั้นพิเศษ', 'description': 'ห้องพักระดับ VIP พร้อมสิ่งอำนวยความสะดวกครบครัน', 'color': Colors.amber},
-    {'icon': Icons.meeting_room, 'title': 'ห้องกิจกรรม', 'description': 'ห้องประชุมและห้องจัดกิจกรรมรองรับผู้เข้าอบรม', 'color': Colors.indigo},
-    {'icon': Icons.tv, 'title': 'LCD TV', 'description': 'โทรทัศน์จอแบนระบบดิจิทัลในทุกห้องพัก', 'color': Colors.deepOrange},
+    {
+      'icon': Icons.wifi,
+      'title': 'WiFi',
+      'description': 'อินเทอร์เน็ตไร้สายความเร็วสูง ครอบคลุมทุกพื้นที่',
+      'color': Colors.blue,
+    },
+    {
+      'icon': Icons.room_service,
+      'title': 'รูมเซอร์วิซ',
+      'description': 'บริการอาหารและเครื่องดื่มถึงห้องพัก',
+      'color': Colors.orange,
+    },
+    {
+      'icon': Icons.elevator,
+      'title': 'ลิฟท์',
+      'description': 'ลิฟท์โดยสารอำนวยความสะดวกครบทุกชั้น',
+      'color': Colors.purple,
+    },
+    {
+      'icon': Icons.support_agent,
+      'title': 'พนักงานต้อนรับ',
+      'description': 'บริการให้คำแนะนำตลอด 24 ชั่วโมง',
+      'color': Colors.green,
+    },
+    {
+      'icon': Icons.bed,
+      'title': 'ห้องพัก',
+      'description': 'ห้องพักสะอาด สะดวกสบาย พร้อมสิ่งอำนวยความสะดวก',
+      'color': Colors.teal,
+    },
+    {
+      'icon': Icons.star,
+      'title': 'ห้องพักชั้นพิเศษ',
+      'description': 'ห้องพักระดับ VIP พร้อมสิ่งอำนวยความสะดวกครบครัน',
+      'color': Colors.amber,
+    },
+    {
+      'icon': Icons.meeting_room,
+      'title': 'ห้องกิจกรรม',
+      'description': 'ห้องประชุมและห้องจัดกิจกรรมรองรับผู้เข้าอบรม',
+      'color': Colors.indigo,
+    },
+    {
+      'icon': Icons.tv,
+      'title': 'LCD TV',
+      'description': 'โทรทัศน์จอแบนระบบดิจิทัลในทุกห้องพัก',
+      'color': Colors.deepOrange,
+    },
   ];
 
   @override
@@ -34,7 +74,10 @@ class FacilitiesScreen extends StatelessWidget {
         ),
         title: Text(
           'สิ่งอำนวยความสะดวก',
-          style: TextStyle(fontSize: headerFontSize, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            fontSize: headerFontSize,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         backgroundColor: AppTheme.primaryColor,
         foregroundColor: Colors.white,
@@ -116,7 +159,11 @@ class FacilitiesScreen extends StatelessWidget {
   }
 
   // Grid แสดงสิ่งอำนวยความสะดวก
-  Widget _buildFacilitiesGrid(BuildContext context, bool isDesktop, bool isLargeScreen) {
+  Widget _buildFacilitiesGrid(
+    BuildContext context,
+    bool isDesktop,
+    bool isLargeScreen,
+  ) {
     final crossAxisCount = isLargeScreen ? 4 : (isDesktop ? 3 : 2);
     final aspectRatio = isDesktop ? 1.1 : 0.9;
 
@@ -224,7 +271,11 @@ class FacilitiesScreen extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(Icons.directions_car, size: isDesktop ? 28 : 24, color: AppTheme.primaryColor),
+              Icon(
+                Icons.directions_car,
+                size: isDesktop ? 28 : 24,
+                color: AppTheme.primaryColor,
+              ),
               SizedBox(width: 10),
               Text(
                 'การเดินทาง',
@@ -273,7 +324,11 @@ class FacilitiesScreen extends StatelessWidget {
             color: AppTheme.primaryColor.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(10),
           ),
-          child: Icon(icon, size: isDesktop ? 26 : 22, color: AppTheme.primaryColor),
+          child: Icon(
+            icon,
+            size: isDesktop ? 26 : 22,
+            color: AppTheme.primaryColor,
+          ),
         ),
         SizedBox(width: isDesktop ? 14 : 10),
         Expanded(

@@ -50,6 +50,10 @@ utils/       logger.dart, dialog.dart, snackbar_helper.dart, event_bus.dart, uti
 
 **Logging** ใช้ `AppLogger` จาก `lib/utils/logger.dart` เท่านั้น อย่าใช้ `print()` หรือ `debugPrint()` — `AppLogger` ถูกตัดออกตอน compile release เพื่อไม่ให้ token หลุดลง browser console ถ้าข้อความ log ต้องคำนวณค่าที่แพงหรืออ่อนไหว ให้ใช้ `AppLogger.lazy(() => ...)`
 
+**ธีม** เลือกได้ 6 ธีมจากปุ่มจานสีที่แถบบน (`AppTheme.palettes` ใน `lib/config/theme.dart`, จำใน localStorage `htc_theme`) สีที่เปลี่ยนตามธีม (`primaryColor`, `backgroundColor`, `fieldFillColor` ฯลฯ) เป็น getter ใช้ในนิพจน์ `const` ไม่ได้ และห้ามเก็บลง `static final`
+
+**ป้ายช่วงทดสอบ** `TestPhaseBanner` ใส่ไว้ใน `MaterialApp.builder` ของ `main.dart` เปิดใช้จริงแล้วให้เอาออก
+
 **ฟอนต์ไทย** ต้องระบุ `fontFamily` ให้ชัดเสมอ (`Sarabun`, `NotoSansThai`, `Kanit` — bundle มาในโปรเจกต์แล้ว ไม่ได้โหลดจาก Google Fonts ตอน runtime)
 
 **ภาษา** ข้อความที่ผู้ใช้เห็นเป็นภาษาไทยทั้งหมด คอมเมนต์ในโค้ดก็เป็นภาษาไทย เขียนโค้ดใหม่ให้เข้าชุดกัน

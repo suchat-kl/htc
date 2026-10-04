@@ -33,8 +33,7 @@ class PlaceProjectReportScreen extends StatefulWidget {
       _PlaceProjectReportScreenState();
 }
 
-class _PlaceProjectReportScreenState
-    extends State<PlaceProjectReportScreen> {
+class _PlaceProjectReportScreenState extends State<PlaceProjectReportScreen> {
   // Pagination
   int _currentPage = 0;
   int _pageSize = 5;
@@ -785,7 +784,9 @@ class _PlaceProjectReportScreenState
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('เลือกรูปแบบไฟล์', style: TextStyle(fontSize: 18)),
-        content: const Text('ต้องการออกแบบขออนุญาตใช้สถานที่และบริการเป็นไฟล์แบบใด'),
+        content: const Text(
+          'ต้องการออกแบบขออนุญาตใช้สถานที่และบริการเป็นไฟล์แบบใด',
+        ),
         actions: [
           TextButton(
             style: TextButton.styleFrom(foregroundColor: AppTheme.cancelColor),
@@ -814,5 +815,4 @@ class _PlaceProjectReportScreenState
       ),
     );
   }
-
 }

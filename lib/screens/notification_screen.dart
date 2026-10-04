@@ -60,9 +60,13 @@ class _NotificationScreenState extends State<NotificationScreen> {
       if (!mounted) return;
       final list = r['notifications'] as List?;
       setState(() {
-        _items = list
-                ?.map((e) =>
-                    NotificationItem.fromJson(Map<String, dynamic>.from(e as Map)))
+        _items =
+            list
+                ?.map(
+                  (e) => NotificationItem.fromJson(
+                    Map<String, dynamic>.from(e as Map),
+                  ),
+                )
                 .toList() ??
             [];
         _totalPages = r['totalPages'] as int? ?? 1;
@@ -80,15 +84,14 @@ class _NotificationScreenState extends State<NotificationScreen> {
     final ok = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
-      builder: (_) => NotificationDialog(
-        apiService: widget.apiService,
-        item: item,
-      ),
+      builder: (_) =>
+          NotificationDialog(apiService: widget.apiService, item: item),
     );
     if (ok == true) {
       if (!mounted) return;
       context.showSuccessSnackBar(
-          item == null ? 'เพิ่มประกาศเรียบร้อย' : 'อัปเดตประกาศเรียบร้อย');
+        item == null ? 'เพิ่มประกาศเรียบร้อย' : 'อัปเดตประกาศเรียบร้อย',
+      );
       _load();
     }
   }
@@ -162,12 +165,12 @@ class _NotificationScreenState extends State<NotificationScreen> {
             child: _loading
                 ? const Center(child: CircularProgressIndicator())
                 : _items.isEmpty
-                    ? _emptyState()
-                    : ListView.builder(
-                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                        itemCount: _items.length,
-                        itemBuilder: (_, i) => _card(_items[i], isDesktop),
-                      ),
+                ? _emptyState()
+                : ListView.builder(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                    itemCount: _items.length,
+                    itemBuilder: (_, i) => _card(_items[i], isDesktop),
+                  ),
           ),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -222,8 +225,9 @@ class _NotificationScreenState extends State<NotificationScreen> {
               decoration: InputDecoration(
                 hintText: 'ค้นหาจากหัวเรื่อง',
                 prefixIcon: const Icon(Icons.search, size: 20),
-                border:
-                    OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
                 isDense: true,
                 filled: true,
                 fillColor: AppTheme.fieldFillColor,
@@ -238,8 +242,9 @@ class _NotificationScreenState extends State<NotificationScreen> {
               decoration: InputDecoration(
                 labelText: 'สถานะ',
                 labelStyle: const TextStyle(fontSize: 13),
-                border:
-                    OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
                 isDense: true,
                 filled: true,
                 fillColor: AppTheme.fieldFillColor,
@@ -266,8 +271,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
             style: ElevatedButton.styleFrom(
               backgroundColor: AppTheme.primaryColor,
               foregroundColor: Colors.white,
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
             ),
           ),
         ],
@@ -293,8 +297,10 @@ class _NotificationScreenState extends State<NotificationScreen> {
             Row(
               children: [
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
                   decoration: BoxDecoration(
                     color: active
                         ? AppTheme.successColor.withValues(alpha: 0.12)
@@ -386,10 +392,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
         children: [
           Icon(Icons.campaign_outlined, size: 48, color: Colors.grey.shade400),
           const SizedBox(height: 10),
-          Text(
-            'ยังไม่มีประกาศ',
-            style: TextStyle(color: Colors.grey.shade600),
-          ),
+          Text('ยังไม่มีประกาศ', style: TextStyle(color: Colors.grey.shade600)),
         ],
       ),
     );

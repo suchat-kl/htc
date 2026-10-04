@@ -139,7 +139,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
   static const double _minTableWidth = 900;
 
   /// สีเส้นตาราง
-  static final Color _line = AppTheme.primaryColor.withValues(alpha: 0.45);
+  static Color get _line => AppTheme.primaryColor.withValues(alpha: 0.45);
 
   bool _loading = true;
   String? _error;
@@ -1285,7 +1285,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
       textAlign: right
           ? TextAlign.right
           : (center ? TextAlign.center : TextAlign.left),
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 13,
         fontWeight: FontWeight.bold,
         color: AppTheme.primaryColor,

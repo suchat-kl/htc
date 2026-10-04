@@ -2047,7 +2047,7 @@ const Divider(indent: 16, endIndent: 16),
             backgroundColor: Colors.white,
             child: Text(
               widget.authProvider.initials,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
                 color: AppTheme.primaryColor,
@@ -2133,7 +2133,7 @@ const Divider(indent: 16, endIndent: 16),
             backgroundColor: Colors.white,
             child: Text(
               widget.authProvider.initials,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
                 color: AppTheme.primaryColor,

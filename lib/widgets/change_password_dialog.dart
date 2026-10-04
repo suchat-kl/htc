@@ -356,10 +356,7 @@ class _ChangePasswordDialogState extends State<ChangePasswordDialog> {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(
-                color: AppTheme.primaryColor,
-                width: 2,
-              ),
+              borderSide: BorderSide(color: AppTheme.primaryColor, width: 2),
             ),
             filled: true,
             fillColor: AppTheme.fieldFillColor,
@@ -422,10 +419,7 @@ class _ChangePasswordDialogState extends State<ChangePasswordDialog> {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(
-                color: AppTheme.primaryColor,
-                width: 2,
-              ),
+              borderSide: BorderSide(color: AppTheme.primaryColor, width: 2),
             ),
             filled: true,
             fillColor: AppTheme.fieldFillColor,
@@ -485,10 +479,7 @@ class _ChangePasswordDialogState extends State<ChangePasswordDialog> {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(
-                color: AppTheme.primaryColor,
-                width: 2,
-              ),
+              borderSide: BorderSide(color: AppTheme.primaryColor, width: 2),
             ),
             filled: true,
             fillColor: AppTheme.fieldFillColor,

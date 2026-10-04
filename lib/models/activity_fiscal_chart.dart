@@ -27,7 +27,11 @@ class ActivityFiscalChart {
       fiscalYear: asInt(json['fiscalYear']),
       periodLabel: json['periodLabel'] as String? ?? '',
       months: (json['months'] as List? ?? const [])
-          .map((e) => ActivityFiscalPoint.fromJson(Map<String, dynamic>.from(e as Map)))
+          .map(
+            (e) => ActivityFiscalPoint.fromJson(
+              Map<String, dynamic>.from(e as Map),
+            ),
+          )
           .toList(),
       totalBookings: asInt(json['totalBookings']),
       totalPeople: asInt(json['totalPeople']),

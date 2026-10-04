@@ -31,7 +31,7 @@ class CustomHeader extends StatelessWidget implements PreferredSizeWidget {
               color: Colors.white,
               borderRadius: BorderRadius.circular(8),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.account_balance,
               color: AppTheme.primaryColor,
               size: 30,
@@ -95,6 +95,7 @@ class CustomHeader extends StatelessWidget implements PreferredSizeWidget {
         //   icon: const Icon(Icons.search, color: Colors.white),
         //   onPressed: () {},
         // ),
+        _buildThemeButton(),
 
         // ปุ่ม ThaID กับปุ่มเข้าสู่ระบบใช้ได้ทีละปุ่ม
         // เข้าสู่ระบบแล้วด้วยวิธีใดก็ตาม ทั้งสองปุ่มหายไป (แสดงเมนูผู้ใช้แทน) ออกจากระบบแล้วกลับมาใช้ได้ทั้งคู่
@@ -109,6 +110,48 @@ class CustomHeader extends StatelessWidget implements PreferredSizeWidget {
               ? _buildUserMenu(context)
               : _buildLoginButton(context),
         ),
+      ],
+    );
+  }
+
+  /// ปุ่มจานสี เลือกธีมของทั้งระบบ (จำไว้ในเบราว์เซอร์ ดู main.dart)
+  Widget _buildThemeButton() {
+    return PopupMenuButton<String>(
+      tooltip: 'เปลี่ยนธีม',
+      icon: const Icon(Icons.palette_outlined, color: Colors.white),
+      initialValue: AppTheme.current.id,
+      onSelected: AppTheme.select,
+      itemBuilder: (context) => [
+        for (final palette in AppTheme.palettes)
+          PopupMenuItem<String>(
+            value: palette.id,
+            child: Row(
+              children: [
+                Container(
+                  width: 18,
+                  height: 18,
+                  decoration: BoxDecoration(
+                    color: palette.primary,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: palette.primaryPale, width: 2),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    palette.name,
+                    style: const TextStyle(
+                      fontFamily: 'NotoSansThai',
+                      fontSize: 14,
+                      color: AppTheme.textPrimary,
+                    ),
+                  ),
+                ),
+                if (palette.id == AppTheme.current.id)
+                  Icon(Icons.check, size: 18, color: palette.primary),
+              ],
+            ),
+          ),
       ],
     );
   }
@@ -277,7 +320,7 @@ class CustomHeader extends StatelessWidget implements PreferredSizeWidget {
               backgroundColor: Colors.white,
               child: Text(
                 authProvider.initials,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 10,
                   fontWeight: FontWeight.bold,
                   color: AppTheme.primaryColor,
@@ -371,7 +414,7 @@ class CustomHeader extends StatelessWidget implements PreferredSizeWidget {
             ),
           ),
           const PopupMenuDivider(),
-          const PopupMenuItem(
+          PopupMenuItem(
             value: 'profile',
             child: Row(
               children: [
@@ -383,7 +426,7 @@ class CustomHeader extends StatelessWidget implements PreferredSizeWidget {
           ),
           // บัญชีที่ ThaID สร้างให้ไม่มีรหัสผ่านที่ผู้ใช้รู้ เปลี่ยนรหัสผ่านไม่ได้
           if (!authProvider.isThaidOnly)
-            const PopupMenuItem(
+            PopupMenuItem(
               value: 'change_password',
               child: Row(
                 children: [
@@ -411,7 +454,7 @@ class CustomHeader extends StatelessWidget implements PreferredSizeWidget {
               ),
             ),
 
-            const PopupMenuItem(
+            PopupMenuItem(
               value: 'register_user',
               child: Row(
                 children: [
@@ -425,7 +468,7 @@ class CustomHeader extends StatelessWidget implements PreferredSizeWidget {
                 ],
               ),
             ),
-            const PopupMenuItem(
+            PopupMenuItem(
               value: 'resetPwd',
               child: Row(
                 children: [

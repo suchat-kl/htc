@@ -412,10 +412,7 @@ class _ChangePasswordDialogState extends State<ResetPasswordDialog> {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(
-                color: AppTheme.primaryColor,
-                width: 2,
-              ),
+              borderSide: BorderSide(color: AppTheme.primaryColor, width: 2),
             ),
             filled: true,
             fillColor: AppTheme.fieldFillColor,

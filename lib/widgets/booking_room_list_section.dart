@@ -322,7 +322,7 @@ class _BookingRoomListSectionState extends State<BookingRoomListSection> {
         Expanded(
           child: Text(
             widget.title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
               color: AppTheme.primaryColor,
@@ -517,7 +517,7 @@ class _ColHead extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       text,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 14,
         fontWeight: FontWeight.bold,
         color: AppTheme.primaryColor,
