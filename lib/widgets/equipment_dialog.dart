@@ -6,6 +6,7 @@ import '../models/equipment.dart';
 import '../models/roomtype.dart';
 import '../services/api_service.dart';
 import '../utils/snackbar_helper.dart';
+import 'thai_date_picker.dart';
 
 class EquipmentDialog extends StatefulWidget {
   final Equipment? equipment;
@@ -114,15 +115,12 @@ class _EquipmentDialogState extends State<EquipmentDialog> {
   }
 
   Future<void> _pickDate(bool isStart) async {
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: isStart ? _startDate : _stopDate,
+    final picked = await showThaiDatePicker(
+      context,
+      isStart ? _startDate : _stopDate,
       firstDate: DateTime(2020),
       lastDate: DateTime(2037),
-      locale: const Locale('th'),
       helpText: 'เลือกวันที่',
-      cancelText: 'ยกเลิก',
-      confirmText: 'ตกลง',
     );
     if (picked != null) {
       setState(() {

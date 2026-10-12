@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-import '../config/theme.dart';
+import '../widgets/thai_date_picker.dart';
 
 // import 'package:flutter_localizations/flutter_localizations.dart';
 
@@ -25,55 +25,57 @@ class Util {
 
   /// เลือกวันที่ด้วยปฏิทินภาษาไทย (พ.ศ.) — คืน null เมื่อกดยกเลิก
   ///
-  /// ทั้งระบบใช้ตัวนี้ตัวเดียว ผู้เรียกต้องเช็ค null เองก่อนนำค่าไปใช้
+  /// เปิด [showThaiDatePicker] ด้วยช่วงวันที่ตั้งต้น (พ.ศ. 2560-2580) จุดที่ต้องกำหนดช่วงเอง
+  /// ให้เรียก [showThaiDatePicker] ตรง ห้ามเรียก showDatePicker ของ Flutter (ปีเป็น ค.ศ.)
+  /// ผู้เรียกต้องเช็ค null เองก่อนนำค่าไปใช้
   /// เพื่อให้แยกออกว่าผู้ใช้กดยกเลิก หรือตั้งใจเลือกวันเดิม
   /// [iniDate] เป็น null ได้ ปฏิทินจะเปิดที่วันนี้ ใช้กับช่องที่ยังไม่ได้เลือก
   static Future<DateTime?> dateFieldPickerNullable(
     BuildContext context,
     DateTime? iniDate,
-  ) async {
-    final first = DateTime(2017, 1, 1); // พ.ศ. 2560
-    final last = DateTime(2037, 12, 31); // พ.ศ. 2580
-    var initial = iniDate ?? DateTime.now();
-    // initialDate ต้องอยู่ในช่วง first-last ไม่งั้น showDatePicker จะ assert
-    if (initial.isBefore(first)) initial = first;
-    if (initial.isAfter(last)) initial = last;
-
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: DateTime(initial.year, initial.month, initial.day),
-      firstDate: first,
-      lastDate: last,
-      helpText: 'เลือกวันที่',
-      cancelText: 'ยกเลิก',
-      confirmText: 'ตกลง',
-      fieldLabelText: 'วันที่',
-      fieldHintText: 'วัน/เดือน/ปี',
-      errorFormatText: 'รูปแบบวันที่ไม่ถูกต้อง',
-      errorInvalidText: 'วันที่ไม่ถูกต้อง',
-      locale: const Locale('th', 'TH'), // แสดงปีเป็น พ.ศ.
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: ColorScheme.light(
-              primary: AppTheme.primaryColor,
-              onPrimary: Colors.white,
-              surface: Colors.white,
-              onSurface: AppTheme.textPrimary,
-            ),
-          ),
-          child: Localizations.override(
-            context: context,
-            locale: const Locale('th', 'TH'),
-            child: child!,
-          ),
-        );
-      },
-    );
-
-    if (picked == null) return null;
-    return DateTime(picked.year, picked.month, picked.day);
+  ) {
+    // ช่วงวันที่ตั้งต้นของ showThaiDatePicker คือ พ.ศ. 2560-2580 (1 ม.ค. 2017 - 31 ธ.ค. 2037)
+    // วันตั้งต้นที่อยู่นอกช่วงถูกปรับเข้าช่วงให้ ค่าที่คืนไม่มีเวลา
+    return showThaiDatePicker(context, iniDate);
   }
+
+  /// ชื่อเดือนภาษาไทยแบบเต็ม เรียงมกราคม-ธันวาคม
+  static const List<String> thaiMonths = [
+    'มกราคม',
+    'กุมภาพันธ์',
+    'มีนาคม',
+    'เมษายน',
+    'พฤษภาคม',
+    'มิถุนายน',
+    'กรกฎาคม',
+    'สิงหาคม',
+    'กันยายน',
+    'ตุลาคม',
+    'พฤศจิกายน',
+    'ธันวาคม',
+  ];
+
+  /// ชื่อวันในสัปดาห์ เรียงจันทร์-อาทิตย์ ตาม [DateTime.weekday] (1 = จันทร์)
+  static const List<String> thaiWeekdays = [
+    'จันทร์',
+    'อังคาร',
+    'พุธ',
+    'พฤหัสบดี',
+    'ศุกร์',
+    'เสาร์',
+    'อาทิตย์',
+  ];
+
+  /// ชื่อเดือนภาษาไทยของเดือน 1-12 นอกช่วงคืนตัวเลขเดิม (ข้อมูลเดิมที่ผิดรูป)
+  static String thaiMonthName(int month) =>
+      month >= 1 && month <= 12 ? thaiMonths[month - 1] : '$month';
+
+  /// ปี พ.ศ. ของวันที่ (ค.ศ. + 543)
+  static int buddhistYear(DateTime date) => date.year + 543;
+
+  /// วันที่ไทยพร้อมวันในสัปดาห์ เช่น "ศุกร์ 16 มกราคม 2569"
+  static String formatThaiDateWithWeekday(DateTime date) =>
+      '${thaiWeekdays[date.weekday - 1]} ${formatThaiDate(date)}';
 
   // ✅ Thai date display
   static String formatThaiDate(DateTime date) {
@@ -81,20 +83,6 @@ class Util {
     // return DateFormat.yMMMd('th').format(date);
     // Example output: "30 ก.ค. 2569"
     final thaiYear = date.year + 543;
-    final thaiMonths = [
-      'มกราคม',
-      'กุมภาพันธ์',
-      'มีนาคม',
-      'เมษายน',
-      'พฤษภาคม',
-      'มิถุนายน',
-      'กรกฎาคม',
-      'สิงหาคม',
-      'กันยายน',
-      'ตุลาคม',
-      'พฤศจิกายน',
-      'ธันวาคม',
-    ];
     return '${date.day} ${thaiMonths[date.month - 1]} $thaiYear';
   }
 

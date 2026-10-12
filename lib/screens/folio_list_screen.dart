@@ -10,6 +10,7 @@ import '../services/api_service.dart';
 import '../utils/snackbar_helper.dart';
 import '../utils/util.dart';
 import '../widgets/app_pagination.dart';
+import '../widgets/thai_date_picker.dart';
 import 'package:highway_training/utils/logger.dart';
 
 /// เมนูห้องพัก/ห้องกิจกรรม > Folio
@@ -159,12 +160,11 @@ class _FolioListScreenState extends State<FolioListScreen> {
     final initialDate = isStart
         ? _startDate ?? DateTime.now()
         : _stopDate ?? DateTime.now();
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: initialDate,
+    final picked = await showThaiDatePicker(
+      context,
+      initialDate,
       firstDate: DateTime(2020),
-      lastDate: DateTime(2030),
-      locale: const Locale('th', 'TH'),
+      lastDate: DateTime(2037, 12, 31),
     );
     if (picked != null) {
       setState(() {
