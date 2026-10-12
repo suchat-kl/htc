@@ -56,6 +56,8 @@ utils/       logger.dart, dialog.dart, snackbar_helper.dart, event_bus.dart, uti
 
 **ฟอนต์ไทย** ต้องระบุ `fontFamily` ให้ชัดเสมอ (`Sarabun`, `NotoSansThai`, `Kanit` — bundle มาในโปรเจกต์แล้ว ไม่ได้โหลดจาก Google Fonts ตอน runtime)
 
+**เลือกวันที่** ใช้ปฏิทิน พ.ศ. `showThaiDatePicker` (`lib/widgets/thai_date_picker.dart`) หรือ `Util.dateFieldPickerNullable` (ช่วงตั้งต้น พ.ศ. 2560-2580) เท่านั้น **ห้ามเรียก `showDatePicker` ของ Flutter ตรง** เพราะแสดงปีเป็น ค.ศ. ค่าที่คืนเป็น `DateTime` ค.ศ. (null = กดยกเลิก) แสดงผลด้วย `Util.formatThaiDate`
+
 **ภาษา** ข้อความที่ผู้ใช้เห็นเป็นภาษาไทยทั้งหมด คอมเมนต์ในโค้ดก็เป็นภาษาไทย เขียนโค้ดใหม่ให้เข้าชุดกัน
 
 ## Git
