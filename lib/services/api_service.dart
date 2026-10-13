@@ -558,20 +558,27 @@ class ApiService {
     }
   }
 
-  // Simple logout - interceptor handles the token
+  /// ออกจากระบบ: แจ้ง backend ให้ยกเลิก access token และ refresh token แล้วล้างข้อมูลในเครื่อง
+  ///
+  /// ยิงผ่าน [publicDio] (ไม่มี interceptor) แล้วแนบ header เอง เพื่อไม่ให้ interceptor ไปต่ออายุ token ที่กำลังจะทิ้ง
+  /// — เดิมไม่ได้แนบ header ทั้งที่ backend ยกเลิก token จาก header อย่างเดียว token จึงยังใช้ได้หลังออกจากระบบ
   Future<void> logout() async {
     try {
       if (AppLogger.on) AppLogger.d('👋 Logging out...');
 
       final refreshToken = await storage.read(key: refreshTokenKey);
+      final accessToken = await storage.read(key: accessTokenKey);
 
-      if (refreshToken != null) {
+      if (refreshToken != null || accessToken != null) {
         try {
-          // No need to manually add Authorization header
-          // The interceptor will add it automatically
           final response = await publicDio.post(
             '/api/auth/logout',
             data: {'refresh_token': refreshToken},
+            options: Options(
+              headers: {
+                if (accessToken != null) 'Authorization': 'Bearer $accessToken',
+              },
+            ),
           );
 
           if (AppLogger.on) {
