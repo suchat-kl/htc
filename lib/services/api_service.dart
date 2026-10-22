@@ -1998,6 +1998,25 @@ class ApiService {
     );
   }
 
+  /// สถานะของคำขอยืนยันตัวตน ThaID [state] โดยไม่ใช้ผลทิ้ง: `PENDING` / `DONE` / `ERROR` / `GONE`
+  /// (GONE = ยกเลิกในแอป ThaID / ใช้แล้ว / หมดอายุ) ถามไม่ได้ (เครือข่าย / 5xx / รูปผิด) = null — ไม่ต้องล็อกอิน
+  ///
+  /// ใช้บนมือถือ: แอป ThaID เปิดหน้า callback ในแท็บใหม่ที่ไม่มี window.opener ผลจึงส่งกลับทาง postMessage ไม่ได้
+  /// [thaidAuthorize] จึงถามสถานะจาก backend เป็นระยะแทน ห้าม log [state]
+  Future<String?> thaidStatus(String state) async {
+    try {
+      final r = await publicDio.post(
+        '/api/auth/public-thaid/status',
+        data: {'state': state},
+        options: Options(validateStatus: (status) => status! < 500),
+      );
+      final s = r.data is Map ? r.data['status'] : null;
+      return r.statusCode == 200 && s is String ? s : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
   /// ชื่อ-สกุลและเลขบัตรของผู้ใช้ที่ล็อกอิน ใช้เติมใบจองใหม่ (เข้าด้วย ThaID หรือรหัสผ่านก็ได้)
   ///
   /// บัญชีเจ้าหน้าที่ได้ชื่อ-สกุลจากพนักงานที่ผูกไว้ (empID) บัญชีที่ ThaID สร้างให้ได้ชื่อตามบัตร

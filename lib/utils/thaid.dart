@@ -58,6 +58,9 @@ String thaidReturnUrl() {
 ///   2. ผู้ใช้สแกน QR -> ThaID ส่ง state กลับมาที่ backend ตรวจว่าตรงกับที่ส่งไป
 ///   3. thaid_callback.html ส่ง state กลับมาทาง postMessage หน้านี้เทียบกับค่าที่เก็บไว้ ต้องตรงกัน
 ///   4. ขอเลขบัตรและชื่อจาก backend ด้วย state นั้น ได้ครั้งเดียว
+///
+/// มือถือ: แอป ThaID เปิดหน้า callback ใน**แท็บใหม่**ที่ไม่มี window.opener ข้อ 3 จึงไม่เกิด
+/// [thaidAuthorize] จึงถามสถานะของ state จาก backend แทน (ดูคำอธิบายที่ฟังก์ชันนั้น)
 Future<ThaidIdentity?> verifyWithThaid(ApiService api) async {
   final state = await thaidAuthorize(api);
   if (state == null) return null;
@@ -67,6 +70,13 @@ Future<ThaidIdentity?> verifyWithThaid(ApiService api) async {
 /// เปิดหน้าต่าง ThaID ให้สแกน แล้วรอผล คืน state ที่ตรวจแล้วว่าตรงกับที่ส่งไป
 /// ผู้เรียกนำ state ไปขอผล ([ApiService.thaidResult]) หรือเข้าสู่ระบบ ([ApiService.loginWithThaid])
 /// คืน null ถ้าผู้ใช้ยกเลิก: กดยกเลิกในแอป ThaID หรือปิดหน้าต่างเอง
+///
+/// รับผลได้สองทาง ทางไหนมาก่อนใช้ทางนั้น
+///   - คอมพิวเตอร์: thaid_callback.html ในหน้าต่างที่เปิดไว้ส่ง state กลับมาทาง postMessage
+///   - มือถือ: แอป ThaID เปิดหน้า callback ใน**แท็บใหม่**ที่ไม่มี window.opener postMessage จึงไม่มา
+///     หน้านี้ถามสถานะของ state จาก backend ([ApiService.thaidStatus]) ทุก 3 วินาที
+///     และทันทีที่ผู้ใช้สลับกลับมาที่แท็บนี้ DONE / ERROR = คืน state ให้ผู้เรียกไปขอผลต่อ
+///     (ผลสำเร็จหรือข้อความผิดพลาดได้จากเส้น result / login ตามเดิม) GONE = ยกเลิกในแอป ThaID
 Future<String?> thaidAuthorize(ApiService api) async {
   final popup = html.window.open(
     '',
@@ -86,12 +96,16 @@ Future<String?> thaidAuthorize(ApiService api) async {
 
   final done = Completer<String?>();
   late final StreamSubscription<html.MessageEvent> sub;
+  StreamSubscription<html.Event>? visibility;
   Timer? watcher;
+  Timer? poller;
 
   void finish(Object? result, {bool isError = false}) {
     if (done.isCompleted) return;
     sub.cancel();
+    visibility?.cancel();
     watcher?.cancel();
+    poller?.cancel();
     if (isError) {
       done.completeError(result!);
     } else {
@@ -125,19 +139,51 @@ Future<String?> thaidAuthorize(ApiService api) async {
     finish(sentState);
   });
 
-  // ผู้ใช้ปิดหน้าต่างเองก่อนยืนยันเสร็จ = ยกเลิก
-  // รอเผื่อข้อความที่ส่งมาก่อนหน้าต่างปิดอีกนิด
-  watcher = Timer.periodic(const Duration(seconds: 1), (_) {
-    if (popup.closed == true) {
-      Future.delayed(const Duration(seconds: 2), () => finish(null));
+  // ถามสถานะจาก backend (ทางของมือถือ ที่ผลไม่ได้กลับมาทาง postMessage)
+  // [cancelIfPending] = ถามครั้งสุดท้ายหลังหน้าต่าง ThaID ปิด: ยังไม่เสร็จ/ถามไม่ได้ = ผู้ใช้ยกเลิก
+  var checking = false;
+  Future<void> check({bool cancelIfPending = false}) async {
+    if (done.isCompleted || checking) return;
+    checking = true;
+    try {
+      final status = await api.thaidStatus(sentState);
+      if (status == 'DONE' || status == 'ERROR') {
+        finish(sentState);
+      } else if (status == 'GONE' || cancelIfPending) {
+        finish(null);
+      }
+    } finally {
+      checking = false;
     }
+  }
+
+  bool pageVisible() => html.document.visibilityState != 'hidden';
+
+  poller = Timer.periodic(const Duration(seconds: 3), (_) {
+    if (pageVisible()) check();
+  });
+  // มือถือหยุดตัวจับเวลาของแท็บที่อยู่เบื้องหลัง ถามทันทีเมื่อผู้ใช้กลับมาที่แท็บนี้
+  visibility = html.document.onVisibilityChange.listen((_) {
+    if (pageVisible()) check();
+  });
+
+  // หน้าต่าง ThaID ปิดแล้ว (ผู้ใช้ปิดเอง หรือมือถือปิดแท็บตอนเปิดแอป ThaID)
+  // ถามสถานะครั้งสุดท้ายเมื่อหน้านี้แสดงอยู่ (ผู้ใช้อยู่ที่หน้านี้จริง) — เสร็จแล้วไปต่อ ยังไม่เสร็จ = ยกเลิก
+  // รอเผื่อข้อความที่ส่งมาก่อนหน้าต่างปิดอีกนิด; ระหว่างผู้ใช้อยู่ในแอป ThaID (หน้านี้ซ่อน) ยังไม่ตัดสิน
+  var popupClosedFor = 0;
+  watcher = Timer.periodic(const Duration(seconds: 1), (_) {
+    if (popup.closed != true) return;
+    popupClosedFor++;
+    if (popupClosedFor >= 2 && pageVisible()) check(cancelIfPending: true);
   });
 
   return done.future.timeout(
     const Duration(minutes: 11),
     onTimeout: () {
       sub.cancel();
+      visibility?.cancel();
       watcher?.cancel();
+      poller?.cancel();
       popup.close();
       throw Exception('หมดเวลายืนยันตัวตน กรุณาลองใหม่');
     },
