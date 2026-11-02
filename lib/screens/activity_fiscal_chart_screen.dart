@@ -307,7 +307,7 @@ class _ActivityFiscalChartScreenState extends State<ActivityFiscalChartScreen> {
   List<Widget> _charts(ActivityFiscalChart data) {
     return [
       _chartCard(
-        title: 'จำนวนใบจอง รายเดือน',
+        title: 'จำนวนหลักสูตร รายเดือน',
         total: 'รวมทั้งปี ${data.totalBookings} ใบจอง',
         color: AppTheme.primaryColor,
         points: [
@@ -317,7 +317,7 @@ class _ActivityFiscalChartScreenState extends State<ActivityFiscalChartScreen> {
       ),
       const SizedBox(height: 16),
       _chartCard(
-        title: 'จำนวนผู้ใช้บริการ รายเดือน',
+        title: 'จำนวนผู้อบรม รายเดือน',
         total: 'รวมทั้งปี ${data.totalPeople} คน',
         color: AppTheme.accentColor,
         points: [
@@ -397,9 +397,9 @@ class _ActivityFiscalChartScreenState extends State<ActivityFiscalChartScreen> {
                 dataRowMaxHeight: 40,
                 columns: const [
                   DataColumn(label: Text('เดือน')),
-                  DataColumn(label: Text('จำนวนใบจอง'), numeric: true),
+                  DataColumn(label: Text('จำนวนหลักสูตร'), numeric: true),
                   DataColumn(
-                    label: Text('จำนวนผู้ใช้บริการ (คน)'),
+                    label: Text('จำนวนผู้อบรม (คน)'),
                     numeric: true,
                   ),
                 ],

@@ -20,8 +20,11 @@ class BookRoomDetailDialog extends StatefulWidget {
   /// null = โหมดเพิ่มรายการใหม่
   final BookRoomDetail? detail;
 
-  /// ประเภทห้องที่เลือกได้ (กรอง type == 'R' มาแล้ว)
+  /// ประเภทห้องที่เลือกได้ (กรองตามประเภท R/C มาแล้ว)
   final List<Roomtype> roomTypes;
+
+  /// ชื่อรายการบนหัว dialog — ห้องกิจกรรมใช้ dialog นี้ร่วมกับห้องพัก
+  final String roomLabel;
 
   /// ค่าเริ่มต้นของวันที่ ใช้ตอนเพิ่มรายการใหม่ — ปกติคือช่วงวันที่ของใบจอง
   final DateTime? defaultStartDate;
@@ -35,6 +38,7 @@ class BookRoomDetailDialog extends StatefulWidget {
     this.detail,
     this.defaultStartDate,
     this.defaultStopDate,
+    this.roomLabel = 'ห้องพัก',
   });
 
   @override
@@ -278,7 +282,9 @@ class _BookRoomDetailDialogState extends State<BookRoomDetailDialog> {
           Icon(isEdit ? Icons.edit : Icons.add, color: Colors.white),
           const SizedBox(width: 10),
           Text(
-            isEdit ? 'แก้ไขรายการห้องพัก' : 'เพิ่มรายการห้องพัก',
+            isEdit
+                ? 'แก้ไขรายการ${widget.roomLabel}'
+                : 'เพิ่มรายการ${widget.roomLabel}',
             style: const TextStyle(
               color: Colors.white,
               fontSize: 18,

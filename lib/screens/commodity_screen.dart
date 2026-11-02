@@ -667,7 +667,7 @@ class _CommodityScreenState extends State<CommodityScreen> {
             ),
           ),
           title: Text(
-            'เครื่องนอน-ของใช้ (Commodity)',
+            'เครื่องนอน-ของใช้ (Room Amenities)',
             style: TextStyle(
               fontSize: headerFontSize,
               fontWeight: FontWeight.bold,

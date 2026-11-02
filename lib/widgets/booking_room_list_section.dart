@@ -172,6 +172,7 @@ class _BookingRoomListSectionState extends State<BookingRoomListSection> {
         apiService: widget.apiService,
         bookId: widget.bookId,
         roomTypes: _roomTypes,
+        roomLabel: widget.type == 'C' ? 'ห้องกิจกรรม' : 'ห้องพัก',
         defaultStartDate: widget.defaultStartDate,
         defaultStopDate: widget.defaultStopDate,
       ),
@@ -191,6 +192,7 @@ class _BookingRoomListSectionState extends State<BookingRoomListSection> {
         apiService: widget.apiService,
         bookId: widget.bookId,
         roomTypes: _roomTypes,
+        roomLabel: widget.type == 'C' ? 'ห้องกิจกรรม' : 'ห้องพัก',
         detail: d,
       ),
     );

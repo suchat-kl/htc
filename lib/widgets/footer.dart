@@ -220,20 +220,14 @@ class CustomFooter extends StatelessWidget {
             runSpacing: 8,
             children: [
               _buildFooterLink('หน้าหลัก', isMobile: true),
-              _buildFooterLink('หลักสูตรฝึกอบรม', isMobile: true),
-              _buildFooterLink('ปฏิทินอบรม', isMobile: true),
-              _buildFooterLink('ลงทะเบียน', isMobile: true),
-              _buildFooterLink('ข่าวสาร', isMobile: true),
+              _buildFooterLink('ข่าวประชาสัมพันธ์', isMobile: true),
               _buildFooterLink('ติดต่อเรา', isMobile: true),
             ],
           ),
         ] else ...[
           // Column layout for desktop/tablet
           _buildFooterLink('หน้าหลัก'),
-          _buildFooterLink('หลักสูตรฝึกอบรม'),
-          _buildFooterLink('ปฏิทินอบรม'),
-          _buildFooterLink('ลงทะเบียน'),
-          _buildFooterLink('ข่าวสาร'),
+          _buildFooterLink('ข่าวประชาสัมพันธ์'),
           _buildFooterLink('ติดต่อเรา'),
         ],
       ],
@@ -260,16 +254,20 @@ class CustomFooter extends StatelessWidget {
             runSpacing: 8,
             children: [
               _buildFooterLink('คู่มือการใช้งาน', isMobile: true),
-              _buildFooterLink('เอกสารประกอบการอบรม', isMobile: true),
-              _buildFooterLink('แบบฟอร์มลงทะเบียน', isMobile: true),
+              _buildFooterLink('คำแนะนำในการใช้ศูนย์ฯ', isMobile: true),
               _buildFooterLink('ระเบียบและข้อบังคับ', isMobile: true),
+              _buildFooterLink('การเดินทาง', isMobile: true),
+              _buildFooterLink('แผนผังอาคาร', isMobile: true),
             ],
           ),
         ] else ...[
+          // คู่มือการใช้งาน = คู่มือการใช้ศูนย์ฯ ไม่ใช่คู่มือระบบ (ผู้ใช้ยืนยัน 2 พ.ย. 2569)
+          // ยังไม่มีไฟล์ให้ดาวน์โหลด รอศูนย์ฯ ส่งมา
           _buildFooterLink('คู่มือการใช้งาน'),
-          _buildFooterLink('เอกสารประกอบการอบรม'),
-          _buildFooterLink('แบบฟอร์มลงทะเบียน'),
+          _buildFooterLink('คำแนะนำในการใช้ศูนย์ฯ'),
           _buildFooterLink('ระเบียบและข้อบังคับ'),
+          _buildFooterLink('การเดินทาง'),
+          _buildFooterLink('แผนผังอาคาร'),
         ],
       ],
     );

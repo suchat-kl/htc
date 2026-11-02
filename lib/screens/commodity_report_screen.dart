@@ -281,7 +281,7 @@ class _CommodityReportScreenState extends State<CommodityReportScreen> {
           tooltip: 'กลับหน้าหลัก',
         ),
         title: Text(
-          'ใบเติมของใช้',
+          'การจัดการวัสดุห้องพัก',
           style: TextStyle(
             fontSize: headerFontSize,
             fontWeight: FontWeight.bold,

@@ -262,144 +262,46 @@ class _SidebarMenuState extends State<SidebarMenu> {
 
               // เมนูของผู้ใช้ที่ล็อกอินแล้ว ไม่เช็ค role USER อีกแล้ว
               // เพราะสิทธิ์จริงอยู่ที่ตารางสิทธิ์รายหน้าจอ แต่ละกลุ่มซ่อนตัวเองอยู่แล้ว
-              if (widget.authProvider.isLoggedIn) ...[
-                // บัญชีที่ ThaID สร้างให้ไม่มีรหัสผ่านที่ผู้ใช้รู้ เปลี่ยนรหัสผ่านไม่ได้
-                // ซ่อนเส้นคั่นไปพร้อมกัน ไม่งั้นเส้นซ้อนกับเส้นของกลุ่มถัดไปเป็นสองเส้น
-                if (!widget.authProvider.isThaidOnly) ...[
-                  const Divider(indent: 16, endIndent: 16),
-                  _buildMenuItem(
-                    context,
-                    icon: Icons.lock_reset,
-                    title: 'เปลี่ยนรหัสผ่าน',
-                    onTap: () => {
-                      _closeMenu(context),
-                      _showChangePasswordDialog(context),
-                    },
-                    compact: true,
-                  ),
-                ],
-                _buildExpandableMenuItem(
-                  context,
-                  icon: Icons.storage,
-                  title: 'รายการหลัก',
-                  menuKey: 'master',
-                  divider: true,
-                  children: [
-                    _SubMenuItemData(Icons.room, 'สถานะห้องพัก', () {
-                      _closeMenu(context);
-                      _open(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) =>
-                              StatusCheckScreen(apiService: ApiService()),
-                        ),
-                      );
-                    }, screenCode: 'MS_ROOM_STATUS'),
-                    _SubMenuItemData(Icons.date_range, 'สถานะการจอง', () {
-                      _closeMenu(context);
-                      _open(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) =>
-                              DocumentStatusScreen(apiService: ApiService()),
-                        ),
-                      );
-                    }, screenCode: 'MS_DOC_STATUS'),
-                    _SubMenuItemData(Icons.restaurant, 'กลุ่มรายการอาหาร', () {
-                      _closeMenu(context);
-                      _open(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) =>
-                              FoodtypeScreen(apiService: ApiService()),
-                        ),
-                      );
-                    }, screenCode: 'MS_FOOD_GROUP'),
-                    _SubMenuItemData(Icons.bed, 'เครื่องนอน-ของใช้', () {
-                      _closeMenu(context);
-                      _open(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) =>
-                              CommodityScreen(apiService: ApiService()),
-                        ),
-                      );
-                    }, screenCode: 'MS_COMMODITY'),
-                    _SubMenuItemData(Icons.bed, 'สิ่งอำนวยความสะดวก', () {
-                      _closeMenu(context);
-                      _open(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) =>
-                              FacilityScreen(apiService: ApiService()),
-                        ),
-                      );
-                    }, screenCode: 'MS_FACILITY'),
-                    _SubMenuItemData(Icons.bed, 'ประเภทห้อง', () {
-                      _closeMenu(context);
-                      _open(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) =>
-                              RoomtypeScreen(apiService: ApiService()),
-                        ),
-                      );
-                    }, screenCode: 'MS_ROOMTYPE'),
-                    _SubMenuItemData(Icons.bed, 'ห้อง', () {
-                      _closeMenu(context);
-                      _open(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => RoomScreen(apiService: ApiService()),
-                        ),
-                      );
-                    }, screenCode: 'MS_ROOM'),
-                    _SubMenuItemData(Icons.build, 'วัสดุซ่อมบำรุง', () {
-                      _closeMenu(context);
-                      _open(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => PartScreen(apiService: ApiService()),
-                        ),
-                      );
-                    }, screenCode: 'MS_PART'),
-                    _SubMenuItemData(Icons.business, 'รหัสหน่วยงาน', () {
-                      _closeMenu(context);
-                      _open(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) =>
-                              OrganizationScreen(apiService: ApiService()),
-                        ),
-                      );
-                    }, screenCode: 'MS_ORG'),
-                    _SubMenuItemData(Icons.group, 'กลุ่ม', () {
-                      _closeMenu(context);
-                      _open(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) =>
-                              SectionScreen(apiService: ApiService()),
-                        ),
-                      );
-                    }, screenCode: 'MS_SECTION'),
-                    _SubMenuItemData(Icons.people, 'บุคลากร', () {
-                      _closeMenu(context);
-                      _open(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) =>
-                              EmployeeScreen(apiService: ApiService()),
-                        ),
-                      );
-                    }, screenCode: 'MS_EMPLOYEE'),
-                  ], //master
-                ),
+              // ลำดับเมนูตามที่ศูนย์ฯ กำหนด (ต.ค. 2569): หน้าหลัก จอง รายการจอง การดำเนินงาน
+              // ห้องพัก/ห้องกิจกรรม รายงาน การบริหารจัดการข้อมูล ผู้ดูแลระบบ เปลี่ยนรหัสผ่าน เกี่ยวกับเรา
+              const Divider(indent: 16, endIndent: 16),
 
-                //  _MenuItemData(Icons.lock_reset, 'เปลี่ยนรหัสผ่าน', () {
-                //   _closeMenu(context);
-                //   _showChangePasswordDialog(context);
-                // }),
+              _buildMenuItem(
+                context,
+                icon: Icons.date_range,
+                title: 'จอง',
+                onTap: () => {
+                  _closeMenu(context),
+                  _open(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          BookingEditScreen(apiService: ApiService()),
+                    ),
+                  ),
+                },
+                compact: true,
+              ),
+              const Divider(indent: 16, endIndent: 16),
+              _buildMenuItem(
+                context,
+                icon: Icons.date_range,
+                title: 'รายการการจอง',
+                onTap: () => {
+                  _closeMenu(context),
+                  _open(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => BookingListScreen(
+                        authProvider: widget.authProvider,
+                        apiService: ApiService(),
+                      ),
+                    ),
+                  ),
+                },
+                compact: true,
+              ),
+              if (widget.authProvider.isLoggedIn) ...[
                 _buildExpandableMenuItem(
                   context,
                   icon: Icons.assignment,
@@ -407,7 +309,7 @@ class _SidebarMenuState extends State<SidebarMenu> {
                   menuKey: 'operations',
                   divider: true,
                   children: [
-                    _SubMenuItemData(Icons.bed, 'ใบรื้อเครื่องนอน', () {
+                    _SubMenuItemData(Icons.bed, 'การจัดการวัสดุห้องพัก', () {
                       _closeMenu(context);
                       _open(
                         context,
@@ -920,6 +822,103 @@ class _SidebarMenuState extends State<SidebarMenu> {
                     }, screenCode: 'RPT_17'),
                   ],
                 ),
+                _buildExpandableMenuItem(
+                  context,
+                  icon: Icons.storage,
+                  title: 'การบริหารจัดการข้อมูล',
+                  menuKey: 'master',
+                  divider: true,
+                  children: [
+                    _SubMenuItemData(Icons.room, 'สถานะห้องพัก', () {
+                      _closeMenu(context);
+                      _open(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              StatusCheckScreen(apiService: ApiService()),
+                        ),
+                      );
+                    }, screenCode: 'MS_ROOM_STATUS'),
+                    _SubMenuItemData(Icons.date_range, 'สถานะการจอง', () {
+                      _closeMenu(context);
+                      _open(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              DocumentStatusScreen(apiService: ApiService()),
+                        ),
+                      );
+                    }, screenCode: 'MS_DOC_STATUS'),
+                    _SubMenuItemData(Icons.restaurant, 'กลุ่มรายการอาหาร', () {
+                      _closeMenu(context);
+                      _open(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              FoodtypeScreen(apiService: ApiService()),
+                        ),
+                      );
+                    }, screenCode: 'MS_FOOD_GROUP'),
+                    _SubMenuItemData(Icons.bed, 'เครื่องนอน-ของใช้', () {
+                      _closeMenu(context);
+                      _open(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              CommodityScreen(apiService: ApiService()),
+                        ),
+                      );
+                    }, screenCode: 'MS_COMMODITY'),
+                    _SubMenuItemData(Icons.bed, 'สิ่งอำนวยความสะดวก', () {
+                      _closeMenu(context);
+                      _open(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              FacilityScreen(apiService: ApiService()),
+                        ),
+                      );
+                    }, screenCode: 'MS_FACILITY'),
+                    _SubMenuItemData(Icons.bed, 'ประเภทห้อง', () {
+                      _closeMenu(context);
+                      _open(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              RoomtypeScreen(apiService: ApiService()),
+                        ),
+                      );
+                    }, screenCode: 'MS_ROOMTYPE'),
+                    _SubMenuItemData(Icons.bed, 'ห้อง', () {
+                      _closeMenu(context);
+                      _open(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => RoomScreen(apiService: ApiService()),
+                        ),
+                      );
+                    }, screenCode: 'MS_ROOM'),
+                    _SubMenuItemData(Icons.build, 'วัสดุซ่อมบำรุง', () {
+                      _closeMenu(context);
+                      _open(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => PartScreen(apiService: ApiService()),
+                        ),
+                      );
+                    }, screenCode: 'MS_PART'),
+                    _SubMenuItemData(Icons.business, 'รหัสหน่วยงาน', () {
+                      _closeMenu(context);
+                      _open(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              OrganizationScreen(apiService: ApiService()),
+                        ),
+                      );
+                    }, screenCode: 'MS_ORG'),
+                  ], //master
+                ),
                 //]
                 /*  else //not wide
                 ...[
@@ -1048,7 +1047,9 @@ class _SidebarMenuState extends State<SidebarMenu> {
               // MANAGER ได้สองหน้าจอนี้เหมือน ADMIN ตามที่ศูนย์ฯ กำหนด
               if (widget.authProvider.canView('USR_CREATE') ||
                   widget.authProvider.canView('USR_EDIT') ||
-                  widget.authProvider.canView('USR_RESET_PWD')) ...[
+                  widget.authProvider.canView('USR_RESET_PWD') ||
+                  widget.authProvider.canView('MS_SECTION') ||
+                  widget.authProvider.canView('MS_EMPLOYEE')) ...[
                 const Divider(indent: 16, endIndent: 16),
                 _buildMenuSection(
                   context,
@@ -1084,6 +1085,29 @@ class _SidebarMenuState extends State<SidebarMenu> {
                           _showResetPasswordDialog(context);
                         },
                       ),
+                    // ย้ายมาจากเมนูการบริหารจัดการข้อมูลตามคำขอผู้ใช้งาน (ต.ค. 2569)
+                    if (widget.authProvider.canView('MS_SECTION'))
+                      _MenuItemData(Icons.group, 'กลุ่ม', () {
+                        _closeMenu(context);
+                        _open(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                SectionScreen(apiService: ApiService()),
+                          ),
+                        );
+                      }),
+                    if (widget.authProvider.canView('MS_EMPLOYEE'))
+                      _MenuItemData(Icons.people, 'บุคลากร', () {
+                        _closeMenu(context);
+                        _open(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                EmployeeScreen(apiService: ApiService()),
+                          ),
+                        );
+                      }),
                   ],
                 ),
                 /*  else ...[
@@ -1120,44 +1144,22 @@ class _SidebarMenuState extends State<SidebarMenu> {
                   ),
                 ], */
               ],
-
-              const Divider(indent: 16, endIndent: 16),
-
-              _buildMenuItem(
-                context,
-                icon: Icons.date_range,
-                title: 'จอง',
-                onTap: () => {
-                  _closeMenu(context),
-                  _open(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) =>
-                          BookingEditScreen(apiService: ApiService()),
-                    ),
-                  ),
-                },
-                compact: true,
-              ),
-              const Divider(indent: 16, endIndent: 16),
-              _buildMenuItem(
-                context,
-                icon: Icons.date_range,
-                title: 'รายการการจอง',
-                onTap: () => {
-                  _closeMenu(context),
-                  _open(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => BookingListScreen(
-                        authProvider: widget.authProvider,
-                        apiService: ApiService(),
-                      ),
-                    ),
-                  ),
-                },
-                compact: true,
-              ),
+              // บัญชีที่ ThaID สร้างให้ไม่มีรหัสผ่านที่ผู้ใช้รู้ เปลี่ยนรหัสผ่านไม่ได้
+              // ซ่อนเส้นคั่นไปพร้อมกัน ไม่งั้นเส้นซ้อนกับเส้นของกลุ่มถัดไปเป็นสองเส้น
+              if (widget.authProvider.isLoggedIn &&
+                  !widget.authProvider.isThaidOnly) ...[
+                const Divider(indent: 16, endIndent: 16),
+                _buildMenuItem(
+                  context,
+                  icon: Icons.lock_reset,
+                  title: 'เปลี่ยนรหัสผ่าน',
+                  onTap: () => {
+                    _closeMenu(context),
+                    _showChangePasswordDialog(context),
+                  },
+                  compact: true,
+                ),
+              ],
               const Divider(indent: 16, endIndent: 16),
               // Add in the menu items
               _buildExpandableMenuItem(

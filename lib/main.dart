@@ -162,6 +162,9 @@ class MainNavigation extends StatefulWidget {
 class _MainNavigationState extends State<MainNavigation> {
   int _currentIndex = 0;
 
+  /// แสดงแถบไอคอนล่างจอ (หน้าหลัก/ฝึกอบรม/ข่าวสาร/ติดต่อ) หรือไม่
+  static const bool _showBottomNav = false;
+
   /// ตรึงเมนูไว้ข้างซ้าย จำไว้ในเบราว์เซอร์ (localStorage ไม่หายตอนออกจากระบบ
   /// ต่างจาก secure storage ที่ถูกล้างทุกครั้งที่ออกจากระบบ)
   static const String _pinnedKey = 'htc_menu_pinned';
@@ -315,7 +318,8 @@ class _MainNavigationState extends State<MainNavigation> {
               ],
             )
           : _buildBody(),
-      bottomNavigationBar: BottomNavigationBar(
+      // แถบไอคอนล่างจอซ่อนไว้ตามคำขอผู้ใช้งาน (ต.ค. 2569) หน้าฝึกอบรม/ติดต่อเรายังเปิดจากเมนูข้างได้
+      bottomNavigationBar: !_showBottomNav ? null : BottomNavigationBar(
         currentIndex: _currentIndex,
         onTap: _onTabChanged, // Use the new method,
         type: BottomNavigationBarType.fixed,
