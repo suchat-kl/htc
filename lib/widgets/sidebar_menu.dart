@@ -12,8 +12,7 @@ import 'package:highway_training/screens/lodging_usage_report_screen.dart';
 import 'package:highway_training/screens/folio_list_screen.dart';
 import 'package:highway_training/screens/food_list_screen.dart';
 import 'package:highway_training/screens/payment_list_screen.dart';
-import 'package:highway_training/screens/place_project_report_screen.dart';
-import 'package:highway_training/screens/place_request_report_screen.dart';
+import 'package:highway_training/screens/place_permit_report_screen.dart';
 import 'package:highway_training/screens/booking_list_screen.dart';
 import 'package:highway_training/screens/booking_status_screen.dart';
 import 'package:highway_training/utils/permission.dart';
@@ -710,7 +709,9 @@ class _SidebarMenuState extends State<SidebarMenu> {
                       },
                       screenCode: 'RPT_07',
                     ),
-                    // 8
+                    // 8 + 9 รวมเป็นเมนูเดียวตามคำขอปรับปรุงรอบ ต.ค. 2569
+                    // เลือกเลขใบจองแล้วหน้าจอเลือกแบบฟอร์มให้เอง (A/B = โครงการ, C = รายย่อย)
+                    // ทุก role ที่มี RPT_08 มี RPT_09 ด้วย (seed 2569-09-23) backend ยังคุมพิมพ์แยกสองรหัส
                     _SubMenuItemData(
                       Icons.assignment,
                       'แบบขออนุญาตใช้สถานที่และบริการ',
@@ -719,7 +720,7 @@ class _SidebarMenuState extends State<SidebarMenu> {
                         _open(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => PlaceRequestReportScreen(
+                            builder: (_) => PlacePermitReportScreen(
                               apiService: ApiService(),
                               authProvider: widget.authProvider,
                             ),
@@ -727,24 +728,6 @@ class _SidebarMenuState extends State<SidebarMenu> {
                         );
                       },
                       screenCode: 'RPT_08',
-                    ),
-                    // 9
-                    _SubMenuItemData(
-                      Icons.assignment_turned_in,
-                      'แบบขออนุญาตใช้สถานที่และบริการ (โครงการ)',
-                      () {
-                        _closeMenu(context);
-                        _open(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => PlaceProjectReportScreen(
-                              apiService: ApiService(),
-                              authProvider: widget.authProvider,
-                            ),
-                          ),
-                        );
-                      },
-                      screenCode: 'RPT_09',
                     ),
                     // 10
                     _SubMenuItemData(Icons.headphones, 'สรุปการใช้บริการโสตฯ', () {
@@ -807,10 +790,12 @@ class _SidebarMenuState extends State<SidebarMenu> {
                         ),
                       );
                     }, screenCode: 'RPT_12'),
-                    // 13
+                    // 13 — เลือกอาคารได้ (คำขอปรับปรุงข้อ 7.7)
+                    // รหัสอาคารตรงกับ RoomBuilding.placetype ใน models/room.dart
+                    // (R/C/O ของ t_maintenance.placetype) ALL = ทุกอาคาร
                     _SubMenuItemData(
                       Icons.home_repair_service,
-                      'รายการซ่อมบำรุง อาคารเรียน',
+                      'รายการซ่อมบำรุง',
                       () {
                         _closeMenu(context);
                         final api = ApiService();
@@ -818,12 +803,36 @@ class _SidebarMenuState extends State<SidebarMenu> {
                           context,
                           MaterialPageRoute(
                             builder: (_) => MonthlyReportScreen(
-                              title: 'รายการซ่อมบำรุง อาคารเรียน',
-                              fileBaseName: 'รายการซ่อมบำรุงอาคารเรียน',
-                              download: (year, month) =>
+                              title: 'รายการซ่อมบำรุง',
+                              fileBaseName: 'รายการซ่อมบำรุง',
+                              choiceLabel: 'อาคาร',
+                              choices: const [
+                                MonthlyReportChoice(
+                                  'ALL',
+                                  'ทั้งหมด',
+                                  fileLabel: 'ทุกอาคาร',
+                                ),
+                                MonthlyReportChoice(
+                                  'R',
+                                  'อาคารพัก',
+                                  fileLabel: 'อาคารพัก',
+                                ),
+                                MonthlyReportChoice(
+                                  'C',
+                                  'อาคารเรียน',
+                                  fileLabel: 'อาคารเรียน',
+                                ),
+                                MonthlyReportChoice(
+                                  'O',
+                                  'อาคารอำนวยการ',
+                                  fileLabel: 'อาคารอำนวยการ',
+                                ),
+                              ],
+                              downloadWithChoice: (year, month, placetype) =>
                                   api.downloadMaintenanceSchool(
                                     year: year,
                                     month: month,
+                                    placetype: placetype,
                                   ),
                             ),
                           ),

@@ -1770,15 +1770,21 @@ class ApiService {
     throw Exception('ออกรายงานไม่สำเร็จ (${r.statusCode})');
   }
 
-  /// ดาวน์โหลดรายการซ่อมบำรุง อาคารเรียน ประจำเดือน (เมนูรายงาน 13)
+  /// ดาวน์โหลดรายการซ่อมบำรุง ประจำเดือน (เมนูรายงาน 13)
+  ///
+  /// [placetype] อาคารที่เรียกรายงาน: ALL = ทุกอาคาร, R = อาคารพัก,
+  /// C = อาคารเรียน, O = อาคารอำนวยการ (ตาม t_maintenance.placetype)
+  /// ฝั่ง backend ถ้าไม่ส่งจะได้อาคารเรียนตามแบบเดิม จึงส่งค่าเสมอ
+  /// path ยังเป็น maintenance-school เพราะสิทธิ์ RPT_13 ผูกกับ path นี้
   Future<List<int>> downloadMaintenanceSchool({
     required int year,
     required int month,
+    String placetype = 'ALL',
   }) async {
     await _ensureToken();
     final r = await dio.get(
       '/api/auth/report/maintenance-school',
-      queryParameters: {'year': year, 'month': month},
+      queryParameters: {'year': year, 'month': month, 'placetype': placetype},
       options: Options(
         responseType: ResponseType.bytes,
         receiveTimeout: const Duration(seconds: 60),
@@ -1789,6 +1795,11 @@ class ApiService {
       final bytes = r.data as List<int>;
       if (bytes.isEmpty) throw Exception('ไฟล์รายงานว่างเปล่า');
       return bytes;
+    }
+    // 400 = ค่าเงื่อนไขไม่ถูกต้อง backend ส่งข้อความภาษาไทยมาในเนื้อคำตอบ
+    if (r.statusCode == 400 && r.data is List<int>) {
+      final msg = utf8.decode(r.data as List<int>, allowMalformed: true).trim();
+      if (msg.isNotEmpty) throw Exception(msg);
     }
     throw Exception('ออกรายงานไม่สำเร็จ (${r.statusCode})');
   }

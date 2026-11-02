@@ -6,11 +6,28 @@ import 'package:universal_html/html.dart' as html;
 import '../config/theme.dart';
 import '../utils/snackbar_helper.dart';
 
+/// ตัวเลือกเสริมหนึ่งค่าของรายงานประจำเดือน เช่น อาคารที่เรียกรายงาน
+class MonthlyReportChoice {
+  /// ค่าที่ส่งให้ API
+  final String value;
+
+  /// ข้อความที่แสดงในช่องเลือก
+  final String label;
+
+  /// คำที่ต่อท้ายชื่อไฟล์ ว่าง = ไม่ต่อ
+  final String fileLabel;
+
+  const MonthlyReportChoice(this.value, this.label, {this.fileLabel = ''});
+}
+
 /// หน้าจอกลางของรายงานประจำเดือน — เลือกปี พ.ศ. กับเดือน แล้วกดพิมพ์
 ///
 /// เมนูรายงานหลายตัวใช้เงื่อนไขชุดเดียวกันหมด (ตารางการใช้ห้องพัก, สรุปการใช้
 /// ห้องพัก, รายงานการใช้ห้องกิจกรรม ฯลฯ) จึงทำเป็นหน้าจอเดียวแล้วส่งชื่อเรื่อง
 /// กับฟังก์ชันดาวน์โหลดเข้ามา ไม่ต้องคัดลอกหน้าจอเดิมซ้ำทุกเมนู
+///
+/// รายงานที่ต้องมีตัวเลือกเพิ่มหนึ่งช่อง (เช่น เลือกอาคาร) ส่ง [choices] กับ
+/// [downloadWithChoice] แทน [download] รายงานที่ไม่ส่งจะหน้าตาเหมือนเดิมทุกอย่าง
 class MonthlyReportScreen extends StatefulWidget {
   /// ชื่อที่แสดงบนแถบด้านบน
   final String title;
@@ -19,7 +36,17 @@ class MonthlyReportScreen extends StatefulWidget {
   final String fileBaseName;
 
   /// ฟังก์ชันเรียก API ออกรายงาน คืนค่าเป็นเนื้อไฟล์
-  final Future<List<int>> Function(int year, int month) download;
+  final Future<List<int>> Function(int year, int month)? download;
+
+  /// ชื่อช่องตัวเลือกเสริม เช่น "อาคาร" ใช้คู่กับ [choices]
+  final String choiceLabel;
+
+  /// ค่าของช่องตัวเลือกเสริม ค่าแรกเป็นค่าตั้งต้น ว่าง = ไม่มีช่องนี้
+  final List<MonthlyReportChoice> choices;
+
+  /// ฟังก์ชันเรียก API ที่รับค่าตัวเลือกเสริมด้วย ใช้เมื่อมี [choices]
+  final Future<List<int>> Function(int year, int month, String choice)?
+  downloadWithChoice;
 
   /// นามสกุลไฟล์ ปัจจุบันรายงานกลุ่มนี้ออกเป็น Excel อย่างเดียว
   final String extension;
@@ -28,9 +55,15 @@ class MonthlyReportScreen extends StatefulWidget {
     super.key,
     required this.title,
     required this.fileBaseName,
-    required this.download,
+    this.download,
     this.extension = 'xlsx',
-  });
+    this.choiceLabel = '',
+    this.choices = const [],
+    this.downloadWithChoice,
+  }) : assert(
+         download != null || downloadWithChoice != null,
+         'ต้องส่ง download หรือ downloadWithChoice อย่างน้อยหนึ่งตัว',
+       );
 
   @override
   State<MonthlyReportScreen> createState() => _MonthlyReportScreenState();
@@ -54,12 +87,14 @@ class _MonthlyReportScreenState extends State<MonthlyReportScreen> {
 
   final TextEditingController _yearCtrl = TextEditingController();
   int _month = DateTime.now().month;
+  MonthlyReportChoice? _choice;
   bool _printing = false;
 
   @override
   void initState() {
     super.initState();
     _yearCtrl.text = '${DateTime.now().year + 543}';
+    if (widget.choices.isNotEmpty) _choice = widget.choices.first;
   }
 
   @override
@@ -77,7 +112,14 @@ class _MonthlyReportScreenState extends State<MonthlyReportScreen> {
 
     setState(() => _printing = true);
     try {
-      final bytes = await widget.download(year, _month);
+      final choice = _choice;
+      final withChoice = widget.downloadWithChoice;
+      final bytes = (choice != null && withChoice != null)
+          ? await withChoice(year, _month, choice.value)
+          : await widget.download!(year, _month);
+      final choicePart = (choice == null || choice.fileLabel.isEmpty)
+          ? ''
+          : '_${choice.fileLabel}';
 
       final isPdf = widget.extension == 'pdf';
       final mime = isPdf
@@ -89,7 +131,7 @@ class _MonthlyReportScreenState extends State<MonthlyReportScreen> {
         ..href = url
         ..style.display = 'none'
         ..download =
-            '${widget.fileBaseName}_${_monthNames[_month - 1]}_$year.${widget.extension}';
+            '${widget.fileBaseName}${choicePart}_${_monthNames[_month - 1]}_$year.${widget.extension}';
       html.document.body!.children.add(anchor);
       anchor.click();
       Future.delayed(const Duration(seconds: 1), () {
@@ -206,6 +248,42 @@ class _MonthlyReportScreenState extends State<MonthlyReportScreen> {
                             ),
                           ),
                         ),
+                        if (widget.choices.isNotEmpty)
+                          SizedBox(
+                            width: 220,
+                            child: DropdownButtonFormField<MonthlyReportChoice>(
+                              initialValue: _choice,
+                              isExpanded: true,
+                              decoration: InputDecoration(
+                                labelText: widget.choiceLabel,
+                                labelStyle: const TextStyle(fontSize: 14),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                filled: true,
+                                fillColor: Colors.white,
+                                isDense: true,
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 12,
+                                ),
+                              ),
+                              items: [
+                                for (final c in widget.choices)
+                                  DropdownMenuItem<MonthlyReportChoice>(
+                                    value: c,
+                                    child: Text(c.label),
+                                  ),
+                              ],
+                              onChanged: (v) {
+                                if (v != null) setState(() => _choice = v);
+                              },
+                              style: const TextStyle(
+                                fontSize: 14,
+                                color: AppTheme.textPrimary,
+                              ),
+                            ),
+                          ),
                       ],
                     ),
                     const SizedBox(height: 24),
