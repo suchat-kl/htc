@@ -263,7 +263,7 @@ class _SidebarMenuState extends State<SidebarMenu> {
               // เมนูของผู้ใช้ที่ล็อกอินแล้ว ไม่เช็ค role USER อีกแล้ว
               // เพราะสิทธิ์จริงอยู่ที่ตารางสิทธิ์รายหน้าจอ แต่ละกลุ่มซ่อนตัวเองอยู่แล้ว
               // ลำดับเมนูตามที่ศูนย์ฯ กำหนด (ต.ค. 2569): หน้าหลัก จอง รายการจอง การดำเนินงาน
-              // ห้องพัก/ห้องกิจกรรม รายงาน การบริหารจัดการข้อมูล ผู้ดูแลระบบ เปลี่ยนรหัสผ่าน เกี่ยวกับเรา
+              // ห้องพัก/ห้องกิจกรรม การเงิน รายงาน การบริหารจัดการข้อมูล ผู้ดูแลระบบ เปลี่ยนรหัสผ่าน เกี่ยวกับเรา
               const Divider(indent: 16, endIndent: 16),
 
               _buildMenuItem(
@@ -429,6 +429,29 @@ class _SidebarMenuState extends State<SidebarMenu> {
                         ),
                       );
                     }, screenCode: 'RM_LODGE_SEARCH'),
+                    _SubMenuItemData(Icons.receipt_long, 'Folio', () {
+                      _closeMenu(context);
+                      _open(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => FolioListScreen(
+                            apiService: ApiService(),
+                            authProvider: widget.authProvider,
+                          ),
+                        ),
+                      );
+                    }, screenCode: 'RM_FOLIO'),
+                  ],
+                ),
+                // ย้ายออกมาจากห้องพัก/ห้องกิจกรรมตามคำขอผู้ใช้งาน (ต.ค. 2569)
+                // สองหน้านี้มีทางเข้าจากเมนูนี้ทางเดียว ห้ามตัดทิ้ง งานการเงินใช้ตรวจสลิปและพิมพ์ใบค่าอาหาร
+                _buildExpandableMenuItem(
+                  context,
+                  icon: Icons.account_balance_wallet,
+                  title: 'การเงิน',
+                  menuKey: 'finance',
+                  divider: true,
+                  children: [
                     _SubMenuItemData(
                       Icons.restaurant_menu,
                       'ใบแจ้งค่าอาหาร',
@@ -446,18 +469,6 @@ class _SidebarMenuState extends State<SidebarMenu> {
                       },
                       screenCode: 'RM_FOOD_INVOICE',
                     ),
-                    _SubMenuItemData(Icons.receipt_long, 'Folio', () {
-                      _closeMenu(context);
-                      _open(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => FolioListScreen(
-                            apiService: ApiService(),
-                            authProvider: widget.authProvider,
-                          ),
-                        ),
-                      );
-                    }, screenCode: 'RM_FOLIO'),
                     _SubMenuItemData(
                       Icons.payments_outlined,
                       'รับชำระเงิน',
