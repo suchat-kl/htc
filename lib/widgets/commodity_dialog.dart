@@ -9,7 +9,15 @@ class CommodityDialog extends StatefulWidget {
   final Commodity? commodity;
   final ApiService apiService;
 
-  const CommodityDialog({super.key, this.commodity, required this.apiService});
+  /// ลำดับตั้งต้นตอนเพิ่มใหม่ — หน้าจอหาเลขต่อจากรายการล่าสุดมาให้ (ข้อ 8.2)
+  final int? nextSequence;
+
+  const CommodityDialog({
+    super.key,
+    this.commodity,
+    required this.apiService,
+    this.nextSequence,
+  });
 
   @override
   State<CommodityDialog> createState() => _CommodityDialogState();
@@ -41,6 +49,7 @@ class _CommodityDialogState extends State<CommodityDialog> {
       _selectedStatus = widget.commodity!.status;
     } else {
       _stockLevelController.text = "0";
+      _sequenceController.text = '${widget.nextSequence ?? 1}';
     }
   }
 
@@ -226,6 +235,9 @@ class _CommodityDialogState extends State<CommodityDialog> {
                       _buildTextField(
                         label: 'ลำดับ',
                         hint: 'กรอกลำดับ',
+                        helper: isEdit
+                            ? null
+                            : 'ระบบรันต่อจากรายการล่าสุดให้แล้ว',
                         controller: _sequenceController,
                         isDesktop: isDesktop,
                         keyboardType: TextInputType.number,
@@ -268,12 +280,12 @@ class _CommodityDialogState extends State<CommodityDialog> {
                             v?.isEmpty == true ? 'กรุณากรอกรายการ' : null,
                       ),
                       const SizedBox(height: 16),
+                      // ช่อง description ใช้เก็บหน่วยนับ (ข้อ 8.2 เปลี่ยนแค่ป้าย)
                       _buildTextField(
-                        label: 'คำอธิบาย',
-                        hint: 'กรอกคำอธิบาย',
+                        label: 'หน่วยนับ',
+                        hint: 'เช่น ผืน, ใบ, ชิ้น, ชุด',
                         controller: _descriptionController,
                         isDesktop: isDesktop,
-                        maxLines: 3,
                       ),
                       const SizedBox(height: 16),
                       _buildTextField(
@@ -383,6 +395,7 @@ class _CommodityDialogState extends State<CommodityDialog> {
     TextInputType? keyboardType,
     int maxLines = 1,
     bool readOnly = false,
+    String? helper,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -402,6 +415,7 @@ class _CommodityDialogState extends State<CommodityDialog> {
           maxLines: maxLines,
           decoration: InputDecoration(
             hintText: hint,
+            helperText: helper,
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
             filled: true,
             fillColor: AppTheme.fieldFillColor,

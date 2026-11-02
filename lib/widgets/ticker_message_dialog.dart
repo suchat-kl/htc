@@ -4,6 +4,7 @@ import '../config/theme.dart';
 import '../models/ticker_message.dart';
 import '../services/api_service.dart';
 import '../utils/snackbar_helper.dart';
+import '../utils/util.dart';
 
 class TickerMessageDialog extends StatefulWidget {
   final ApiService apiService;
@@ -375,6 +376,32 @@ class _TickerMessageDialogState extends State<TickerMessageDialog> {
                   ),
                 ),
               ],
+            ),
+            // วันที่บันทึก — ให้รู้ว่าข้อความนี้ลงมาตั้งแต่วันไหน (ข้อ 5.4)
+            const SizedBox(height: 6),
+            Padding(
+              padding: const EdgeInsets.only(left: 36),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.event_note,
+                    size: 14,
+                    color: AppTheme.textSecondary,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    message.createdAt != null
+                        ? 'บันทึกเมื่อ ${Util.formatThaiDate(message.createdAt!)}'
+                        : 'ข้อความใหม่ ยังไม่ได้บันทึก',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: message.createdAt != null
+                          ? AppTheme.textSecondary
+                          : AppTheme.warningColor,
+                    ),
+                  ),
+                ],
+              ),
             ),
             // Preview
             if (message.message.isNotEmpty || message.icon.isNotEmpty) ...[

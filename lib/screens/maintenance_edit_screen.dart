@@ -3,7 +3,7 @@ import 'package:intl/intl.dart';
 import '../config/theme.dart';
 import '../models/maintenance.dart';
 import '../models/employee.dart';
-// import '../models/room.dart';
+import '../models/room.dart';
 import '../models/tpart.dart';
 import '../models/part.dart';
 import '../providers/auth_provider.dart';
@@ -42,13 +42,15 @@ class _MaintenanceEditScreenState extends State<MaintenanceEditScreen> {
       _workremarkCtrl = TextEditingController();
 
   int? _selectedEmp1, _selectedEmp2, _selectedRoomid;
-  String _placetype = 'O',
+  // ค่าตั้งต้นเป็นอาคารพัก ตามลำดับตัวเลือกที่ผู้ใช้กำหนด (พัก, เรียน, อำนวยการ)
+  String _placetype = RoomBuilding.lodging.placetype,
       _workstatus = '0',
       _worktype = 'E',
       _resolutiontype = 'C';
+  // วันรับงานกับวันปิดงานตั้งต้นเป็นวันเดียวกัน (วันนี้)
   DateTime _reportDate = DateTime.now(),
       _startDate = DateTime.now(),
-      _stopDate = DateTime.now().add(const Duration(days: 1));
+      _stopDate = DateTime.now();
   // bool _isLoading = false,
   bool _isSaving = false;
   String? _error;
@@ -56,7 +58,8 @@ class _MaintenanceEditScreenState extends State<MaintenanceEditScreen> {
 
   // Dropdown data
   List<Employee> _employees = [];
-  List<Map<String, dynamic>> _rooms = [];
+  List<Room> _rooms = [];
+  bool _roomsLoaded = false;
   List<Tpart> _tparts = [];
   List<Part> _parts = [];
 
@@ -68,9 +71,28 @@ class _MaintenanceEditScreenState extends State<MaintenanceEditScreen> {
       _loadExistingData();
       _loadTparts();
     } else {
+      // ใบใหม่ ผู้แจ้งคือคนที่ล็อกอินอยู่เสมอ แก้ไม่ได้
       _selectedEmp1 = _myEmpId;
-      _selectedEmp2 = _myEmpId;
+      _reportnameCtrl.text = widget.authProvider.displayName;
+      // งานซ่อมบำรุงเปิดใบเองก็เป็นผู้รับงานไปด้วย
+      if (_isService) _acceptJob();
     }
+  }
+
+  /// ผู้ใช้เป็นงานซ่อมบำรุง (role SERVICE) ผู้รับงานต้องเป็นคนกลุ่มนี้เท่านั้น
+  bool get _isService => widget.authProvider.hasRole('SERVICE');
+
+  /// ตั้งคนที่ล็อกอินเป็นผู้รับงาน และวันรับงาน = วันปิดงาน = วันนี้
+  ///
+  /// เรียกเมื่อเจ้าหน้าที่งานซ่อมบำรุงเปิดใบที่ยังไม่มีผู้รับงาน
+  /// (ตามคำขอปรับปรุง 5.3 "วันรับงาน/วันปิดงาน auto เป็นวันเดียวกัน
+  /// = วันที่ user service เปิดเข้ามาดูรายละเอียด") ค่าจะบันทึกจริงเมื่อกดบันทึก
+  void _acceptJob() {
+    _selectedEmp2 = _myEmpId;
+    final today = DateUtils.dateOnly(DateTime.now());
+    _startDate = today;
+    _stopDate = today;
+    if (_workstatus == '0') _workstatus = '1';
   }
 
   /// รหัสพนักงานของบัญชีที่ล็อกอิน ใช้เป็นค่าตั้งต้นของช่องผู้แจ้ง/ผู้รับงาน
@@ -93,12 +115,8 @@ class _MaintenanceEditScreenState extends State<MaintenanceEditScreen> {
     _priceCtrl.text = m.price?.toString() ?? '';
     _workremarkCtrl.text = m.workremark ?? '';
     _selectedEmp1 = m.employeeid1?.toInt();
-    // ข้อ 13 ของความต้องการปรับปรุง ใบที่ยังไม่มีผู้รับงานให้ตั้งเป็นคนที่ล็อกอินอยู่
-    // ใบที่ระบุไว้แล้วไม่แตะ เพราะผู้รับงานเดิมเป็นข้อมูลของใบนั้น
-    final emp2 = m.employeeid2?.toInt();
-    _selectedEmp2 = (emp2 == null || emp2 == 0) ? _myEmpId : emp2;
     _selectedRoomid = m.roomid;
-    _placetype = m.placetype ?? 'O';
+    _placetype = m.placetype ?? RoomBuilding.lodging.placetype;
     _workstatus = m.workstatus ?? '0';
     _worktype = m.worktype ?? 'E';
     _resolutiontype = m.resolutiontype ?? 'C';
@@ -106,8 +124,17 @@ class _MaintenanceEditScreenState extends State<MaintenanceEditScreen> {
     // ✅ Parse date strings from API
     _reportDate = _parseDate(m.reportdate) ?? DateTime.now();
     _startDate = _parseDate(m.startdate) ?? DateTime.now();
-    _stopDate =
-        _parseDate(m.stopdate) ?? DateTime.now().add(const Duration(days: 1));
+    _stopDate = _parseDate(m.stopdate) ?? _startDate;
+
+    // ผู้รับงาน = เจ้าหน้าที่งานซ่อมบำรุงที่ล็อกอินอยู่ (คำขอปรับปรุง 5.3)
+    // ใบที่ยังไม่มีผู้รับงาน เมื่อ SERVICE เปิดดูให้รับงานอัตโนมัติ
+    // ใบที่มีผู้รับงานแล้วไม่แตะ เพราะผู้รับงานเดิมเป็นข้อมูลของใบนั้น
+    final emp2 = m.employeeid2?.toInt();
+    if (emp2 == null || emp2 == 0) {
+      if (_isService) _acceptJob();
+    } else {
+      _selectedEmp2 = emp2;
+    }
   }
 
   // ✅ Helper method to parse date string
@@ -130,13 +157,24 @@ class _MaintenanceEditScreenState extends State<MaintenanceEditScreen> {
   Future<void> _loadDropdowns() async {
     try {
       final emps = await widget.apiService.getEmployeesList();
-      final rooms = await widget.apiService.getRoomList();
+      // ใช้ /rooms (ไม่ใช่ /rooms/list) เพราะต้องได้เลขอาคารมากรองห้องตามอาคาร
+      // GET ของ /rooms ไม่ถูกคุมสิทธิ์หน้าจอ ทุกคนที่ล็อกอินเรียกได้ เรียงตามลำดับห้อง
+      final roomResult = await widget.apiService.getRooms(page: 0, size: 10000);
+      final rooms = (roomResult['rooms'] as List? ?? const [])
+          .map((j) => Room.fromJson(j as Map<String, dynamic>))
+          .where((r) => r.roomID != null)
+          .toList();
       final parts = await widget.apiService.getPartsList();
       if (mounted) {
         setState(() {
           _employees = emps;
           _rooms = rooms;
+          _roomsLoaded = true;
           _parts = parts;
+          // ใบเดิมที่ไม่มีชื่อผู้แจ้งเป็นข้อความ เติมจากรายชื่อพนักงานไว้แสดง
+          if (_reportnameCtrl.text.trim().isEmpty) {
+            _reportnameCtrl.text = _empName(_selectedEmp1) ?? '';
+          }
         });
       }
     } catch (e) {
@@ -208,50 +246,6 @@ class _MaintenanceEditScreenState extends State<MaintenanceEditScreen> {
     }
   }
 
-  Future<void> _delete() async {
-    if (widget.maintenance?.maintenanceID == null) return;
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (c) => AlertDialog(
-        title: const Text(
-          'ยืนยันการลบ',
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-        ),
-        content: const Text(
-          'ต้องการลบใบแจ้งซ่อมนี้และรายการวัสดุที่เกี่ยวข้อง?',
-          style: TextStyle(fontSize: 16),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(c, false),
-            style: TextButton.styleFrom(foregroundColor: AppTheme.cancelColor),
-            child: const Text('ยกเลิก'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(c, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.deleteColor,
-            ),
-            child: const Text('ลบ', style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
-    );
-    if (ok == true) {
-      try {
-        await widget.apiService.deleteMaintenance(
-          widget.maintenance!.maintenanceID!,
-        );
-        if (mounted) {
-          context.showSuccessSnackBar('ลบสำเร็จ');
-          Navigator.pop(context, true);
-        }
-      } catch (e) {
-        if (mounted) context.showErrorSnackBar('ลบไม่สำเร็จ');
-      }
-    }
-  }
-
   void _tpartDialog({Tpart? transaction}) {
     showDialog(
       context: context,
@@ -288,20 +282,9 @@ class _MaintenanceEditScreenState extends State<MaintenanceEditScreen> {
         backgroundColor: AppTheme.primaryColor,
         foregroundColor: Colors.white,
         elevation: 4,
+        // ไม่มีปุ่มลบ — ห้ามลบใบแจ้งซ่อม (คำขอปรับปรุง 5.3)
+        // งานที่ไม่ได้ซ่อมให้เปลี่ยนสถานะงานเป็น "ยกเลิกงาน" แทน
         actions: [
-          if (isEdit)
-            Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: ElevatedButton.icon(
-                onPressed: _delete,
-                icon: const Icon(Icons.delete, size: 18),
-                label: const Text('ลบ'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.deleteColor,
-                  foregroundColor: Colors.white,
-                ),
-              ),
-            ),
           Padding(
             padding: const EdgeInsets.only(right: 8),
             child: ElevatedButton.icon(
@@ -522,36 +505,118 @@ class _MaintenanceEditScreenState extends State<MaintenanceEditScreen> {
         }
         ),
 */
+        // ชื่อผู้แจ้ง = ชื่อที่ล็อกอิน แก้ไม่ได้ (ใบเดิมแสดงชื่อที่บันทึกไว้)
+        _readOnlyField('ชื่อผู้แจ้ง', _reporterName),
+        // เรียงตามที่ผู้ใช้กำหนด: อาคารพัก, อาคารเรียน, อาคารอำนวยการ
         _dd(
-          'ชื่อผู้แจ้ง',
-          _empValue(_selectedEmp1),
-          _employeeItems(),
-          (v) => setState(() => _selectedEmp1 = v),
+          'ประเภทของสถานที่',
+          _placetype,
+          [
+            for (final b in RoomBuilding.all)
+              DropdownMenuItem(value: b.placetype, child: Text(b.name)),
+            // รหัสที่ไม่รู้จักจากข้อมูลเดิม ใส่ไว้ไม่ให้ dropdown assert
+            if (RoomBuilding.ofPlacetype(_placetype) == null)
+              DropdownMenuItem(value: _placetype, child: Text(_placetype)),
+          ],
+          (v) => setState(() {
+            _placetype = v!;
+            // ห้องที่เลือกไว้ไม่อยู่ในอาคารใหม่ ต้องล้างทิ้ง
+            if (!_roomsInPlace.any((r) => r.roomID == _selectedRoomid)) {
+              _selectedRoomid = null;
+            }
+          }),
         ),
-        _dd('ประเภทของสถานที่', _placetype, [
-          const DropdownMenuItem(value: 'O', child: Text('อาคารอำนวยการ')),
-          const DropdownMenuItem(value: 'C', child: Text('อาคารเรียน')),
-          const DropdownMenuItem(value: 'R', child: Text('อาคารพัก')),
-        ], (v) => setState(() => _placetype = v!)),
         _dd(
           'ห้อง',
           _selectedRoomid,
-          _rooms
-              .map(
-                (r) => DropdownMenuItem<int>(
-                  value: r['roomID'] as int?,
-                  child: Text(r['roomNO']?.toString() ?? ''),
-                ),
-              )
-              .toList(),
+          _roomItems(),
           (v) => setState(() => _selectedRoomid = v),
+          // สร้าง dropdown ใหม่เมื่อเปลี่ยนอาคาร/โหลดห้องเสร็จ ให้ค่าที่แสดงตรงกับ state
+          key: ValueKey('room-$_placetype-$_roomsLoaded'),
+          helper: _roomFallbackNote,
         ),
-        _fld('สถานที่', _placeCtrl),
-        _fld('บริเวณหรือตำแหน่ง', _positionCtrl),
+        _fld('สถานที่', _placeCtrl, multiline: true),
+        _fld('บริเวณหรือตำแหน่ง', _positionCtrl, multiline: true),
         _fld('หมายเลขติดต่อ', _reporttelCtrl),
-        _fld('รายละเอียด', _reportremarkCtrl, maxLines: 3),
+        _fld('รายละเอียด', _reportremarkCtrl, multiline: true, minLines: 4),
       ],
     );
+  }
+
+  /// ชื่อผู้แจ้งที่แสดง — ข้อความในใบ ถ้าไม่มีใช้ชื่อพนักงาน ถ้าไม่มีอีกใช้ชื่อที่ล็อกอิน
+  String get _reporterName {
+    final t = _reportnameCtrl.text.trim();
+    if (t.isNotEmpty) return t;
+    final n = _empName(_selectedEmp1);
+    if (n != null) return n;
+    return isEdit ? '-' : widget.authProvider.displayName;
+  }
+
+  /// ชื่อผู้รับงานที่แสดง
+  String get _receiverName {
+    final n = _empName(_selectedEmp2);
+    if (n != null) return n;
+    // SERVICE ที่บัญชียังไม่ผูกกับพนักงาน บันทึกเป็นผู้รับงานไม่ได้ ต้องแจ้งให้รู้
+    if (_selectedEmp2 == null && _isService && _myEmpId == null) {
+      return '${widget.authProvider.displayName} '
+          '(บัญชียังไม่ผูกกับรายชื่อพนักงาน บันทึกเป็นผู้รับงานไม่ได้)';
+    }
+    if (_selectedEmp2 != null && _employees.isEmpty) return 'กำลังโหลด...';
+    return 'ยังไม่มีผู้รับงาน';
+  }
+
+  /// ชื่อ-สกุลของพนักงาน ไม่พบ = null
+  String? _empName(int? id) {
+    if (id == null) return null;
+    for (final e in _employees) {
+      if (e.empID == id) {
+        final n = '${e.name ?? ''} ${e.lastname ?? ''}'.trim();
+        return n.isEmpty ? null : n;
+      }
+    }
+    return null;
+  }
+
+  /// ห้องในอาคารที่เลือก (เทียบ placetype ของใบกับ m_room.building ผ่าน [RoomBuilding])
+  ///
+  /// ถ้ายังไม่มีห้องไหนกำหนดอาคารนี้ไว้เลย (ข้อมูลห้องยังไม่ได้ตั้งตึก)
+  /// ให้แสดงทุกห้องแทน ไม่งั้นแจ้งซ่อมไม่ได้เลย และแสดงหมายเหตุใต้ช่อง
+  List<Room> get _roomsInPlace {
+    final b = RoomBuilding.ofPlacetype(_placetype);
+    if (b == null) return _rooms;
+    final inBuilding = _rooms.where((r) => r.building == b.code).toList();
+    return inBuilding.isEmpty ? _rooms : inBuilding;
+  }
+
+  /// หมายเหตุใต้ช่องห้อง เมื่อกรองตามอาคารไม่ได้และต้องแสดงทุกห้อง
+  String? get _roomFallbackNote {
+    final b = RoomBuilding.ofPlacetype(_placetype);
+    if (!_roomsLoaded || b == null || _rooms.isEmpty) return null;
+    if (_rooms.any((r) => r.building == b.code)) return null;
+    return 'ยังไม่มีห้องที่กำหนดตึกเป็น${b.name} จึงแสดงทุกห้อง '
+        '(กำหนดได้ที่เมนูห้อง)';
+  }
+
+  List<DropdownMenuItem<int>> _roomItems() {
+    final rooms = _roomsInPlace;
+    final items = rooms
+        .map(
+          (r) => DropdownMenuItem<int>(value: r.roomID, child: Text(r.roomNO)),
+        )
+        .toList();
+    // ใบเดิมที่ห้องไม่อยู่ในอาคารที่เลือก (หรือห้องถูกลบ) ยังต้องแสดงห้องเดิมไว้
+    // ไม่งั้น DropdownButtonFormField จะ assert เพราะค่าไม่มีในรายการ
+    final cur = _selectedRoomid;
+    if (cur != null && _roomsLoaded && !rooms.any((r) => r.roomID == cur)) {
+      final old = _rooms.where((r) => r.roomID == cur);
+      items.add(
+        DropdownMenuItem<int>(
+          value: cur,
+          child: Text(old.isNotEmpty ? old.first.roomNO : 'ห้องรหัส $cur'),
+        ),
+      );
+    }
+    return items;
   }
 
   Widget _buildColumn2() {
@@ -699,12 +764,9 @@ class _MaintenanceEditScreenState extends State<MaintenanceEditScreen> {
         }),
 
         */
-        _dd(
-          'ผู้รับงาน',
-          _empValue(_selectedEmp2),
-          _employeeItems(),
-          (v) => setState(() => _selectedEmp2 = v),
-        ),
+        // ผู้รับงาน = เจ้าหน้าที่งานซ่อมบำรุง (SERVICE) ที่ล็อกอิน แก้ไม่ได้
+        // ตั้งให้อัตโนมัติตอนเปิดใบ ดู _acceptJob
+        _readOnlyField('ผู้รับงาน', _receiverName),
         _dd('ประเภทของงาน', _worktype, [
           const DropdownMenuItem(value: 'E', child: Text('ไฟฟ้า')),
           const DropdownMenuItem(value: 'A', child: Text('เครื่องปรับอากาศ')),
@@ -713,43 +775,26 @@ class _MaintenanceEditScreenState extends State<MaintenanceEditScreen> {
           const DropdownMenuItem(value: 'TP', child: Text('โทรศัพท์')),
           const DropdownMenuItem(value: 'B', child: Text('อาคารสถานที่')),
         ], (v) => setState(() => _worktype = v!)),
-        _fld('การแก้ไข', _workdetailCtrl, maxLines: 2),
+        _fld('การแก้ไข', _workdetailCtrl, multiline: true, minLines: 3),
         _dd('ลักษณะการดำเนินงาน', _resolutiontype, [
           const DropdownMenuItem(value: 'C', child: Text('ซ่อม')),
           const DropdownMenuItem(value: 'O', child: Text('จ้างซ่อม')),
         ], (v) => setState(() => _resolutiontype = v!)),
         _fld('ราคา', _priceCtrl, inputType: TextInputType.number),
-        _fld('อื่นๆ', _workremarkCtrl, maxLines: 2),
+        _fld('อื่นๆ', _workremarkCtrl, multiline: true, minLines: 3),
       ],
     );
   }
 
-  /// ค่าที่ปลอดภัยสำหรับ dropdown พนักงาน
+  /// ช่องกรอกข้อความ
   ///
-  /// รายชื่อพนักงานโหลดแบบ async ระหว่างที่ยังโหลดไม่เสร็จหรือพนักงานคนนั้น
-  /// ถูกลบไปแล้ว ค่าที่ค้างอยู่จะไม่มีในรายการ ต้องคืน null แทน
-  int? _empValue(int? id) {
-    if (id == null) return null;
-    return _employees.any((e) => e.empID == id) ? id : null;
-  }
-
-  List<DropdownMenuItem<int>> _employeeItems() => _employees
-      .where((e) => e.empID != null)
-      .map(
-        (e) => DropdownMenuItem<int>(
-          value: e.empID,
-          child: Text(
-            '${e.name ?? ''} ${e.lastname ?? ''}',
-            style: const TextStyle(fontSize: 13),
-          ),
-        ),
-      )
-      .toList();
-
+  /// [multiline] = ช่องข้อความยาว ขยายความสูงตามข้อความให้เห็นครบ ไม่ตัดทิ้ง
+  /// (คำขอปรับปรุง 5.3 "แสดงให้ครบ หรือให้ช่องกว้างกว่านี้") เริ่มที่ [minLines] บรรทัด
   Widget _fld(
     String l,
     TextEditingController c, {
-    int maxLines = 1,
+    bool multiline = false,
+    int minLines = 2,
     TextInputType? inputType,
   }) => Padding(
     padding: const EdgeInsets.only(bottom: 12),
@@ -763,8 +808,9 @@ class _MaintenanceEditScreenState extends State<MaintenanceEditScreen> {
         const SizedBox(height: 4),
         TextFormField(
           controller: c,
-          keyboardType: inputType,
-          maxLines: maxLines,
+          keyboardType: multiline ? TextInputType.multiline : inputType,
+          minLines: multiline ? minLines : 1,
+          maxLines: multiline ? null : 1,
           decoration: InputDecoration(
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
             filled: true,
@@ -784,8 +830,10 @@ class _MaintenanceEditScreenState extends State<MaintenanceEditScreen> {
     String l,
     T? v,
     List<DropdownMenuItem<T>> items,
-    Function(T?) oc,
-  ) => Padding(
+    Function(T?) oc, {
+    Key? key,
+    String? helper,
+  }) => Padding(
     padding: const EdgeInsets.only(bottom: 12),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -796,6 +844,7 @@ class _MaintenanceEditScreenState extends State<MaintenanceEditScreen> {
         ),
         const SizedBox(height: 4),
         DropdownButtonFormField<T>(
+          key: key,
           initialValue: v,
           isExpanded: true,
           decoration: InputDecoration(
@@ -807,6 +856,9 @@ class _MaintenanceEditScreenState extends State<MaintenanceEditScreen> {
               vertical: 10,
             ),
             isDense: true,
+            helperText: helper,
+            helperMaxLines: 2,
+            helperStyle: TextStyle(color: AppTheme.warningColor),
           ),
           items: items,
           onChanged: oc,

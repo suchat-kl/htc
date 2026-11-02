@@ -30,6 +30,10 @@ class TfoodDialog extends StatefulWidget {
   /// ลำดับตั้งต้นตอนเพิ่มใหม่ ปกติคือลำดับสุดท้ายในตาราง + 1
   final int? defaultSequence;
 
+  /// จำนวนคนตั้งต้นตอนเพิ่มใหม่ ปกติคือผู้เข้าพัก + เจ้าหน้าที่ ของใบจอง
+  /// null หรือ 0 = ปล่อยว่างให้ผู้ใช้กรอก
+  final int? defaultAmount;
+
   const TfoodDialog({
     super.key,
     required this.apiService,
@@ -39,6 +43,7 @@ class TfoodDialog extends StatefulWidget {
     this.defaultStartDate,
     this.defaultStopDate,
     this.defaultSequence,
+    this.defaultAmount,
   });
 
   @override
@@ -59,6 +64,9 @@ class _TfoodDialogState extends State<TfoodDialog> {
 
   bool _isSaving = false;
   String? _error;
+
+  /// ผู้ใช้พิมพ์จำนวนมื้อเองแล้ว — หลังจากนี้เปลี่ยนวันที่ก็ไม่คำนวณทับค่าที่พิมพ์
+  bool _timesEditedByUser = false;
 
   bool get isEdit => widget.tfood != null;
 
@@ -85,6 +93,11 @@ class _TfoodDialogState extends State<TfoodDialog> {
     } else {
       // เพิ่มรายการใหม่ — เติมค่าที่เดาได้ให้ก่อน ผู้ใช้แก้เองต่อได้
       _sequenceCtrl.text = '${widget.defaultSequence ?? 1}';
+      // จำนวนคน = ผู้เข้าพัก + เจ้าหน้าที่ ของใบจอง (แก้ได้)
+      if ((widget.defaultAmount ?? 0) > 0) {
+        _amountCtrl.text = '${widget.defaultAmount}';
+      }
+      // จำนวนมื้อ = จำนวนวันจากวันเริ่มถึงวันสิ้นสุด นับรวมหัวท้าย (แก้ได้)
       _timesCtrl.text = '${_dayCount(_startDate, _stopDate)}';
     }
 
@@ -127,9 +140,12 @@ class _TfoodDialogState extends State<TfoodDialog> {
   }
 
   /// จำนวนมื้อผูกกับช่วงวันที่ ตอนเพิ่มใหม่จึงคำนวณให้ทุกครั้งที่เปลี่ยนวันที่
+  /// เว้นแต่ผู้ใช้พิมพ์จำนวนมื้อเองไปแล้ว (หรือช่องว่างอยู่ = คำนวณใหม่ได้)
   /// โหมดแก้ไขไม่แตะ เพราะค่าที่บันทึกไว้อาจถูกปรับด้วยมือมาแล้ว
   void _syncTimesWithDates() {
     if (isEdit) return;
+    if (_timesEditedByUser && _timesCtrl.text.trim().isNotEmpty) return;
+    _timesEditedByUser = false;
     _timesCtrl.text = '${_dayCount(_startDate, _stopDate)}';
   }
 
@@ -256,7 +272,12 @@ class _TfoodDialogState extends State<TfoodDialog> {
                       const SizedBox(height: 18),
                       _numField('คน', _amountCtrl, suffix: 'คน'),
                       const SizedBox(height: 18),
-                      _numField('มื้อ', _timesCtrl, suffix: 'มื้อ'),
+                      _numField(
+                        'มื้อ',
+                        _timesCtrl,
+                        suffix: 'มื้อ',
+                        onEdited: () => _timesEditedByUser = true,
+                      ),
                       const SizedBox(height: 18),
                       _dateField('วันที่เริ่มต้น', _startDate, () async {
                         final p = await Util.dateFieldPickerNullable(
@@ -451,6 +472,7 @@ class _TfoodDialogState extends State<TfoodDialog> {
     TextEditingController ctrl, {
     String? suffix,
     bool required = true,
+    VoidCallback? onEdited,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -464,7 +486,7 @@ class _TfoodDialogState extends State<TfoodDialog> {
           decoration: _decoration(suffix: suffix),
           style: const TextStyle(fontSize: 14),
           // อัปเดตยอดรวมทันทีที่พิมพ์
-          onChanged: (_) => setState(() {}),
+          onChanged: (_) => setState(() => onEdited?.call()),
           validator: required
               ? (v) =>
                     (v == null || v.trim().isEmpty) ? 'กรุณากรอก$label' : null

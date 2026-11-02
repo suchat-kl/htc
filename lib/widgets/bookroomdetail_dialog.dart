@@ -9,6 +9,7 @@ import '../models/roomtype.dart';
 import '../services/api_service.dart';
 import '../utils/logger.dart';
 import '../utils/util.dart';
+import 'thai_date_picker.dart';
 
 /// dialog เพิ่ม/แก้ไขรายการห้องพักของการจอง (ตาราง bookroomdetail)
 ///
@@ -30,6 +31,15 @@ class BookRoomDetailDialog extends StatefulWidget {
   final DateTime? defaultStartDate;
   final DateTime? defaultStopDate;
 
+  /// ช่วงวันที่ที่เลือกได้ (ช่วงวันที่ของใบจอง) ใช้ทั้งตอนเพิ่มและแก้ไข
+  /// null = ไม่จำกัด (ใช้ช่วงตั้งต้นของปฏิทิน)
+  final DateTime? minDate;
+  final DateTime? maxDate;
+
+  /// ลำดับของแถวใหม่ — ระบบใส่ให้เอง (ลำดับสุดท้ายของประเภทเดียวกัน + 1)
+  /// ตอนแก้ไขคงลำดับเดิมของแถวไว้ ผู้ใช้ไม่ต้องกรอกเอง
+  final int? defaultSequence;
+
   const BookRoomDetailDialog({
     super.key,
     required this.apiService,
@@ -38,6 +48,9 @@ class BookRoomDetailDialog extends StatefulWidget {
     this.detail,
     this.defaultStartDate,
     this.defaultStopDate,
+    this.minDate,
+    this.maxDate,
+    this.defaultSequence,
     this.roomLabel = 'ห้องพัก',
   });
 
@@ -48,7 +61,6 @@ class BookRoomDetailDialog extends StatefulWidget {
 class _BookRoomDetailDialogState extends State<BookRoomDetailDialog> {
   final _formKey = GlobalKey<FormState>();
 
-  final _sequenceCtrl = TextEditingController();
   final _numberMemberCtrl = TextEditingController();
   final _numberRoomCtrl = TextEditingController();
 
@@ -74,7 +86,6 @@ class _BookRoomDetailDialogState extends State<BookRoomDetailDialog> {
         DateTime.now().add(const Duration(days: 1));
 
     if (d != null) {
-      _sequenceCtrl.text = '${d.sequence ?? ''}';
       _numberMemberCtrl.text = '${d.numberMember ?? ''}';
       _numberRoomCtrl.text = '${d.numberRoom ?? ''}';
       _roomTypeId = d.roomTypeId;
@@ -91,9 +102,52 @@ class _BookRoomDetailDialogState extends State<BookRoomDetailDialog> {
     return DateTime.tryParse(s);
   }
 
+  static DateTime? _dateOnly(DateTime? d) =>
+      d == null ? null : DateTime(d.year, d.month, d.day);
+
+  DateTime? get _min => _dateOnly(widget.minDate);
+  DateTime? get _max => _dateOnly(widget.maxDate);
+
+  /// วันที่อยู่ในช่วงวันที่ของใบจองหรือไม่ (ไม่ได้ส่งช่วงมา = ผ่านเสมอ)
+  bool _inRange(DateTime d) {
+    final x = _dateOnly(d)!;
+    if (_min != null && x.isBefore(_min!)) return false;
+    if (_max != null && x.isAfter(_max!)) return false;
+    return true;
+  }
+
+  /// เลือกวันที่เริ่มต้น — ได้เฉพาะในช่วงวันที่ของใบจอง
+  /// ถ้าวันเริ่มใหม่เลยวันสิ้นสุดไปแล้ว เลื่อนวันสิ้นสุดตามให้
+  Future<void> _pickStart() async {
+    final p = await showThaiDatePicker(
+      context,
+      _startDate,
+      firstDate: _min,
+      lastDate: _max,
+    );
+    if (p == null || p == _startDate) return;
+    setState(() {
+      _startDate = p;
+      if (_stopDate.isBefore(p)) _stopDate = p;
+    });
+  }
+
+  /// เลือกวันที่สิ้นสุด — ไม่ก่อนวันเริ่ม และไม่เกินวันสิ้นสุดของใบจอง
+  Future<void> _pickStop() async {
+    var first = _dateOnly(_startDate)!;
+    if (_min != null && first.isBefore(_min!)) first = _min!;
+    final p = await showThaiDatePicker(
+      context,
+      _stopDate,
+      firstDate: first,
+      lastDate: _max,
+    );
+    if (p == null || p == _stopDate) return;
+    setState(() => _stopDate = p);
+  }
+
   @override
   void dispose() {
-    _sequenceCtrl.dispose();
     _numberMemberCtrl.dispose();
     _numberRoomCtrl.dispose();
     super.dispose();
@@ -104,6 +158,18 @@ class _BookRoomDetailDialogState extends State<BookRoomDetailDialog> {
 
     if (_stopDate.isBefore(_startDate)) {
       setState(() => _error = 'วันที่สิ้นสุดต้องไม่อยู่ก่อนวันที่เริ่มต้น');
+      return;
+    }
+
+    // แถวเดิมอาจมีวันที่อยู่นอกช่วง ถ้าใบจองถูกแก้ช่วงวันที่ทีหลัง ต้องให้แก้ก่อนบันทึก
+    if (!_inRange(_startDate) || !_inRange(_stopDate)) {
+      final range = [
+        if (_min != null) 'ตั้งแต่ ${Util.formatThaiDate(_min!)}',
+        if (_max != null) 'ถึง ${Util.formatThaiDate(_max!)}',
+      ].join(' ');
+      setState(
+        () => _error = 'วันที่ต้องอยู่ในช่วงวันที่ของใบจอง ($range)',
+      );
       return;
     }
 
@@ -125,7 +191,8 @@ class _BookRoomDetailDialogState extends State<BookRoomDetailDialog> {
         roomTypeId: _roomTypeId,
         numberMember: int.tryParse(_numberMemberCtrl.text),
         numberRoom: int.tryParse(_numberRoomCtrl.text),
-        sequence: int.tryParse(_sequenceCtrl.text),
+        // ผู้ใช้ไม่ได้กรอกลำดับแล้ว แก้ไขคงค่าเดิม เพิ่มใหม่ใช้ค่าที่หน้าแม่คำนวณมาให้
+        sequence: isEdit ? widget.detail!.sequence : widget.defaultSequence,
         startDate: fmt.format(_startDate),
         stopDate: fmt.format(_stopDate),
         // ตอนแก้ไขคงค่าเดิมไว้ ตอนเพิ่มใหม่ใช้ราคาของประเภทห้องที่เลือก
@@ -206,9 +273,6 @@ class _BookRoomDetailDialogState extends State<BookRoomDetailDialog> {
                         ),
                         const SizedBox(height: 16),
                       ],
-                      const SizedBox(height: 18),
-                      _numField('ลำดับ', _sequenceCtrl, required: false),
-                      const SizedBox(height: 18),
                       _label('ประเภทห้อง'),
                       const SizedBox(height: 6),
                       DropdownButtonFormField<int>(
@@ -241,23 +305,21 @@ class _BookRoomDetailDialogState extends State<BookRoomDetailDialog> {
                       const SizedBox(height: 18),
                       _numField('จำนวนห้อง', _numberRoomCtrl, suffix: 'ห้อง'),
                       const SizedBox(height: 18),
-                      _dateField('วันที่เริ่มต้น', _startDate, () async {
-                        final p = await Util.dateFieldPickerNullable(
-                          context,
-                          _startDate,
-                        );
-                        if (p != null && p != _startDate)
-                          setState(() => _startDate = p);
-                      }),
+                      _dateField('วันที่เริ่มต้น', _startDate, _pickStart),
                       const SizedBox(height: 18),
-                      _dateField('วันที่สิ้นสุด', _stopDate, () async {
-                        final p = await Util.dateFieldPickerNullable(
-                          context,
-                          _stopDate,
-                        );
-                        if (p != null && p != _stopDate)
-                          setState(() => _stopDate = p);
-                      }),
+                      _dateField('วันที่สิ้นสุด', _stopDate, _pickStop),
+                      if (_min != null || _max != null) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          'เลือกได้เฉพาะในช่วงวันที่ของใบจอง'
+                          '${_min != null ? ' ${Util.formatThaiDate(_min!)}' : ''}'
+                          '${_max != null ? ' - ${Util.formatThaiDate(_max!)}' : ''}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),

@@ -7,7 +7,16 @@ import '../utils/snackbar_helper.dart';
 class FoodtypeDialog extends StatefulWidget {
   final Foodtype? foodtype;
   final ApiService apiService;
-  const FoodtypeDialog({super.key, this.foodtype, required this.apiService});
+
+  /// ลำดับตั้งต้นตอนเพิ่มใหม่ — หน้าจอหาเลขต่อจากรายการล่าสุดมาให้ (ข้อ 8.1)
+  final int? nextSequence;
+
+  const FoodtypeDialog({
+    super.key,
+    this.foodtype,
+    required this.apiService,
+    this.nextSequence,
+  });
 
   @override
   State<FoodtypeDialog> createState() => _FoodtypeDialogState();
@@ -17,7 +26,6 @@ class _FoodtypeDialogState extends State<FoodtypeDialog> {
   final _formKey = GlobalKey<FormState>();
   final _nameCtrl = TextEditingController(),
       _priceCtrl = TextEditingController(),
-      _sectionCtrl = TextEditingController(),
       _seqCtrl = TextEditingController();
   int _group = 1;
 
@@ -33,10 +41,12 @@ class _FoodtypeDialogState extends State<FoodtypeDialog> {
     if (isEdit) {
       _nameCtrl.text = widget.foodtype!.name ?? '';
       _priceCtrl.text = '${widget.foodtype!.price ?? 0}';
-      _sectionCtrl.text = widget.foodtype!.section ?? '';
       _seqCtrl.text = '${widget.foodtype!.sequence ?? 0}';
       _group = widget.foodtype!.foodgroupID ?? 1;
       _status = widget.foodtype!.status ?? '1';
+    } else {
+      _priceCtrl.text = '0';
+      _seqCtrl.text = '${widget.nextSequence ?? 1}';
     }
   }
 
@@ -44,7 +54,6 @@ class _FoodtypeDialogState extends State<FoodtypeDialog> {
   void dispose() {
     _nameCtrl.dispose();
     _priceCtrl.dispose();
-    _sectionCtrl.dispose();
     _seqCtrl.dispose();
     super.dispose();
   }
@@ -61,7 +70,8 @@ class _FoodtypeDialogState extends State<FoodtypeDialog> {
         foodgroupID: _group,
         name: _nameCtrl.text,
         price: int.tryParse(_priceCtrl.text),
-        section: _sectionCtrl.text,
+        // หมวดหมู่เอาออกจากหน้าจอแล้ว (ข้อ 8.1) ส่งค่าเดิมกลับไปให้ข้อมูลเก่าไม่หาย
+        section: widget.foodtype?.section,
         sequence: int.tryParse(_seqCtrl.text),
         status: _status,
       );
@@ -194,9 +204,12 @@ class _FoodtypeDialogState extends State<FoodtypeDialog> {
                       const SizedBox(height: 10),
                       _fld('ราคา', _priceCtrl, kb: TextInputType.number),
                       const SizedBox(height: 10),
-                      _fld('หมวดหมู่', _sectionCtrl),
-                      const SizedBox(height: 10),
-                      _fld('ลำดับ', _seqCtrl, kb: TextInputType.number),
+                      _fld(
+                        'ลำดับ',
+                        _seqCtrl,
+                        kb: TextInputType.number,
+                        hint: isEdit ? null : 'ระบบรันต่อจากรายการล่าสุดให้แล้ว',
+                      ),
                       const SizedBox(height: 18),
                       Row(
                         children: [
@@ -262,7 +275,12 @@ class _FoodtypeDialogState extends State<FoodtypeDialog> {
     );
   }
 
-  Widget _fld(String l, TextEditingController c, {TextInputType? kb}) => Column(
+  Widget _fld(
+    String l,
+    TextEditingController c, {
+    TextInputType? kb,
+    String? hint,
+  }) => Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
       Text(
@@ -277,6 +295,7 @@ class _FoodtypeDialogState extends State<FoodtypeDialog> {
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
           filled: true,
           fillColor: AppTheme.fieldFillColor,
+          helperText: hint,
           contentPadding: const EdgeInsets.symmetric(
             horizontal: 12,
             vertical: 10,

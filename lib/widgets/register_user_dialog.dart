@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 // import 'package:google_fonts/google_fonts.dart';
 import '../config/theme.dart';
+import '../providers/auth_provider.dart';
 import '../services/api_service.dart';
 import '../utils/snackbar_helper.dart';
 import '../utils/util.dart';
@@ -68,12 +69,29 @@ class _RegisterUserDialogState extends State<RegisterUserDialog> {
     super.dispose();
   }
 
+  /// โหลดรายการบทบาท
+  ///
+  /// backend (/api/auth/roles) ส่งแต่ละบทบาทมาเป็น {name: รหัส เช่น ADMIN, description}
+  /// ไม่มีคีย์ code แต่ getRoles() อ่าน code จึงได้ '' ทุกแถว
+  /// เดิมใช้ code นั้นตรง ๆ ติ๊กอันเดียวจึงใส่ '' ลงรายการที่เลือก
+  /// แล้วทุกช่องเช็ก contains('') เป็นจริงพร้อมกัน = ติ๊กทั้งหมด (คำขอปรับปรุงข้อ 9.1)
+  /// จึงใช้ name เป็นรหัส (แบบเดียวกับหน้าแก้ไขผู้ใช้) และแปลชื่อไทยด้วย AuthProvider.roleName
   Future<void> _loadRoles() async {
     try {
       final roles = await widget.apiService.getRoles();
       if (mounted) {
+        final seen = <String>{};
+        final list = <Map<String, String>>[];
+        for (final r in roles) {
+          final code = (r['code'] ?? '').isNotEmpty
+              ? r['code']!
+              : (r['name'] ?? '');
+          // ข้ามรหัสว่างและรหัสซ้ำ ไม่ให้ช่องติ๊กผูกกับค่าเดียวกัน
+          if (code.isEmpty || !seen.add(code)) continue;
+          list.add({'code': code, 'name': AuthProvider.roleName(code)});
+        }
         setState(() {
-          _availableRoles = roles;
+          _availableRoles = list;
         });
       }
     } catch (e) {
@@ -345,13 +363,29 @@ class _RegisterUserDialogState extends State<RegisterUserDialog> {
   }
 
   Widget _buildUsernameField(bool isDesktop) {
-    return _buildTextField(
-      label: 'ชื่อผู้ใช้',
-      hint: 'กรอกชื่อผู้ใช้',
-      icon: Icons.account_circle,
-      controller: _usernameController,
-      isDesktop: isDesktop,
-      validator: (v) => v?.isEmpty == true ? 'กรุณากรอกชื่อผู้ใช้' : null,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildTextField(
+          label: 'ตั้งชื่อผู้ใช้ (User) สำหรับเข้าสู่ระบบ',
+          hint: 'เช่น somchai.j',
+          icon: Icons.account_circle,
+          controller: _usernameController,
+          isDesktop: isDesktop,
+          validator: (v) => v?.trim().isEmpty != false
+              ? 'กรุณาตั้งชื่อผู้ใช้สำหรับเข้าสู่ระบบ'
+              : null,
+        ),
+        const SizedBox(height: 6),
+        Text(
+          'ชื่อที่ผู้ใช้จะพิมพ์ในช่อง "ชื่อผู้ใช้" ตอนเข้าสู่ระบบคู่กับรหัสผ่านด้านล่าง '
+          'แนะนำเป็นภาษาอังกฤษหรือตัวเลข ไม่เว้นวรรค',
+          style: TextStyle(
+            fontSize: isDesktop ? 12 : 11,
+            color: AppTheme.textSecondary,
+          ),
+        ),
+      ],
     );
   }
 

@@ -30,10 +30,30 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
   int _cp = 0, _tp = 0, _ps = 5;
   String? _fReportname, _fWorkstatus;
 
+  /// roomID → ชื่อห้อง ใช้แสดงคอลัมน์ห้องแทนรหัส
+  Map<int, String> _roomNames = {};
+
   @override
   void initState() {
     super.initState();
     _load();
+    _loadRoomNames();
+  }
+
+  Future<void> _loadRoomNames() async {
+    try {
+      final rooms = await widget.apiService.getRoomList();
+      if (!mounted) return;
+      setState(() {
+        _roomNames = {
+          for (final r in rooms)
+            if (r['roomID'] is int)
+              r['roomID'] as int: r['roomNO']?.toString() ?? '',
+        };
+      });
+    } catch (e) {
+      if (AppLogger.on) AppLogger.d('Error loading room names: $e');
+    }
   }
 
   Future<void> _load() async {
@@ -115,47 +135,6 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
         ),
       ),
     ).then((_) => _load());
-  }
-
-  Future<void> _del(Maintenance m) async {
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (c) => AlertDialog(
-        title: const Text(
-          'ยืนยันการลบ',
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-        ),
-        content: Text(
-          'ต้องการลบใบแจ้งซ่อม ID:${m.maintenanceID}?',
-          style: const TextStyle(fontSize: 16),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(c, false),
-            style: TextButton.styleFrom(foregroundColor: AppTheme.cancelColor),
-            child: const Text('ยกเลิก'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(c, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.deleteColor,
-            ),
-            child: const Text('ลบ', style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
-    );
-    if (ok == true && m.maintenanceID != null) {
-      try {
-        await widget.apiService.deleteMaintenance(m.maintenanceID!);
-        if (mounted) {
-          context.showSuccessSnackBar('ลบสำเร็จ');
-          _load();
-        }
-      } catch (e) {
-        if (mounted) context.showErrorSnackBar('ลบไม่สำเร็จ');
-      }
-    }
   }
 
   @override
@@ -321,13 +300,14 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
                       ),
                       headingRowHeight: 44,
                       dataRowMinHeight: 36,
-                      dataRowMaxHeight: 48,
+                      // แถวสูงตามข้อความ ให้สถานที่/รายละเอียดแสดงครบ ไม่ถูกตัด
+                      dataRowMaxHeight: double.infinity,
                       columnSpacing: isL ? 10 : (isD ? 8 : 4),
                       columns: [
                         DataColumn(label: _hdr('ID', 50, bf)),
-                        DataColumn(label: _hdr('ห้อง', 50, bf)),
-                        DataColumn(label: _hdr('สถานที่', 130, bf)),
-                        DataColumn(label: _hdr('รายละเอียด', 150, bf)),
+                        DataColumn(label: _hdr('ห้อง', 90, bf)),
+                        DataColumn(label: _hdr('สถานที่', 180, bf)),
+                        DataColumn(label: _hdr('รายละเอียด', 260, bf)),
                         DataColumn(label: _hdr('วันที่แจ้ง', 100, bf)),
                         DataColumn(label: _hdr('วันที่รับงาน', 100, bf)),
                         DataColumn(label: _hdr('วันที่ปิดงาน', 100, bf)),
@@ -339,12 +319,12 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
                             (m) => DataRow(
                               cells: [
                                 DataCell(_cell('${m.maintenanceID}', 50, bf)),
+                                DataCell(_cellWrap(_roomName(m.roomid), 90, bf)),
                                 DataCell(
-                                  _cell(m.roomid?.toString() ?? '-', 50, bf),
+                                  _cellFull(_orDash(m.place), 180, bf),
                                 ),
-                                DataCell(_cellWrap(m.place ?? '-', 130, bf)),
                                 DataCell(
-                                  _cellWrap(m.reportremark ?? '-', 150, bf),
+                                  _cellFull(_orDash(m.reportremark), 260, bf),
                                 ),
                                 DataCell(
                                   _cellWrap(
@@ -417,27 +397,8 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
                                           ),
                                         ),
                                       ),
-                                      const SizedBox(width: 2),
-                                      InkWell(
-                                        onTap: () => _del(m),
-                                        borderRadius: BorderRadius.circular(4),
-                                        child: Container(
-                                          padding: const EdgeInsets.all(4),
-                                          decoration: BoxDecoration(
-                                            color: Colors.red.withValues(
-                                              alpha: 0.1,
-                                            ),
-                                            borderRadius: BorderRadius.circular(
-                                              4,
-                                            ),
-                                          ),
-                                          child: Icon(
-                                            Icons.delete,
-                                            size: ic - 6,
-                                            color: Colors.red,
-                                          ),
-                                        ),
-                                      ),
+                                      // ไม่มีปุ่มลบ — ห้ามลบใบแจ้งซ่อม
+                                      // งานที่ไม่ได้ซ่อมให้ตั้งสถานะ "ยกเลิกงาน"
                                     ],
                                   ),
                                 ),
@@ -536,6 +497,21 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
       overflow: TextOverflow.ellipsis,
     ),
   );
+  /// ช่องข้อความยาว แสดงครบทุกบรรทัด (แถวขยายสูงตาม)
+  Widget _cellFull(String t, double w, double fs) => Container(
+    width: w,
+    padding: const EdgeInsets.symmetric(vertical: 6),
+    child: Text(t, style: TextStyle(fontSize: fs - 1, height: 1.3)),
+  );
+
+  String _orDash(String? s) => (s == null || s.trim().isEmpty) ? '-' : s;
+
+  /// ชื่อห้องจากรหัสห้อง ยังโหลดไม่เสร็จหรือไม่พบ = แสดงรหัสเดิม
+  String _roomName(int? id) {
+    if (id == null) return '-';
+    return _roomNames[id] ?? '$id';
+  }
+
   Widget _cellWrap(String t, double w, double fs) => Container(
     width: w,
     padding: const EdgeInsets.symmetric(vertical: 2),

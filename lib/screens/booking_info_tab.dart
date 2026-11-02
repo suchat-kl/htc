@@ -82,7 +82,8 @@ class _BookingInfoTabState extends State<BookingInfoTab> {
   bool _isSaving = false;
 
   /// true เมื่อบันทึกสำเร็จอย่างน้อยหนึ่งครั้ง — ใช้บอกหน้ารายการว่าต้องโหลดใหม่
-  /// เพราะปุ่ม "บันทึก" ไม่ได้ปิดหน้าจอ ค่าจึงต้องรอส่งกลับตอนกด "กลับ"
+  /// ปกติบันทึกสำเร็จแล้วจะปิดหน้าจอเองพร้อมส่ง true กลับ ค่านี้ใช้กรณีที่
+  /// หน้านี้ยังเปิดค้างอยู่ จะถูกส่งกลับตอนกด "กลับ"
   bool _hasSaved = false;
   bool _isDeleting = false;
   String? _error;
@@ -225,6 +226,15 @@ class _BookingInfoTabState extends State<BookingInfoTab> {
           'บันทึกข้อมูลเรียบร้อยแล้ว\nเลขที่ขออนุญาต: $_bookID',
         );
       }
+      // บันทึกเสร็จกลับไปหน้าที่เปิดมา (ปกติคือรายการจอง) ให้ manager ไปทำใบถัดไปได้เลย
+      // ส่ง true กลับ หน้ารายการ/หน้าค้นหาห้องที่เปิดมาจะโหลดข้อมูลใหม่เอง
+      if (mounted) {
+        final nav = Navigator.of(context);
+        if (nav.canPop()) {
+          nav.pop(true);
+          return;
+        }
+      }
     } catch (e) {
       if (AppLogger.on) AppLogger.d('Error saving booking: $e');
       final msg = e.toString().replaceAll('Exception: ', '');
@@ -362,8 +372,6 @@ class _BookingInfoTabState extends State<BookingInfoTab> {
                             _rightColumn(),
                           ],
                           const SizedBox(height: 16),
-                          _actionBar(isWide),
-                          const SizedBox(height: 16),
                           BookingRoomListSection(
                             apiService: widget.apiService,
                             bookId: _bookID,
@@ -416,7 +424,16 @@ class _BookingInfoTabState extends State<BookingInfoTab> {
                             bookId: _bookID,
                             defaultStartDate: _startDate,
                             defaultStopDate: _stopDate,
+                            // จำนวนคนตั้งต้น = ผู้เข้าพัก + เจ้าหน้าที่ (ค่าล่าสุดในฟอร์ม)
+                            defaultAmount: () =>
+                                (int.tryParse(_numberMemberCtrl.text) ?? 0) +
+                                (int.tryParse(_numberStaffCtrl.text) ?? 0),
                           ),
+                          // สถานะการจอง + ปุ่มบันทึก อยู่ล่างสุดหลังทุกส่วน
+                          // manager จัดการรายการห้อง/อาหารเสร็จแล้วเปลี่ยนสถานะ
+                          // และบันทึกได้เลยโดยไม่ต้องเลื่อนกลับขึ้นไปด้านบน
+                          const SizedBox(height: 16),
+                          _actionBar(isWide),
                         ],
                       ),
                     );

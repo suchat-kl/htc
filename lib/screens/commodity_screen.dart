@@ -5,6 +5,7 @@ import '../config/theme.dart';
 import '../models/commodity.dart';
 import '../services/api_service.dart';
 import '../utils/dialog.dart';
+import '../utils/logger.dart';
 import '../widgets/app_pagination.dart';
 import '../widgets/commodity_dialog.dart';
 import '../utils/snackbar_helper.dart';
@@ -111,15 +112,54 @@ class _CommodityScreenState extends State<CommodityScreen> {
     }
   }
 
-  void _showAddEditDialog({Commodity? commodity}) {
-    showDialog(
+  /// เปิดหน้าต่างเพิ่มรายการ ลำดับตั้งต้นรันต่อจากรายการล่าสุดให้เลย (ข้อ 8.2)
+  ///
+  /// บันทึกแล้วโหลดตารางใหม่ จึงต้องถามก่อนถ้ายังมีการแก้ไขในตารางค้างอยู่
+  Future<void> _openAddDialog() async {
+    if (!await _confirmDiscard()) return;
+    final nextSeq = await _nextSequence();
+    if (!mounted) return;
+    final result = await showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) =>
-          CommodityDialog(commodity: commodity, apiService: widget.apiService),
-    ).then((result) {
-      if (result == true) _loadData();
-    });
+      builder: (context) => CommodityDialog(
+        apiService: widget.apiService,
+        nextSequence: nextSeq,
+      ),
+    );
+    if (result == true && mounted) _loadData();
+  }
+
+  /// ลำดับถัดไป = ลำดับมากที่สุดในฐานข้อมูล (ทุกประเภท) + 1
+  ///
+  /// รายการเรียงตามลำดับจากน้อยไปมาก จึงขอแถวสุดท้ายแถวเดียวก็ได้ค่ามากสุด
+  /// รวมแถวใหม่ที่เพิ่มในตารางแต่ยังไม่บันทึกด้วย เลขจะได้ไม่ซ้ำกัน
+  Future<int> _nextSequence() async {
+    var maxSeq = 0;
+    try {
+      final first = await widget.apiService.getCommodities(page: 0, size: 1);
+      final total = (first['totalItems'] as num?)?.toInt() ?? 0;
+      if (total > 0) {
+        final last = await widget.apiService.getCommodities(
+          page: total - 1,
+          size: 1,
+        );
+        final l = last['commodities'] as List?;
+        if (l != null && l.isNotEmpty) {
+          maxSeq = Commodity.fromJson(l.first).sequence;
+        }
+      }
+    } catch (e) {
+      // ดึงไม่ได้ก็ใช้ค่ามากสุดจากแถวที่เห็นในหน้าจอแทน
+      if (AppLogger.on) {
+        AppLogger.d('หาลำดับล่าสุดของเครื่องนอน-ของใช้ไม่ได้: $e');
+      }
+    }
+    for (final r in _rows) {
+      final s = int.tryParse(r.sequenceCtrl.text.trim());
+      if (s != null && s > maxSeq) maxSeq = s;
+    }
+    return maxSeq + 1;
   }
 
   Future<void> _deleteCommodity(Commodity commodity) async {
@@ -208,9 +248,30 @@ class _CommodityScreenState extends State<CommodityScreen> {
     });
   }
 
-  /// เพิ่มแถวว่างท้ายตาราง
-  void _addRow() {
-    setState(() => _rows.add(_EditRow.empty()));
+  /// กำลังหาลำดับถัดไปให้แถวใหม่ กันกดเพิ่มซ้ำจนได้เลขเดียวกัน
+  bool _addingRow = false;
+
+  /// เพิ่มแถวว่างท้ายตาราง ลำดับรันต่อจากรายการล่าสุดให้อัตโนมัติ
+  Future<void> _addRow() async {
+    if (_addingRow) return;
+    setState(() => _addingRow = true);
+    final seq = await _nextSequence();
+    if (!mounted) return;
+    setState(() {
+      _rows.add(_EditRow.empty(seq));
+      _addingRow = false;
+    });
+  }
+
+  /// ปลดล็อกแถวเพื่อแก้ไข หรือถ้าแก้อยู่แล้วให้ยกเลิกกลับเป็นค่าเดิมแล้วล็อกคืน
+  void _toggleEdit(_EditRow row) {
+    setState(() {
+      if (row.editing) {
+        row.revert();
+      } else {
+        row.editing = true;
+      }
+    });
   }
 
   /// ลบออกจากหน้าจอ แถวที่มีอยู่แล้วจะถูกลบจริงตอนกดบันทึก
@@ -391,7 +452,8 @@ class _CommodityScreenState extends State<CommodityScreen> {
           _headerCell('ลำดับ', _wSequence),
           _headerCell('ประเภท', _wType),
           _headerCell('รายการ', _wName),
-          _headerCell('คำอธิบาย', _wDescription),
+          // ช่อง description ใช้เก็บหน่วยนับ (ข้อ 8.2 เปลี่ยนแค่ป้าย)
+          _headerCell('หน่วยนับ', _wDescription),
           _headerCell('คงเหลือ', _wStock, align: TextAlign.right),
           _headerCell('สถานะ', _wStatus),
           _headerCell('จัดการ', _wAction, align: TextAlign.center),
@@ -404,13 +466,18 @@ class _CommodityScreenState extends State<CommodityScreen> {
   ///
   /// รหัส (commodityId) เป็นคีย์ที่ฐานข้อมูลสร้างเอง จึงไม่แสดงและแก้ไม่ได้
   /// ส่วน "คงเหลือ" ระบบคำนวณจากการเบิกจ่าย จึงแสดงอย่างเดียวเหมือนหน้าต่างเดิม
+  /// แถวที่มีอยู่แล้วล็อกไว้ ต้องกดปุ่มแก้ไขก่อนจึงแก้ได้ (ข้อ 8.2)
+  /// แถวใหม่ที่เพิ่งเพิ่มในตารางแก้ได้ทันที
   Widget _editableRow(_EditRow row, int index) {
+    final locked = row.locked;
     return Container(
       // ผูก key กับแถว เพื่อให้ dropdown ไม่สลับค่ากันเมื่อมีการลบ/เพิ่มแถว
       key: ValueKey(row.uid),
       width: _tableWidth,
       decoration: BoxDecoration(
-        color: index % 2 == 0 ? Colors.white : AppTheme.fieldFillColor,
+        color: row.editing
+            ? AppTheme.warningColor.withValues(alpha: 0.06)
+            : (index % 2 == 0 ? Colors.white : AppTheme.fieldFillColor),
         border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -428,34 +495,40 @@ class _CommodityScreenState extends State<CommodityScreen> {
             _wSequence,
             TextField(
               controller: row.sequenceCtrl,
+              readOnly: locked,
+              canRequestFocus: !locked,
               keyboardType: TextInputType.number,
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
               style: const TextStyle(fontSize: 14),
-              decoration: _rowInput(),
+              decoration: _rowInput(locked: locked),
               onChanged: (_) => setState(() {}),
             ),
           ),
           _cell(
             _wType,
             DropdownButtonFormField<String>(
-              key: ValueKey('type-${row.uid}-${row.type}'),
+              key: ValueKey('type-${row.uid}-${row.type}-${row.rev}'),
               initialValue: _codeOrNull(row.type, const ['B', 'C']),
               isExpanded: true,
               style: const TextStyle(fontSize: 14, color: Colors.black87),
-              decoration: _rowInput(),
+              decoration: _rowInput(locked: locked),
               items: const [
                 DropdownMenuItem(value: 'B', child: Text('เครื่องนอน')),
                 DropdownMenuItem(value: 'C', child: Text('ของใช้')),
               ],
-              onChanged: (v) => setState(() => row.type = v ?? row.type),
+              onChanged: locked
+                  ? null
+                  : (v) => setState(() => row.type = v ?? row.type),
             ),
           ),
           _cell(
             _wName,
             TextField(
               controller: row.nameCtrl,
+              readOnly: locked,
+              canRequestFocus: !locked,
               style: const TextStyle(fontSize: 14),
-              decoration: _rowInput(),
+              decoration: _rowInput(locked: locked),
               onChanged: (_) => setState(() {}),
             ),
           ),
@@ -463,8 +536,10 @@ class _CommodityScreenState extends State<CommodityScreen> {
             _wDescription,
             TextField(
               controller: row.descriptionCtrl,
+              readOnly: locked,
+              canRequestFocus: !locked,
               style: const TextStyle(fontSize: 14),
-              decoration: _rowInput(),
+              decoration: _rowInput(locked: locked),
               onChanged: (_) => setState(() {}),
             ),
           ),
@@ -479,16 +554,18 @@ class _CommodityScreenState extends State<CommodityScreen> {
           _cell(
             _wStatus,
             DropdownButtonFormField<String>(
-              key: ValueKey('status-${row.uid}-${row.status}'),
+              key: ValueKey('status-${row.uid}-${row.status}-${row.rev}'),
               initialValue: _codeOrNull(row.status, const ['1', '2']),
               isExpanded: true,
               style: const TextStyle(fontSize: 14, color: Colors.black87),
-              decoration: _rowInput(),
+              decoration: _rowInput(locked: locked),
               items: const [
                 DropdownMenuItem(value: '1', child: Text('ใช้งาน')),
                 DropdownMenuItem(value: '2', child: Text('ไม่ใช้งาน')),
               ],
-              onChanged: (v) => setState(() => row.status = v ?? row.status),
+              onChanged: locked
+                  ? null
+                  : (v) => setState(() => row.status = v ?? row.status),
             ),
           ),
           SizedBox(
@@ -496,16 +573,17 @@ class _CommodityScreenState extends State<CommodityScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
+                // แก้ไข = ปลดล็อกแถวนี้ในตาราง, กดซ้ำ = ยกเลิกการแก้ไขแถวนี้
                 IconButton(
-                  onPressed: row.isNew
-                      ? null
-                      : () => _showAddEditDialog(commodity: row.toCommodity()),
+                  onPressed: row.isNew ? null : () => _toggleEdit(row),
                   icon: Icon(
-                    Icons.edit,
+                    row.editing ? Icons.undo : Icons.edit,
                     size: 20,
-                    color: AppTheme.primaryColor,
+                    color: row.editing
+                        ? AppTheme.warningColor
+                        : AppTheme.primaryColor,
                   ),
-                  tooltip: 'แก้ไขในหน้าต่าง',
+                  tooltip: row.editing ? 'ยกเลิกการแก้ไขแถวนี้' : 'แก้ไข',
                 ),
                 IconButton(
                   onPressed: row.isNew
@@ -541,11 +619,12 @@ class _CommodityScreenState extends State<CommodityScreen> {
     );
   }
 
-  InputDecoration _rowInput() {
+  /// ช่องที่ล็อกอยู่ใช้พื้นเทา ให้เห็นว่าต้องกดแก้ไขก่อน
+  InputDecoration _rowInput({bool locked = false}) {
     return InputDecoration(
       isDense: true,
       filled: true,
-      fillColor: Colors.white,
+      fillColor: locked ? Colors.grey.shade100 : Colors.white,
       contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
     );
@@ -562,14 +641,23 @@ class _CommodityScreenState extends State<CommodityScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
-          if (_dirty)
-            Padding(
+          Flexible(
+            child: Padding(
               padding: const EdgeInsets.only(right: 12),
               child: Text(
-                'มีการแก้ไขที่ยังไม่ได้บันทึก',
-                style: TextStyle(fontSize: 13, color: AppTheme.warningColor),
+                _dirty
+                    ? 'มีการแก้ไขที่ยังไม่ได้บันทึก'
+                    : 'กดปุ่มแก้ไข (รูปดินสอ) ที่แถวก่อน จึงจะแก้ไขรายการได้',
+                textAlign: TextAlign.right,
+                style: TextStyle(
+                  fontSize: 13,
+                  color: _dirty
+                      ? AppTheme.warningColor
+                      : AppTheme.textSecondary,
+                ),
               ),
             ),
+          ),
           _rowButton(
             'ลบที่เลือก',
             _deleteSelectedRows,
@@ -578,7 +666,11 @@ class _CommodityScreenState extends State<CommodityScreen> {
           const SizedBox(width: 12),
           _rowButton('เลือกทั้งหมด', _rows.isEmpty ? null : _selectAll),
           const SizedBox(width: 4),
-          _rowButton('เพิ่ม', _addRow, color: AppTheme.addColor),
+          _rowButton(
+            'เพิ่ม',
+            _addingRow ? null : _addRow,
+            color: AppTheme.addColor,
+          ),
           const SizedBox(width: 12),
           ElevatedButton.icon(
             onPressed: _isSaving ? null : _saveRows,
@@ -680,7 +772,7 @@ class _CommodityScreenState extends State<CommodityScreen> {
             Padding(
               padding: const EdgeInsets.only(right: 8),
               child: ElevatedButton.icon(
-                onPressed: () => _showAddEditDialog(),
+                onPressed: _openAddDialog,
                 icon: Icon(Icons.add, size: iconSize),
                 label: Text(
                   'เพิ่มรายการ',
@@ -954,7 +1046,7 @@ class _CommodityScreenState extends State<CommodityScreen> {
                           ),
                           const SizedBox(height: 8),
                           ElevatedButton.icon(
-                            onPressed: () => _showAddEditDialog(),
+                            onPressed: _openAddDialog,
                             icon: const Icon(Icons.add),
                             label: const Text('เพิ่มรายการ'),
                             style: ElevatedButton.styleFrom(
@@ -1038,7 +1130,7 @@ class _CommodityScreenState extends State<CommodityScreen> {
         floatingActionButton: isDesktop
             ? null
             : FloatingActionButton(
-                onPressed: () => _showAddEditDialog(),
+                onPressed: _openAddDialog,
                 backgroundColor: AppTheme.primaryColor,
                 child: const Icon(Icons.add),
               ),
@@ -1073,6 +1165,12 @@ class _EditRow {
   /// ติ๊กเลือกไว้ (สำหรับปุ่มลบที่เลือก)
   bool selected = false;
 
+  /// กดปุ่มแก้ไขแล้ว — แถวที่มีอยู่แล้วต้องกดก่อนจึงแก้ได้ (ข้อ 8.2)
+  bool editing = false;
+
+  /// นับรอบการยกเลิกแก้ไข ใช้เป็น key ให้ dropdown กลับไปแสดงค่าเดิม
+  int rev = 0;
+
   _EditRow({
     this.originalId,
     this.originalSequence = '',
@@ -1103,8 +1201,9 @@ class _EditRow {
     status: c.status,
   );
 
-  factory _EditRow.empty() => _EditRow(
-    sequenceCtrl: TextEditingController(text: '0'),
+  /// แถวใหม่ — ลำดับรันต่อจากรายการล่าสุด
+  factory _EditRow.empty(int sequence) => _EditRow(
+    sequenceCtrl: TextEditingController(text: '$sequence'),
     nameCtrl: TextEditingController(),
     descriptionCtrl: TextEditingController(),
     type: 'B',
@@ -1112,6 +1211,20 @@ class _EditRow {
   );
 
   bool get isNew => originalId == null;
+
+  /// แถวที่มีอยู่แล้วและยังไม่ได้กดแก้ไข — แก้ค่าในตารางไม่ได้
+  bool get locked => !isNew && !editing;
+
+  /// ยกเลิกการแก้ไข คืนค่าเดิมทุกช่องแล้วล็อกแถวกลับ
+  void revert() {
+    sequenceCtrl.text = originalSequence;
+    nameCtrl.text = originalName;
+    descriptionCtrl.text = originalDescription;
+    type = originalType;
+    status = originalStatus;
+    editing = false;
+    rev++;
+  }
 
   /// แถวเดิมที่มีค่าใดค่าหนึ่งเปลี่ยนไป
   bool get changed =>

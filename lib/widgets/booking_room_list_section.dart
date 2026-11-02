@@ -29,7 +29,8 @@ class BookingRoomListSection extends StatefulWidget {
   final IconData icon;
   final String emptyText;
 
-  /// ค่าเริ่มต้นของวันที่ตอนเพิ่มรายการใหม่ ปกติคือช่วงวันที่ของใบจอง
+  /// ช่วงวันที่ของใบจอง — เป็นค่าเริ่มต้นตอนเพิ่มรายการใหม่ และเป็นขอบเขต
+  /// วันที่ที่เลือกได้ใน dialog ทั้งตอนเพิ่มและแก้ไข
   final DateTime? defaultStartDate;
   final DateTime? defaultStopDate;
 
@@ -83,6 +84,11 @@ class _BookingRoomListSectionState extends State<BookingRoomListSection> {
   int _totalItems = 0;
   int _totalPages = 0;
   bool _loading = false;
+
+  /// โหลดสำเร็จแล้วอย่างน้อยหนึ่งครั้ง — ตอนโหลดซ้ำ (หลังเพิ่ม/แก้/ลบ)
+  /// ให้คงตารางเดิมไว้แล้วแสดงแถบโหลดบาง ๆ แทนวงหมุน ไม่งั้นความสูงของส่วนนี้
+  /// หดลงชั่วคราว หน้าที่เลื่อนอยู่จะถูกดึงขึ้นไปจากตำแหน่งเดิม
+  bool _loadedOnce = false;
   String? _error;
 
   @override
@@ -118,6 +124,7 @@ class _BookingRoomListSectionState extends State<BookingRoomListSection> {
         _totalPages = _asInt(r['totalPages']) ?? 0;
         _page = _asInt(r['currentPage']) ?? _page;
         _loading = false;
+        _loadedOnce = true;
       });
     } catch (e) {
       if (AppLogger.on) AppLogger.d('Error loading bookroomdetails: $e');
@@ -160,11 +167,35 @@ class _BookingRoomListSectionState extends State<BookingRoomListSection> {
     return '$what ไม่สำเร็จ\n${e.toString().replaceAll('Exception: ', '')}';
   }
 
+  /// ลำดับถัดไป = ลำดับสูงสุดของประเภทเดียวกัน (R/C) ในใบจองนี้ + 1
+  ///
+  /// ลำดับนับแยกตามประเภทห้อง และต้องดึงทุกแถวไม่ใช่แค่หน้าที่เปิดอยู่
+  /// เพราะตารางแบ่งหน้า ดูแค่หน้าปัจจุบันจะได้ลำดับซ้ำกับแถวในหน้าอื่น
+  Future<int> _nextSequence() async {
+    int maxOf(Iterable<BookRoomDetail> list) =>
+        list.fold<int>(0, (m, d) => (d.sequence ?? 0) > m ? d.sequence! : m);
+    try {
+      final r = await widget.apiService.getBookRoomDetailsRC(
+        bookId: widget.bookId,
+        type: widget.type,
+        page: 0,
+        size: 1000,
+      );
+      return maxOf((r['items'] as List).cast<BookRoomDetail>()) + 1;
+    } catch (e) {
+      if (AppLogger.on) AppLogger.d('Error reading max sequence: $e');
+      // ดึงไม่ได้ก็ใช้เท่าที่เห็นในหน้านี้ ดีกว่าปล่อยว่าง
+      return maxOf(_details) + 1;
+    }
+  }
+
   Future<void> _add() async {
     if (_roomTypes.isEmpty) {
       context.showInfoSnackBar('ยังโหลดข้อมูลประเภทห้องไม่สำเร็จ');
       return;
     }
+    final nextSeq = await _nextSequence();
+    if (!mounted) return;
     final ok = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
@@ -175,6 +206,9 @@ class _BookingRoomListSectionState extends State<BookingRoomListSection> {
         roomLabel: widget.type == 'C' ? 'ห้องกิจกรรม' : 'ห้องพัก',
         defaultStartDate: widget.defaultStartDate,
         defaultStopDate: widget.defaultStopDate,
+        minDate: widget.defaultStartDate,
+        maxDate: widget.defaultStopDate,
+        defaultSequence: nextSeq,
       ),
     );
     if (ok == true) await _load();
@@ -194,6 +228,9 @@ class _BookingRoomListSectionState extends State<BookingRoomListSection> {
         roomTypes: _roomTypes,
         roomLabel: widget.type == 'C' ? 'ห้องกิจกรรม' : 'ห้องพัก',
         detail: d,
+        // ตอนแก้ไขก็ต้องเลือกวันที่ได้เฉพาะในช่วงของใบจองเหมือนตอนเพิ่ม
+        minDate: widget.defaultStartDate,
+        maxDate: widget.defaultStopDate,
       ),
     );
     if (ok == true) await _load();
@@ -287,12 +324,19 @@ class _BookingRoomListSectionState extends State<BookingRoomListSection> {
                 ),
             ],
           ),
-          const SizedBox(height: 16),
+          // ช่องว่างเดิมสูง 16 — ตอนโหลดซ้ำใส่แถบโหลดบาง ๆ ไว้ในช่องนี้
+          // ความสูงของส่วนจึงไม่เปลี่ยน ตำแหน่งที่เลื่อนอยู่ไม่กระโดด
+          SizedBox(
+            height: 16,
+            child: _loading && _loadedOnce
+                ? const Center(child: LinearProgressIndicator(minHeight: 2))
+                : null,
+          ),
           if (_error != null) ...[
             _errorBanner(_error!),
             const SizedBox(height: 12),
           ],
-          if (_loading)
+          if (_loading && !_loadedOnce)
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 40),
               child: Center(child: CircularProgressIndicator()),

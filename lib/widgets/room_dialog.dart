@@ -10,11 +10,15 @@ class RoomDialog extends StatefulWidget {
   final ApiService apiService;
   final List<Roomtype> roomtypes;
 
+  /// ลำดับตั้งต้นตอนเพิ่มห้องใหม่ = ลำดับสุดท้าย + 1 (หน้าห้องคำนวณส่งมา)
+  final int? initialSequence;
+
   const RoomDialog({
     super.key,
     this.room,
     required this.apiService,
     required this.roomtypes,
+    this.initialSequence,
   });
 
   @override
@@ -25,9 +29,9 @@ class _RoomDialogState extends State<RoomDialog> {
   final _formKey = GlobalKey<FormState>();
   final _roomNOController = TextEditingController();
   final _sequenceController = TextEditingController();
-  final _buildingController = TextEditingController();
   final _floorController = TextEditingController();
   int? _selectedRoomTypeID;
+  int? _selectedBuilding;
   String _selectedStatus = '1';
   bool _isLoading = false;
   String? _errorMessage;
@@ -39,12 +43,18 @@ class _RoomDialogState extends State<RoomDialog> {
     if (isEdit) {
       _roomNOController.text = widget.room!.roomNO;
       _sequenceController.text = widget.room!.sequence.toString();
-      _buildingController.text = widget.room!.building?.toString() ?? '';
+      _selectedBuilding = widget.room!.building;
       _floorController.text = widget.room!.floor?.toString() ?? '';
       _selectedRoomTypeID = widget.room!.roomTypeID;
       _selectedStatus = widget.room!.status;
-    } else if (widget.roomtypes.isNotEmpty) {
-      _selectedRoomTypeID = widget.roomtypes.first.roomtypeID;
+    } else {
+      // ห้องใหม่ ลำดับรันต่อจากรายการสุดท้ายให้อัตโนมัติ ยังแก้เองได้
+      if (widget.initialSequence != null) {
+        _sequenceController.text = '${widget.initialSequence}';
+      }
+      if (widget.roomtypes.isNotEmpty) {
+        _selectedRoomTypeID = widget.roomtypes.first.roomtypeID;
+      }
     }
   }
 
@@ -52,7 +62,6 @@ class _RoomDialogState extends State<RoomDialog> {
   void dispose() {
     _roomNOController.dispose();
     _sequenceController.dispose();
-    _buildingController.dispose();
     _floorController.dispose();
     super.dispose();
   }
@@ -75,7 +84,7 @@ class _RoomDialogState extends State<RoomDialog> {
         roomID: widget.room?.roomID,
         roomNO: _roomNOController.text.trim(),
         roomTypeID: _selectedRoomTypeID,
-        building: int.tryParse(_buildingController.text),
+        building: _selectedBuilding,
         floor: int.tryParse(_floorController.text),
         sequence: int.tryParse(_sequenceController.text) ?? 0,
         status: _selectedStatus,
@@ -194,8 +203,16 @@ class _RoomDialogState extends State<RoomDialog> {
                       ),
                       const SizedBox(height: 14),
 
-                      // Room Number
-                      _buildField('หมายเลขห้อง', _roomNOController, isDesktop),
+                      // ชื่อห้อง (คอลัมน์ roomno เดิมชื่อ "หมายเลขห้อง")
+                      _buildField(
+                        'ชื่อห้อง',
+                        _roomNOController,
+                        isDesktop,
+                        null,
+                        (v) => (v == null || v.trim().isEmpty)
+                            ? 'กรุณากรอกชื่อห้อง'
+                            : null,
+                      ),
                       const SizedBox(height: 14),
 
                       // Room Type Dropdown
@@ -229,12 +246,26 @@ class _RoomDialogState extends State<RoomDialog> {
                       ),
                       const SizedBox(height: 14),
 
-                      // Building
-                      _buildField(
-                        'ตึก',
-                        _buildingController,
-                        isDesktop,
-                        TextInputType.number,
+                      // ตึก — เลือกจากรายการอาคาร
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildLabel('ตึก'),
+                          const SizedBox(height: 6),
+                          DropdownButtonFormField<int?>(
+                            initialValue: _selectedBuilding,
+                            decoration: InputDecoration(
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              filled: true,
+                              fillColor: AppTheme.fieldFillColor,
+                            ),
+                            items: _buildingItems(),
+                            onChanged: (v) =>
+                                setState(() => _selectedBuilding = v),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 14),
 
@@ -336,6 +367,25 @@ class _RoomDialogState extends State<RoomDialog> {
         ),
       ),
     );
+  }
+
+  /// รายการอาคาร ถ้าห้องนี้มีเลขตึกที่ไม่อยู่ในรายการ (ข้อมูลเดิม)
+  /// ให้ใส่เลขนั้นเพิ่มไว้ ไม่งั้น DropdownButtonFormField จะ assert
+  List<DropdownMenuItem<int?>> _buildingItems() {
+    final items = <DropdownMenuItem<int?>>[
+      const DropdownMenuItem<int?>(value: null, child: Text('ไม่ระบุ')),
+      ...RoomBuilding.all.map(
+        (b) => DropdownMenuItem<int?>(
+          value: b.code,
+          child: Text('${b.name} (${b.shortName})'),
+        ),
+      ),
+    ];
+    final cur = _selectedBuilding;
+    if (cur != null && RoomBuilding.of(cur) == null) {
+      items.add(DropdownMenuItem<int?>(value: cur, child: Text('ตึก $cur')));
+    }
+    return items;
   }
 
   // Helper: Build label

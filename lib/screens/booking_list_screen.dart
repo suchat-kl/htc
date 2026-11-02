@@ -53,10 +53,12 @@ class _BookingListScreenState extends State<BookingListScreen> {
   int? _selectedStatusId;
 
   /// ประเภทผู้จองที่ค้น null = ทั้งหมด
-  /// เจ้าหน้าที่ที่ล็อกอินส่วนใหญ่ดูใบของกองฝึก ส่วนคนทั่วไปที่ไม่ได้ล็อกอินคือผู้จองรายย่อย
+  /// เจ้าหน้าที่ที่ล็อกอินเห็นทุกประเภทเป็นค่าตั้งต้น (ผู้ใช้ขอ ต.ค. 2569)
+  /// ส่วนคนทั่วไปที่ไม่ได้ล็อกอินคือผู้จองรายย่อย ('C')
   late String? _bookingtype = _defaultBookingtype;
 
-  String get _defaultBookingtype => widget.authProvider.isLoggedIn ? 'A' : 'C';
+  String? get _defaultBookingtype =>
+      widget.authProvider.isLoggedIn ? null : 'C';
   DateTime? _startDate;
   DateTime? _stopDate;
 
@@ -475,6 +477,8 @@ class _BookingListScreenState extends State<BookingListScreen> {
     return SizedBox(
       width: 200,
       child: DropdownButtonFormField<int>(
+        // key ผูกกับค่า เพื่อให้ปุ่มล้างรีเซ็ตกลับเป็น "ทั้งหมด" ได้ (initialValue อ่านครั้งเดียว)
+        key: ValueKey('status-$_selectedStatusId'),
         initialValue: _selectedStatusId,
         isExpanded: true,
         decoration: InputDecoration(

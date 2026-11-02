@@ -6,6 +6,7 @@ import '../services/api_service.dart';
 import '../utils/dialog.dart';
 import '../widgets/app_pagination.dart';
 import '../widgets/foodtype_dialog.dart';
+import '../utils/logger.dart';
 import '../utils/snackbar_helper.dart';
 
 class FoodtypeScreen extends StatefulWidget {
@@ -82,16 +83,52 @@ class _FoodtypeScreenState extends State<FoodtypeScreen> {
     }
   }
 
-  void _dialog({Foodtype? foodtype}) {
-    showDialog(
+  /// เปิดหน้าต่างเพิ่มรายการ ลำดับตั้งต้นรันต่อจากรายการล่าสุดให้เลย
+  ///
+  /// ปิดหน้าต่างแล้วโหลดตารางใหม่ จึงต้องถามก่อนถ้ายังมีการแก้ไขในตารางค้างอยู่
+  Future<void> _openAddDialog() async {
+    if (!await _confirmDiscard()) return;
+    final nextSeq = await _nextSequence();
+    if (!mounted) return;
+    await showDialog(
       context: context,
       barrierDismissible: false,
       builder: (c) => FoodtypeDialog(
-        foodtype: foodtype,
-        // ✅ ส่งค่าถูกต้อง
         apiService: widget.apiService,
+        nextSequence: nextSeq,
       ),
-    ).then((_) => _load());
+    );
+    if (mounted) _load();
+  }
+
+  /// ลำดับถัดไป = ลำดับมากที่สุดในฐานข้อมูล (ทุกกลุ่ม) + 1
+  ///
+  /// รายการเรียงตามลำดับจากน้อยไปมาก จึงขอแถวสุดท้ายแถวเดียวก็ได้ค่ามากสุด
+  /// รวมแถวใหม่ที่เพิ่มในตารางแต่ยังไม่บันทึกด้วย เลขจะได้ไม่ซ้ำกัน
+  Future<int> _nextSequence() async {
+    var maxSeq = 0;
+    try {
+      final first = await widget.apiService.getFoodtypes(page: 0, size: 1);
+      final total = (first['totalItems'] as num?)?.toInt() ?? 0;
+      if (total > 0) {
+        final last = await widget.apiService.getFoodtypes(
+          page: total - 1,
+          size: 1,
+        );
+        final l = last['foodtypes'] as List?;
+        if (l != null && l.isNotEmpty) {
+          maxSeq = Foodtype.fromJson(l.first).sequence ?? 0;
+        }
+      }
+    } catch (e) {
+      // ดึงไม่ได้ก็ใช้ค่ามากสุดจากแถวที่เห็นในหน้าจอแทน
+      if (AppLogger.on) AppLogger.d('หาลำดับล่าสุดของรายการอาหารไม่ได้: $e');
+    }
+    for (final r in _rows) {
+      final s = r.sequence;
+      if (s != null && s > maxSeq) maxSeq = s;
+    }
+    return maxSeq + 1;
   }
 
   Future<void> _del(Foodtype f) async {
@@ -175,9 +212,31 @@ class _FoodtypeScreenState extends State<FoodtypeScreen> {
     });
   }
 
+  /// กำลังหาลำดับถัดไปให้แถวใหม่ กันกดเพิ่มซ้ำจนได้เลขเดียวกัน
+  bool _addingRow = false;
+
   /// เพิ่มแถวว่างท้ายตาราง ID เป็นเลขที่ฐานข้อมูลสร้างเอง จึงไม่ให้กรอก
-  void _addRow() {
-    setState(() => _rows.add(_EditRow.empty()));
+  /// ส่วนลำดับรันต่อจากรายการล่าสุดให้อัตโนมัติ
+  Future<void> _addRow() async {
+    if (_addingRow) return;
+    setState(() => _addingRow = true);
+    final seq = await _nextSequence();
+    if (!mounted) return;
+    setState(() {
+      _rows.add(_EditRow.empty(seq));
+      _addingRow = false;
+    });
+  }
+
+  /// ปลดล็อกแถวเพื่อแก้ไข หรือถ้าแก้อยู่แล้วให้ยกเลิกกลับเป็นค่าเดิมแล้วล็อกคืน
+  void _toggleEdit(_EditRow row) {
+    setState(() {
+      if (row.editing) {
+        row.revert();
+      } else {
+        row.editing = true;
+      }
+    });
   }
 
   /// ลบออกจากหน้าจอ แถวที่มีอยู่แล้วจะถูกลบจริงตอนกดบันทึก
@@ -323,8 +382,16 @@ class _FoodtypeScreenState extends State<FoodtypeScreen> {
   /// หนึ่งแถวของตารางที่แก้ไขได้
   ///
   /// ID เป็นคีย์ที่ฐานข้อมูลสร้างเอง จึงแสดงอย่างเดียว แก้ไม่ได้ทุกแถว
+  /// แถวที่มีอยู่แล้วล็อกไว้ ต้องกดปุ่มแก้ไขก่อนจึงแก้ได้ กันพิมพ์ทับโดยไม่ตั้งใจ
+  /// แถวใหม่ที่เพิ่งเพิ่มในตารางแก้ได้ทันที
   DataRow _editableRow(_EditRow row, double bf, double ic) {
+    final locked = row.locked;
     return DataRow(
+      color: row.editing
+          ? WidgetStateProperty.all(
+              AppTheme.warningColor.withValues(alpha: 0.06),
+            )
+          : null,
       cells: [
         DataCell(
           Checkbox(
@@ -351,10 +418,12 @@ class _FoodtypeScreenState extends State<FoodtypeScreen> {
           SizedBox(
             width: 165,
             child: DropdownButtonFormField<int>(
+              // key ผูกกับรอบยกเลิกการแก้ไข เพื่อให้ dropdown กลับไปแสดงค่าเดิม
+              key: ValueKey('group-${identityHashCode(row)}-${row.rev}'),
               initialValue: row.group,
               isExpanded: true,
               style: TextStyle(fontSize: bf - 1, color: AppTheme.textPrimary),
-              decoration: _rowInput(),
+              decoration: _rowInput(locked: locked),
               items: const [
                 DropdownMenuItem(value: 1, child: Text('อาหารหลัก')),
                 DropdownMenuItem(
@@ -362,18 +431,36 @@ class _FoodtypeScreenState extends State<FoodtypeScreen> {
                   child: Text('อาหารว่างและเครื่องดื่ม'),
                 ),
               ],
-              onChanged: (v) => setState(() => row.group = v ?? 1),
+              onChanged: locked
+                  ? null
+                  : (v) => setState(() => row.group = v ?? 1),
             ),
           ),
         ),
-        DataCell(_rowInputField(row.nameCtrl, 180, bf)),
-        DataCell(_rowInputField(row.priceCtrl, 80, bf, digitsOnly: true)),
-        DataCell(_rowInputField(row.sectionCtrl, 110, bf)),
-        DataCell(_rowInputField(row.seqCtrl, 70, bf, digitsOnly: true)),
+        DataCell(_rowInputField(row.nameCtrl, 180, bf, locked: locked)),
+        DataCell(
+          _rowInputField(
+            row.priceCtrl,
+            80,
+            bf,
+            digitsOnly: true,
+            locked: locked,
+          ),
+        ),
+        DataCell(
+          _rowInputField(
+            row.seqCtrl,
+            70,
+            bf,
+            digitsOnly: true,
+            locked: locked,
+          ),
+        ),
         DataCell(
           SizedBox(
             width: 140,
             child: DropdownButtonFormField<String>(
+              key: ValueKey('status-${identityHashCode(row)}-${row.rev}'),
               initialValue: row.status,
               isExpanded: true,
               style: TextStyle(
@@ -382,12 +469,14 @@ class _FoodtypeScreenState extends State<FoodtypeScreen> {
                     ? AppTheme.textPrimary
                     : AppTheme.textSecondary,
               ),
-              decoration: _rowInput(),
+              decoration: _rowInput(locked: locked),
               items: const [
                 DropdownMenuItem(value: '1', child: Text('ให้บริการ')),
                 DropdownMenuItem(value: '2', child: Text('เลิกให้บริการ')),
               ],
-              onChanged: (v) => setState(() => row.status = v ?? '1'),
+              onChanged: locked
+                  ? null
+                  : (v) => setState(() => row.status = v ?? '1'),
             ),
           ),
         ),
@@ -395,12 +484,13 @@ class _FoodtypeScreenState extends State<FoodtypeScreen> {
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
+              // แก้ไข = ปลดล็อกแถวนี้ในตาราง, กดซ้ำ = ยกเลิกการแก้ไขแถวนี้
               _rowIcon(
-                Icons.edit,
-                Colors.blue,
+                row.editing ? Icons.undo : Icons.edit,
+                row.editing ? AppTheme.warningColor : Colors.blue,
                 ic,
-                'แก้ไขในหน้าต่าง',
-                row.isNew ? null : () => _dialog(foodtype: row.toFoodtype()),
+                row.editing ? 'ยกเลิกการแก้ไขแถวนี้' : 'แก้ไข',
+                row.isNew ? null : () => _toggleEdit(row),
               ),
               const SizedBox(width: 2),
               _rowIcon(
@@ -448,27 +538,31 @@ class _FoodtypeScreenState extends State<FoodtypeScreen> {
     double w,
     double bf, {
     bool digitsOnly = false,
+    bool locked = false,
   }) {
     return SizedBox(
       width: w,
       child: TextField(
         controller: c,
+        readOnly: locked,
+        canRequestFocus: !locked,
         style: TextStyle(fontSize: bf - 1),
         keyboardType: digitsOnly ? TextInputType.number : null,
         inputFormatters: digitsOnly
             ? [FilteringTextInputFormatter.digitsOnly]
             : null,
-        decoration: _rowInput(),
+        decoration: _rowInput(locked: locked),
         onChanged: (_) => setState(() {}),
       ),
     );
   }
 
-  InputDecoration _rowInput() {
+  /// ช่องที่ล็อกอยู่ใช้พื้นเทา ให้เห็นว่าต้องกดแก้ไขก่อน
+  InputDecoration _rowInput({bool locked = false}) {
     return InputDecoration(
       isDense: true,
       filled: true,
-      fillColor: Colors.white,
+      fillColor: locked ? Colors.grey.shade100 : Colors.white,
       contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
     );
@@ -492,6 +586,11 @@ class _FoodtypeScreenState extends State<FoodtypeScreen> {
             Text(
               'มีการแก้ไขที่ยังไม่ได้บันทึก',
               style: TextStyle(fontSize: 13, color: AppTheme.warningColor),
+            )
+          else
+            Text(
+              'กดปุ่มแก้ไข (รูปดินสอ) ที่แถวก่อน จึงจะแก้ไขรายการได้',
+              style: TextStyle(fontSize: 13, color: AppTheme.textSecondary),
             ),
           _rowButton(
             'ลบที่เลือก',
@@ -499,7 +598,11 @@ class _FoodtypeScreenState extends State<FoodtypeScreen> {
             color: AppTheme.deleteColor,
           ),
           _rowButton('เลือกทั้งหมด', _rows.isEmpty ? null : _selectAll),
-          _rowButton('เพิ่ม', _addRow, color: AppTheme.addColor),
+          _rowButton(
+            'เพิ่ม',
+            _addingRow ? null : _addRow,
+            color: AppTheme.addColor,
+          ),
           ElevatedButton.icon(
             onPressed: _isSaving ? null : _saveRows,
             icon: const Icon(Icons.save_outlined, size: 18),
@@ -576,7 +679,7 @@ class _FoodtypeScreenState extends State<FoodtypeScreen> {
             Padding(
               padding: const EdgeInsets.only(right: 8),
               child: ElevatedButton.icon(
-                onPressed: () => _dialog(),
+                onPressed: _openAddDialog,
                 icon: Icon(Icons.add, size: ic),
                 label: Text('เพิ่มรายการ', style: TextStyle(fontSize: bf)),
                 style: ElevatedButton.styleFrom(
@@ -722,7 +825,7 @@ class _FoodtypeScreenState extends State<FoodtypeScreen> {
                           ),
                           const SizedBox(height: 12),
                           ElevatedButton.icon(
-                            onPressed: _addRow,
+                            onPressed: _addingRow ? null : _addRow,
                             icon: const Icon(Icons.add),
                             label: const Text('เพิ่มแถวในตาราง'),
                             style: ElevatedButton.styleFrom(
@@ -758,7 +861,6 @@ class _FoodtypeScreenState extends State<FoodtypeScreen> {
                                 DataColumn(label: _hdr('กลุ่ม', 165, bf)),
                                 DataColumn(label: _hdr('รายการ', 180, bf)),
                                 DataColumn(label: _hdr('ราคา', 80, bf)),
-                                DataColumn(label: _hdr('หมวดหมู่', 110, bf)),
                                 DataColumn(label: _hdr('ลำดับ', 70, bf)),
                                 DataColumn(label: _hdr('สถานะ', 140, bf)),
                                 DataColumn(label: _hdr('จัดการ', 60, bf)),
@@ -832,13 +934,15 @@ class _EditRow {
   final int originalGroup;
   final String originalName;
   final String originalPrice;
-  final String originalSection;
   final String originalSeq;
   final String originalStatus;
 
+  /// หมวดหมู่ (section) เอาออกจากหน้าจอแล้วตามคำขอปรับปรุงข้อ 8.1
+  /// ไม่มีส่วนไหนของระบบใช้ค่านี้ แต่ส่งค่าเดิมกลับไปตอนบันทึก ข้อมูลเก่าจะได้ไม่หาย
+  final String? section;
+
   final TextEditingController nameCtrl;
   final TextEditingController priceCtrl;
-  final TextEditingController sectionCtrl;
   final TextEditingController seqCtrl;
 
   /// กลุ่มรายการอาหาร (1 = อาหารหลัก, 2 = อาหารว่างและเครื่องดื่ม)
@@ -851,19 +955,24 @@ class _EditRow {
   /// ติ๊กเลือกไว้ (สำหรับปุ่มลบที่เลือก)
   bool selected = false;
 
+  /// กดปุ่มแก้ไขแล้ว — แถวที่มีอยู่แล้วต้องกดก่อนจึงแก้ได้ (ข้อ 8.1)
+  bool editing = false;
+
+  /// นับรอบการยกเลิกแก้ไข ใช้เป็น key ให้ dropdown กลับไปแสดงค่าเดิม
+  int rev = 0;
+
   _EditRow({
     this.originalId,
     this.originalGroup = 1,
     this.originalName = '',
     this.originalPrice = '0',
-    this.originalSection = '',
     this.originalSeq = '0',
     this.originalStatus = '1',
+    this.section,
     this.group = 1,
     this.status = '1',
     required this.nameCtrl,
     required this.priceCtrl,
-    required this.sectionCtrl,
     required this.seqCtrl,
   });
 
@@ -875,26 +984,39 @@ class _EditRow {
       originalGroup: f.foodgroupID ?? 1,
       originalName: f.name ?? '',
       originalPrice: price,
-      originalSection: f.section ?? '',
       originalSeq: seq,
       originalStatus: f.status ?? '1',
+      section: f.section,
       group: f.foodgroupID ?? 1,
       status: f.status ?? '1',
       nameCtrl: TextEditingController(text: f.name ?? ''),
       priceCtrl: TextEditingController(text: price),
-      sectionCtrl: TextEditingController(text: f.section ?? ''),
       seqCtrl: TextEditingController(text: seq),
     );
   }
 
-  factory _EditRow.empty() => _EditRow(
+  /// แถวใหม่ — ลำดับรันต่อจากรายการล่าสุด
+  factory _EditRow.empty(int sequence) => _EditRow(
     nameCtrl: TextEditingController(),
     priceCtrl: TextEditingController(text: '0'),
-    sectionCtrl: TextEditingController(),
-    seqCtrl: TextEditingController(text: '0'),
+    seqCtrl: TextEditingController(text: '$sequence'),
   );
 
   bool get isNew => originalId == null;
+
+  /// แถวที่มีอยู่แล้วและยังไม่ได้กดแก้ไข — แก้ค่าในตารางไม่ได้
+  bool get locked => !isNew && !editing;
+
+  /// ยกเลิกการแก้ไข คืนค่าเดิมทุกช่องแล้วล็อกแถวกลับ
+  void revert() {
+    group = originalGroup;
+    status = originalStatus;
+    nameCtrl.text = originalName;
+    priceCtrl.text = originalPrice;
+    seqCtrl.text = originalSeq;
+    editing = false;
+    rev++;
+  }
 
   /// ว่างถือเป็น 0 — null แปลว่ากรอกมาไม่ใช่ตัวเลข
   int? get price {
@@ -913,7 +1035,6 @@ class _EditRow {
       (group != originalGroup ||
           nameCtrl.text.trim() != originalName.trim() ||
           priceCtrl.text.trim() != originalPrice.trim() ||
-          sectionCtrl.text.trim() != originalSection.trim() ||
           seqCtrl.text.trim() != originalSeq.trim() ||
           status != originalStatus);
 
@@ -922,7 +1043,7 @@ class _EditRow {
     foodgroupID: group,
     name: nameCtrl.text.trim(),
     price: price ?? 0,
-    section: sectionCtrl.text.trim(),
+    section: section,
     sequence: sequence ?? 0,
     status: status,
   );
@@ -930,7 +1051,6 @@ class _EditRow {
   void dispose() {
     nameCtrl.dispose();
     priceCtrl.dispose();
-    sectionCtrl.dispose();
     seqCtrl.dispose();
   }
 }

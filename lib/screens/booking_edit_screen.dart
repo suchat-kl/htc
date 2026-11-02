@@ -262,8 +262,13 @@ class _BookingEditScreenState extends State<BookingEditScreen> {
     }
   }
 
+  /// โหลดรายการอาหารของใบจองใหม่
+  ///
+  /// ห้ามตั้ง _isLoading ตรงนี้: _isLoading สลับ body ทั้งหน้าเป็นวงหมุน
+  /// SingleChildScrollView ของฟอร์มจึงถูกทิ้งแล้วสร้างใหม่ที่ตำแหน่งบนสุด
+  /// ทำให้กด +เพิ่ม / ลบรายการอาหารแล้วหน้าจอเด้งขึ้นไปบนสุดทุกครั้ง
+  /// ตารางอาหารแทนที่ของเดิมเมื่อโหลดเสร็จ ตำแหน่งเลื่อนจอจึงคงเดิม
   Future<void> _loadTfoods() async {
-    setState(() => _isLoading = true);
     // if (widget.booking?.bookID == null) return;
     if (_currentBooking?.bookID == null) return; // ใช้ _currentBooking
     try {
@@ -281,13 +286,59 @@ class _BookingEditScreenState extends State<BookingEditScreen> {
       }
     } catch (e) {
       if (AppLogger.on) AppLogger.d('Error loading tfoods: $e');
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
     }
   }
 
+  // ===== กำหนดการจองล่วงหน้า =====
+  // กองฝึก (A) + หน่วยราชการอื่น (B) จองล่วงหน้าได้ไม่เกิน 2 เดือน
+  // รายย่อย (C) จองล่วงหน้าได้ไม่เกิน 15 วัน นับจากวันนี้ถึงวันที่เริ่มต้น
+
+  static DateTime _dateOnly(DateTime d) => DateTime(d.year, d.month, d.day);
+
+  /// วันที่เริ่มต้นช้าที่สุดที่ประเภทผู้จองปัจจุบันจองได้
+  DateTime _latestStartDate() {
+    final today = _dateOnly(DateTime.now());
+    if (_bookingtype == 'C') {
+      return DateTime(today.year, today.month, today.day + 15);
+    }
+    // บวก 2 เดือน ถ้าเดือนปลายทางไม่มีวันที่นี้ (เช่น 31) ใช้วันสุดท้ายของเดือนนั้น
+    final lastDay = DateTime(today.year, today.month + 3, 0).day;
+    return DateTime(
+      today.year,
+      today.month + 2,
+      today.day < lastDay ? today.day : lastDay,
+    );
+  }
+
+  String get _advanceRuleText => _bookingtype == 'C'
+      ? 'รายย่อยจองล่วงหน้าได้ไม่เกิน 15 วัน'
+      : 'กองฝึกและหน่วยราชการอื่นจองล่วงหน้าได้ไม่เกิน 2 เดือน';
+
+  /// ข้อความเตือนถ้าวันที่เริ่มต้น [start] เกินกำหนดจองล่วงหน้า ไม่เกิน = null
+  String? _advanceLimitError(DateTime start) {
+    final latest = _latestStartDate();
+    if (!_dateOnly(start).isAfter(latest)) return null;
+    return '$_advanceRuleText '
+        '(วันที่เริ่มต้นเลือกได้ถึง ${Util.formatThaiDate(latest)})';
+  }
+
+  /// ส่งใบจอง ใช้ทั้งปุ่ม Booking บนแถบหัวและปุ่มท้ายฟอร์ม
   Future<void> _saveBooking() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate()) {
+      context.showErrorSnackBar(
+        'กรุณากรอกข้อมูลที่จำเป็น (มีเครื่องหมาย *) ให้ครบ',
+      );
+      return;
+    }
+    final advanceError = _advanceLimitError(_startDate);
+    if (advanceError != null) {
+      context.showErrorSnackBar(advanceError);
+      return;
+    }
+    if (_dateOnly(_stopDate).isBefore(_dateOnly(_startDate))) {
+      context.showErrorSnackBar('วันที่สิ้นสุดต้องไม่ก่อนวันที่เริ่มต้น');
+      return;
+    }
     // ✅ เพิ่มการตรวจสอบเบื้องต้น
     if (_currentBooking == null && !isEdit) {
       // โหมดเพิ่มใหม่ ไม่ต้องมี _currentBooking
@@ -303,6 +354,14 @@ class _BookingEditScreenState extends State<BookingEditScreen> {
       _error = null;
     });
     try {
+      // รายย่อยไม่มีช่องชื่อโครงการและจำนวนเจ้าหน้าที่ (ซ่อนไว้)
+      // ใบจองใหม่ส่งค่าว่าง/0 กันค่าที่พิมพ์ค้างไว้ตอนเลือกประเภทอื่นหลุดไปด้วย
+      // ใบจองที่บันทึกแล้วส่งค่าเดิมกลับไป backend จะได้ไม่ล้างข้อมูลเก่าทิ้ง
+      final isSmall = _bookingtype == 'C';
+      final booktitle = isSmall && !isEdit ? '' : _booktitleCtrl.text.trim();
+      final numberstaff = isSmall && !isEdit
+          ? 0
+          : int.tryParse(_numberStaffCtrl.text.trim());
       final d = Bookroom(
         // bookID: widget.booking?.bookID,
         bookID: _currentBooking?.bookID, // ← เปลี่ยนตรงนี้
@@ -310,9 +369,9 @@ class _BookingEditScreenState extends State<BookingEditScreen> {
         stopdate: DateFormat('yyyy-MM-dd').format(_stopDate),
         numbermember: int.tryParse(_numberMemberCtrl.text),
         idcard: _idcardCtrl.text,
-        numberstaff: int.tryParse(_numberStaffCtrl.text),
+        numberstaff: numberstaff,
         departmentname: _departmentCtrl.text,
-        booktitle: _booktitleCtrl.text,
+        booktitle: booktitle,
         contractname1: _contractNameCtrl.text,
         contractnumber1: _contractNumberCtrl.text,
         // ที่อยู่จาก ThaID ส่งไปเฉพาะเมื่อยืนยันตัวตนแล้ว ไม่ส่ง = backend คงค่าเดิม
@@ -342,10 +401,8 @@ class _BookingEditScreenState extends State<BookingEditScreen> {
       } else {
         saved = await widget.apiService.createBooking(d);
         // ✅ อัปเดต widget.booking ด้วยข้อมูลที่สร้างใหม่
-        setState(() {
-          _currentBooking = saved; // อัปเดต _currentBooking
-          _loadTfoods();
-        });
+        setState(() => _currentBooking = saved);
+        _loadTfoods();
         // List<Bookroom> m= await ApiService().getBookingID(bookingID:  widget.booking?.bookID);
 
         //          BookingEditScreen(apiService: ApiService(),
@@ -394,12 +451,18 @@ class _BookingEditScreenState extends State<BookingEditScreen> {
       return;
     }
 
+    // จำนวนคนตั้งต้น = ผู้เข้าพัก + เจ้าหน้าที่ ในฟอร์ม ผู้จองแก้ในหน้าต่างได้
+    final headcount =
+        (int.tryParse(_numberMemberCtrl.text.trim()) ?? 0) +
+        (int.tryParse(_numberStaffCtrl.text.trim()) ?? 0);
+
     final selected = await showDialog<Map<String, dynamic>>(
       context: context,
       builder: (ctx) => _AddTfoodDialog(
         foodtypes: active,
         startDate: _startDate,
         stopDate: _stopDate,
+        defaultAmount: headcount > 0 ? headcount : 1,
       ),
     );
 
@@ -641,41 +704,8 @@ class _BookingEditScreenState extends State<BookingEditScreen> {
                               ),
                               const SizedBox(height: 18),
 
-                              // วันที่เริ่มต้น / วันที่สิ้นสุด — จำกัดความกว้าง
-                              // เพราะช่องวันที่ยาวเกินความจำเป็นแล้วดูโหว่
-                              _twoCol(
-                                isWide,
-                                _dateField(
-                                  'วันที่เริ่มต้น',
-                                  _startDate,
-                                  () async {
-                                    final p =
-                                        await Util.dateFieldPickerNullable(
-                                          context,
-                                          _startDate,
-                                        );
-                                    if (p != null && p != _startDate) {
-                                      setState(() => _startDate = p);
-                                    }
-                                  },
-                                ),
-                                _dateField(
-                                  'วันที่สิ้นสุด',
-                                  _stopDate,
-                                  () async {
-                                    final p =
-                                        await Util.dateFieldPickerNullable(
-                                          context,
-                                          _stopDate,
-                                        );
-                                    if (p != null && p != _stopDate) {
-                                      setState(() => _stopDate = p);
-                                    }
-                                  },
-                                ),
-                              ),
-                              const SizedBox(height: 18),
-
+                              // ประเภทผู้จองอยู่บนสุด เพราะกำหนดว่าต้องกรอกช่องไหน
+                              // และจองล่วงหน้าได้นานเท่าไร
                               _fieldLabel('ประเภทผู้จอง'),
                               const SizedBox(height: 2),
                               RadioGroup<String>(
@@ -707,34 +737,114 @@ class _BookingEditScreenState extends State<BookingEditScreen> {
                                   ],
                                 ),
                               ),
+                              const SizedBox(height: 10),
+                              _advanceRuleNote(),
+
+                              // รายย่อย: ยืนยันตัวตนด้วย ThaID ก่อนกรอกรายละเอียด
+                              // ผู้ใช้มักกรอกเลยโดยไม่ได้ยืนยัน จึงวางไว้ก่อนช่องอื่นทั้งหมด
+                              if (_bookingtype == 'C') ...[
+                                const SizedBox(height: 14),
+                                _thaidPanel(),
+                              ],
                               const SizedBox(height: 18),
 
-                              _fld(
-                                'ชื่อหลักสูตร/โครงการ/เรื่อง',
-                                _booktitleCtrl,
+                              // วันที่เริ่มต้น / วันที่สิ้นสุด — จำกัดความกว้าง
+                              // เพราะช่องวันที่ยาวเกินความจำเป็นแล้วดูโหว่
+                              _twoCol(
+                                isWide,
+                                _dateField('วันที่เริ่มต้น', _startDate, () async {
+                                  final p = await Util.dateFieldPickerNullable(
+                                    context,
+                                    _startDate,
+                                  );
+                                  if (!context.mounted ||
+                                      p == null ||
+                                      p == _startDate) {
+                                    return;
+                                  }
+                                  // เกินกำหนดจองล่วงหน้าของประเภทนี้ ไม่รับวันที่
+                                  final err = _advanceLimitError(p);
+                                  if (err != null) {
+                                    context.showErrorSnackBar(err);
+                                    return;
+                                  }
+                                  setState(() {
+                                    _startDate = p;
+                                    // เลื่อนวันเริ่มเลยวันสิ้นสุด ดันวันสิ้นสุดตามไป
+                                    if (_dateOnly(
+                                      _stopDate,
+                                    ).isBefore(_dateOnly(p))) {
+                                      _stopDate = p;
+                                    }
+                                  });
+                                }),
+                                _dateField(
+                                  'วันที่สิ้นสุด',
+                                  _stopDate,
+                                  () async {
+                                    final p =
+                                        await Util.dateFieldPickerNullable(
+                                          context,
+                                          _stopDate,
+                                        );
+                                    if (p != null && p != _stopDate) {
+                                      setState(() => _stopDate = p);
+                                    }
+                                  },
+                                ),
                               ),
                               const SizedBox(height: 18),
 
-                              _twoCol(
-                                isWide,
-                                _fld('ชื่อหน่วยงาน', _departmentCtrl),
-                                _fld('ชื่อ-สกุล ผู้จอง', _contractNameCtrl),
-                              ),
-                              const SizedBox(height: 18),
-
-                              _twoCol(
-                                isWide,
-                                _fld('เบอร์ติดต่อ', _contractNumberCtrl),
+                              // รายย่อยไม่มีชื่อโครงการ
+                              if (_bookingtype != 'C') ...[
                                 _fld(
-                                  'เลขบัตรประชาชน',
+                                  'ชื่อหลักสูตร/โครงการ/เรื่อง',
+                                  _booktitleCtrl,
+                                  requiredField: true,
+                                ),
+                                const SizedBox(height: 18),
+                              ],
+
+                              _twoCol(
+                                isWide,
+                                _fld(
+                                  'ชื่อหน่วยงาน',
+                                  _departmentCtrl,
+                                  requiredField: true,
+                                ),
+                                _fld(
+                                  'ชื่อ-สกุล ผู้จอง',
+                                  _contractNameCtrl,
+                                  requiredField: true,
+                                ),
+                              ),
+                              const SizedBox(height: 18),
+
+                              _twoCol(
+                                isWide,
+                                _fld(
+                                  'เบอร์ติดต่อ',
+                                  _contractNumberCtrl,
+                                  kb: TextInputType.phone,
+                                  requiredField: true,
+                                ),
+                                _fld(
+                                  // บังคับเฉพาะรายย่อย (ใช้เป็น Ref.1 ของใบ Pay-in)
+                                  _bookingtype == 'C'
+                                      ? 'เลขบัตรประชาชน *'
+                                      : 'เลขบัตรประชาชน',
                                   _idcardCtrl,
                                   kb: TextInputType.number,
                                   validator: (value) {
-                                    if (value == null || value.isEmpty) {
-                                      return 'กรุณากรอกเลขบัตรประชาชน';
+                                    final cleaned = (value ?? '').replaceAll(
+                                      ' ',
+                                      '',
+                                    );
+                                    if (cleaned.isEmpty) {
+                                      return _bookingtype == 'C'
+                                          ? 'กรุณากรอกเลขบัตรประชาชน'
+                                          : null;
                                     }
-                                    // ลบช่องว่างออกก่อนตรวจสอบ
-                                    final cleaned = value.replaceAll(' ', '');
                                     if (cleaned.length != 13) {
                                       return 'เลขบัตรประชาชนต้องมี 13 หลัก';
                                     }
@@ -752,15 +862,11 @@ class _BookingEditScreenState extends State<BookingEditScreen> {
                                   },
                                 ),
                               ),
-                              // รายย่อย: ยืนยันตัวตนด้วย ThaID แทนการพิมพ์เลขบัตรและชื่อเอง
-                              if (_bookingtype == 'C') ...[
-                                const SizedBox(height: 12),
-                                _thaidPanel(),
-                              ],
                               const SizedBox(height: 18),
 
                               // ช่องตัวเลขไม่ต้องกว้าง — ให้แค่ช่องละหนึ่งในสี่
                               // แล้วปล่อยครึ่งขวาว่าง อ่านง่ายกว่าช่องยาวๆ
+                              // รายย่อยไม่มีจำนวนเจ้าหน้าที่
                               if (isWide)
                                 Row(
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -773,17 +879,19 @@ class _BookingEditScreenState extends State<BookingEditScreen> {
                                         suffix: 'คน',
                                       ),
                                     ),
-                                    const SizedBox(width: 18),
-                                    Expanded(
-                                      child: _fld(
-                                        'จำนวนเจ้าหน้าที่',
-                                        _numberStaffCtrl,
-                                        kb: TextInputType.number,
-                                        suffix: 'คน',
+                                    if (_bookingtype != 'C') ...[
+                                      const SizedBox(width: 18),
+                                      Expanded(
+                                        child: _fld(
+                                          'จำนวนเจ้าหน้าที่',
+                                          _numberStaffCtrl,
+                                          kb: TextInputType.number,
+                                          suffix: 'คน',
+                                        ),
                                       ),
-                                    ),
+                                    ],
                                     // เว้นครึ่งขวาไว้ ไม่ยืดช่องตัวเลขจนเวิ้งว้าง
-                                    const Spacer(flex: 2),
+                                    Spacer(flex: _bookingtype == 'C' ? 3 : 2),
                                   ],
                                 )
                               else ...[
@@ -793,13 +901,15 @@ class _BookingEditScreenState extends State<BookingEditScreen> {
                                   kb: TextInputType.number,
                                   suffix: 'คน',
                                 ),
-                                const SizedBox(height: 18),
-                                _fld(
-                                  'จำนวนเจ้าหน้าที่',
-                                  _numberStaffCtrl,
-                                  kb: TextInputType.number,
-                                  suffix: 'คน',
-                                ),
+                                if (_bookingtype != 'C') ...[
+                                  const SizedBox(height: 18),
+                                  _fld(
+                                    'จำนวนเจ้าหน้าที่',
+                                    _numberStaffCtrl,
+                                    kb: TextInputType.number,
+                                    suffix: 'คน',
+                                  ),
+                                ],
                               ],
                               const SizedBox(height: 18),
 
@@ -948,6 +1058,8 @@ class _BookingEditScreenState extends State<BookingEditScreen> {
                             ],
                           ),
                         ),
+                        const SizedBox(height: 20),
+                        _bottomBookingBar(),
                         const SizedBox(height: 28),
                       ],
                     ),
@@ -955,6 +1067,121 @@ class _BookingEditScreenState extends State<BookingEditScreen> {
                 ),
               ),
             ),
+    );
+  }
+
+  /// หมายเหตุกำหนดการจองล่วงหน้า แสดงทั้งสองกติกา เน้นตัวหนาข้อที่ตรงกับประเภทที่เลือก
+  Widget _advanceRuleNote() {
+    final isSmall = _bookingtype == 'C';
+    TextStyle line(bool active) => TextStyle(
+      fontFamily: 'NotoSansThai',
+      fontSize: 13,
+      color: active ? AppTheme.textPrimary : AppTheme.textSecondary,
+      fontWeight: active ? FontWeight.bold : FontWeight.normal,
+    );
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: AppTheme.warningColor.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppTheme.warningColor.withValues(alpha: 0.4)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(
+            Icons.info_outline,
+            color: AppTheme.warningColor,
+            size: 20,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'หมายเหตุ กำหนดการจอง',
+                  style: TextStyle(
+                    fontFamily: 'NotoSansThai',
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.warningColor,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  '• กองฝึก กรมทางหลวง และหน่วยราชการอื่น '
+                  'จองล่วงหน้าได้ไม่เกิน 2 เดือน',
+                  style: line(!isSmall),
+                ),
+                Text(
+                  '• รายย่อย จองล่วงหน้าได้ไม่เกิน 15 วัน',
+                  style: line(isSmall),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// ปุ่มส่งการจองท้ายฟอร์ม (ซ้ำกับปุ่ม Booking บนแถบหัว)
+  /// ผู้จองกรอกไล่ลงมาจนจบแล้วมักมองหาปุ่มยืนยันด้านล่างสุด
+  Widget _bottomBookingBar() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            color: AppTheme.primaryPale,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(Icons.info_outline, color: AppTheme.primaryColor, size: 20),
+              const SizedBox(width: 8),
+              const Expanded(
+                child: Text(
+                  'การจองจะสมบูรณ์เมื่อได้รับการเปลี่ยนสถานะเป็น '
+                  '“รับจองแล้ว” เท่านั้น',
+                  style: TextStyle(
+                    fontFamily: 'NotoSansThai',
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.textPrimary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        Align(
+          alignment: Alignment.centerRight,
+          child: ElevatedButton.icon(
+            onPressed: _isSaving ? null : _saveBooking,
+            icon: _isSaving
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: AppTheme.onSecondaryColor,
+                    ),
+                  )
+                : const Icon(Icons.check, size: 20),
+            label: const Text('Booking', style: TextStyle(fontSize: 16)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.editColor,
+              foregroundColor: AppTheme.onSecondaryColor,
+              padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -1024,15 +1251,26 @@ class _BookingEditScreenState extends State<BookingEditScreen> {
     TextInputType? kb,
     String? Function(String?)? validator, // ✅ เพิ่มพารามิเตอร์ validator
     String? suffix, // หน่วยท้ายช่อง เช่น 'คน'
+    // ช่องบังคับกรอก: ต่อ * ท้ายชื่อช่อง และเตือนเมื่อเว้นว่าง (ใช้เมื่อไม่ได้ส่ง validator มาเอง)
+    bool requiredField = false,
   }) => Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      if (l.isNotEmpty) ...[_fieldLabel(l), const SizedBox(height: 6)],
+      if (l.isNotEmpty) ...[
+        _fieldLabel(requiredField ? '$l *' : l),
+        const SizedBox(height: 6),
+      ],
       TextFormField(
         controller: c,
         keyboardType: kb,
         maxLines: maxLines,
-        validator: validator, // ✅ ใช้ validator ที่รับเข้ามา
+        validator:
+            validator ??
+            (requiredField
+                ? (v) => (v == null || v.trim().isEmpty)
+                      ? 'กรุณากรอก${l.isEmpty ? 'ข้อมูล' : l}'
+                      : null
+                : null),
         decoration: InputDecoration(
           // ข้อความเตือนยาวอย่างเลขบัตรไม่ถูกต้อง ให้ขึ้นบรรทัดใหม่แทนการตัดทิ้ง
           errorMaxLines: 3,
@@ -1228,10 +1466,14 @@ class _AddTfoodDialog extends StatefulWidget {
   final List<Foodtype> foodtypes;
   final DateTime startDate;
   final DateTime stopDate;
+
+  /// จำนวนคนตั้งต้น (ผู้เข้าพัก + เจ้าหน้าที่ ของใบจอง)
+  final int defaultAmount;
   const _AddTfoodDialog({
     required this.foodtypes,
     required this.startDate,
     required this.stopDate,
+    this.defaultAmount = 1,
   });
 
   @override
@@ -1240,7 +1482,8 @@ class _AddTfoodDialog extends StatefulWidget {
 
 class _AddTfoodDialogState extends State<_AddTfoodDialog> {
   int? _selectedFoodtypeID;
-  int _amount = 1;
+  late int _amount;
+  late final TextEditingController _amountCtrl;
   int _sequence = 1;
   // ✅ เพิ่มตัวแปรสำหรับเก็บวันที่ที่สามารถเปลี่ยนแปลงได้
   late DateTime _startDate;
@@ -1251,9 +1494,17 @@ class _AddTfoodDialogState extends State<_AddTfoodDialog> {
     super.initState();
     _startDate = widget.startDate;
     _stopDate = widget.stopDate;
+    _amount = widget.defaultAmount;
+    _amountCtrl = TextEditingController(text: '$_amount');
     if (widget.foodtypes.isNotEmpty) {
       _selectedFoodtypeID = widget.foodtypes.first.id;
     }
+  }
+
+  @override
+  void dispose() {
+    _amountCtrl.dispose();
+    super.dispose();
   }
 
   // ✅ สร้างเมธอด _dateField ภายในคลาสนี้โดยตรง
@@ -1319,9 +1570,13 @@ class _AddTfoodDialogState extends State<_AddTfoodDialog> {
           ),
           const SizedBox(height: 10),
           TextField(
+            controller: _amountCtrl,
             keyboardType: TextInputType.number,
-            decoration: const InputDecoration(labelText: 'จำนวน (คน)'),
-            onChanged: (v) => _amount = int.tryParse(v) ?? 1,
+            decoration: const InputDecoration(
+              labelText: 'จำนวน (คน)',
+              helperText: 'ตั้งต้นตามจำนวนผู้เข้าพัก + เจ้าหน้าที่ แก้ได้',
+            ),
+            onChanged: (v) => _amount = int.tryParse(v.trim()) ?? 1,
           ),
           const SizedBox(height: 10),
           // ✅ ใช้ _dateField ที่สร้างในคลาสนี้

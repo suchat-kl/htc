@@ -25,12 +25,17 @@ class BookingTfoodSection extends StatefulWidget {
   final DateTime? defaultStartDate;
   final DateTime? defaultStopDate;
 
+  /// จำนวนคนตั้งต้นตอนเพิ่มรายการใหม่ = ผู้เข้าพัก + เจ้าหน้าที่ ของใบจอง
+  /// เป็นฟังก์ชันเพื่ออ่านค่าล่าสุดในฟอร์มตอนกดเพิ่ม (ค่าที่พิมพ์แต่ยังไม่บันทึกก็ได้)
+  final int? Function()? defaultAmount;
+
   const BookingTfoodSection({
     super.key,
     required this.apiService,
     required this.bookId,
     this.defaultStartDate,
     this.defaultStopDate,
+    this.defaultAmount,
   });
 
   @override
@@ -50,6 +55,11 @@ class _BookingTfoodSectionState extends State<BookingTfoodSection> {
   int _totalItems = 0;
   int _totalPages = 0;
   bool _loading = false;
+
+  /// โหลดสำเร็จแล้วอย่างน้อยหนึ่งครั้ง — ตอนโหลดซ้ำ (หลังเพิ่ม/แก้/ลบ)
+  /// ให้คงตารางเดิมไว้ ไม่สลับเป็นวงหมุน ไม่งั้นความสูงของส่วนนี้หดลงชั่วคราว
+  /// หน้าที่เลื่อนอยู่จะถูกดึงขึ้นไปจากตำแหน่งเดิม
+  bool _loadedOnce = false;
   String? _error;
 
   @override
@@ -85,6 +95,7 @@ class _BookingTfoodSectionState extends State<BookingTfoodSection> {
         _totalPages = _asInt(r['totalPages']) ?? 0;
         _page = _asInt(r['currentPage']) ?? _page;
         _loading = false;
+        _loadedOnce = true;
       });
     } catch (e) {
       if (AppLogger.on) AppLogger.d('Error loading tfoods: $e');
@@ -190,6 +201,7 @@ class _BookingTfoodSectionState extends State<BookingTfoodSection> {
         defaultStartDate: widget.defaultStartDate,
         defaultStopDate: widget.defaultStopDate,
         defaultSequence: nextSeq,
+        defaultAmount: tfood == null ? widget.defaultAmount?.call() : null,
       ),
     );
     if (ok == true) await _load();
@@ -266,12 +278,19 @@ class _BookingTfoodSectionState extends State<BookingTfoodSection> {
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          // ช่องว่างเดิมสูง 16 — ตอนโหลดซ้ำใส่แถบโหลดบาง ๆ ไว้ในช่องนี้
+          // ความสูงของส่วนจึงไม่เปลี่ยน ตำแหน่งที่เลื่อนอยู่ไม่กระโดด
+          SizedBox(
+            height: 16,
+            child: _loading && _loadedOnce
+                ? const Center(child: LinearProgressIndicator(minHeight: 2))
+                : null,
+          ),
           if (_error != null) ...[
             _errorBanner(_error!),
             const SizedBox(height: 12),
           ],
-          if (_loading)
+          if (_loading && !_loadedOnce)
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 40),
               child: Center(child: CircularProgressIndicator()),

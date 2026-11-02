@@ -33,7 +33,6 @@ class _RoomScreenState extends State<RoomScreen> {
 
   // ช่องกรอกของตัวกรอง — เก็บเป็น controller เพราะค้นหาเมื่อกดปุ่มเท่านั้น
   final TextEditingController _searchRoomNOCtrl = TextEditingController();
-  final TextEditingController _filterBuildingCtrl = TextEditingController();
   final TextEditingController _filterFloorCtrl = TextEditingController();
 
   /// ตัวนับสำหรับสร้าง dropdown ตัวกรองใหม่
@@ -64,7 +63,7 @@ class _RoomScreenState extends State<RoomScreen> {
   static const double _wSeq = 70;
   static const double _wRoomNO = 130;
   static const double _wType = 170;
-  static const double _wBuilding = 80;
+  static const double _wBuilding = 110;
   static const double _wFloor = 80;
   static const double _wStatus = 130;
   static const double _wAction = 100;
@@ -92,7 +91,6 @@ class _RoomScreenState extends State<RoomScreen> {
   @override
   void dispose() {
     _searchRoomNOCtrl.dispose();
-    _filterBuildingCtrl.dispose();
     _filterFloorCtrl.dispose();
     for (final r in _rows) {
       r.dispose();
@@ -155,7 +153,34 @@ class _RoomScreenState extends State<RoomScreen> {
     return type.name;
   }
 
-  void _showAddEditDialog({Room? room}) {
+  /// ลำดับถัดไปสำหรับห้องใหม่ = ลำดับมากสุดของทุกห้อง + 1
+  ///
+  /// ตารางแสดงทีละหน้า จึงต้องถามทุกห้องจาก API แล้วนับแถวใหม่ที่เพิ่ม
+  /// บนหน้าจอแต่ยังไม่บันทึกด้วย ไม่ให้ลำดับชนกันเอง
+  /// โหลดไม่ได้ก็ยังคืนค่าจากแถวบนหน้าจอ ผู้ใช้แก้เองได้อยู่แล้ว
+  Future<int> _nextSequence() async {
+    var maxSeq = 0;
+    try {
+      final result = await widget.apiService.getRooms(page: 0, size: 10000);
+      final list = result['rooms'] as List? ?? const [];
+      for (final j in list) {
+        final seq = (j as Map<String, dynamic>)['sequence'] as int? ?? 0;
+        if (seq > maxSeq) maxSeq = seq;
+      }
+    } catch (e) {
+      if (AppLogger.on) AppLogger.d('Error loading max room sequence: $e');
+    }
+    for (final r in _rows) {
+      final seq = int.tryParse(r.sequenceCtrl.text.trim()) ?? 0;
+      if (seq > maxSeq) maxSeq = seq;
+    }
+    return maxSeq + 1;
+  }
+
+  Future<void> _showAddEditDialog({Room? room}) async {
+    // ห้องใหม่ ลำดับรันต่อจากรายการสุดท้ายให้อัตโนมัติ
+    final nextSeq = room == null ? await _nextSequence() : null;
+    if (!mounted) return;
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -163,6 +188,7 @@ class _RoomScreenState extends State<RoomScreen> {
         room: room,
         apiService: widget.apiService,
         roomtypes: _roomtypes,
+        initialSequence: nextSeq,
       ),
     ).then((result) {
       if (result == true) _loadData();
@@ -252,11 +278,15 @@ class _RoomScreenState extends State<RoomScreen> {
   }
 
   /// เพิ่มแถวว่างท้ายตาราง ประเภทห้องตั้งค่าเริ่มต้นเป็นตัวแรกของรายการ
-  void _addRow() {
+  /// ลำดับรันต่อจากรายการสุดท้ายให้อัตโนมัติ (แก้เองได้)
+  Future<void> _addRow() async {
+    final nextSeq = await _nextSequence();
+    if (!mounted) return;
     setState(
       () => _rows.add(
         _EditRow.empty(
           _roomtypes.isNotEmpty ? _roomtypes.first.roomtypeID : null,
+          sequence: nextSeq,
         ),
       ),
     );
@@ -288,22 +318,18 @@ class _RoomScreenState extends State<RoomScreen> {
       final r = _rows[i];
       final no = i + 1;
       final roomNO = r.roomNOCtrl.text.trim();
-      if (roomNO.isEmpty) return 'แถวที่ $no ยังไม่ได้กรอกเลขห้อง';
+      if (roomNO.isEmpty) return 'แถวที่ $no ยังไม่ได้กรอกชื่อห้อง';
       if (r.roomTypeID == null) return 'แถวที่ $no ยังไม่ได้เลือกประเภทห้อง';
       final seq = r.sequenceCtrl.text.trim();
       if (seq.isNotEmpty && int.tryParse(seq) == null) {
         return 'แถวที่ $no ลำดับต้องเป็นตัวเลข';
-      }
-      final building = r.buildingCtrl.text.trim();
-      if (building.isNotEmpty && int.tryParse(building) == null) {
-        return 'แถวที่ $no ตึกต้องเป็นตัวเลข';
       }
       final floor = r.floorCtrl.text.trim();
       if (floor.isNotEmpty && int.tryParse(floor) == null) {
         return 'แถวที่ $no ชั้นต้องเป็นตัวเลข';
       }
       if (roomNOs.containsKey(roomNO)) {
-        return 'เลขห้อง $roomNO ซ้ำกัน (แถวที่ ${roomNOs[roomNO]! + 1} และ $no)';
+        return 'ชื่อห้อง $roomNO ซ้ำกัน (แถวที่ ${roomNOs[roomNO]! + 1} และ $no)';
       }
       roomNOs[roomNO] = i;
     }
@@ -380,7 +406,6 @@ class _RoomScreenState extends State<RoomScreen> {
     if (!await _confirmDiscard()) return;
     setState(() {
       _searchRoomNO = _searchRoomNOCtrl.text.trim();
-      _filterBuilding = int.tryParse(_filterBuildingCtrl.text.trim());
       _filterFloor = int.tryParse(_filterFloorCtrl.text.trim());
       _currentPage = 0;
     });
@@ -420,6 +445,42 @@ class _RoomScreenState extends State<RoomScreen> {
     return items;
   }
 
+  /// รายการอาคารของ dropdown ([withAll] = มีตัวเลือก "ทั้งหมด" สำหรับตัวกรอง)
+  ///
+  /// เลขตึกเดิมที่ไม่อยู่ในรายการอาคาร ให้ใส่เพิ่มไว้ ไม่งั้น dropdown จะ assert
+  List<DropdownMenuItem<int?>> _buildingItems(
+    int? current, {
+    bool withAll = false,
+    double? fontSize,
+  }) {
+    final style = fontSize == null ? null : TextStyle(fontSize: fontSize);
+    final items = <DropdownMenuItem<int?>>[
+      DropdownMenuItem<int?>(
+        value: null,
+        child: Text(withAll ? 'ทั้งหมด' : '-', style: style),
+      ),
+      ...RoomBuilding.all.map(
+        (b) => DropdownMenuItem<int?>(
+          value: b.code,
+          child: Text(
+            withAll ? b.name : b.shortName,
+            style: style,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ),
+    ];
+    if (current != null && RoomBuilding.of(current) == null) {
+      items.add(
+        DropdownMenuItem<int?>(
+          value: current,
+          child: Text('ตึก $current', style: style),
+        ),
+      );
+    }
+    return items;
+  }
+
   /// หัวตารางที่แก้ไขได้
   Widget _tableHeader(double fontSize) {
     final style = TextStyle(
@@ -447,7 +508,7 @@ class _RoomScreenState extends State<RoomScreen> {
           const SizedBox(width: _colGap),
           SizedBox(
             width: _wRoomNO,
-            child: Text('เลขห้อง', style: style),
+            child: Text('ชื่อห้อง', style: style),
           ),
           const SizedBox(width: _colGap),
           SizedBox(
@@ -548,13 +609,15 @@ class _RoomScreenState extends State<RoomScreen> {
           const SizedBox(width: _colGap),
           SizedBox(
             width: _wBuilding,
-            child: TextField(
-              controller: row.buildingCtrl,
-              keyboardType: TextInputType.number,
-              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-              style: TextStyle(fontSize: fontSize),
+            child: DropdownButtonFormField<int?>(
+              key: ValueKey('building-${row.uid}'),
+              initialValue: row.building,
+              isExpanded: true,
+              isDense: true,
+              style: TextStyle(fontSize: fontSize, color: Colors.black87),
               decoration: _rowInput(),
-              onChanged: (_) => setState(() {}),
+              items: _buildingItems(row.building),
+              onChanged: (v) => setState(() => row.building = v),
             ),
           ),
           const SizedBox(width: _colGap),
@@ -790,7 +853,7 @@ class _RoomScreenState extends State<RoomScreen> {
                         controller: _searchRoomNOCtrl,
                         style: TextStyle(fontSize: bodyFontSize),
                         decoration: InputDecoration(
-                          hintText: 'ค้นหาเลขห้อง...',
+                          hintText: 'ค้นหาชื่อห้อง...',
                           prefixIcon: Icon(Icons.search, size: iconSize),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
@@ -860,12 +923,13 @@ class _RoomScreenState extends State<RoomScreen> {
                     ),
                     SizedBox(
                       width: isLargeScreen
-                          ? 120
-                          : (isDesktop ? 100 : (screenWidth - 56) / 2 - 6),
-                      child: TextField(
-                        controller: _filterBuildingCtrl,
+                          ? 170
+                          : (isDesktop ? 150 : (screenWidth - 56) / 2 - 6),
+                      child: DropdownButtonFormField<int?>(
+                        key: ValueKey('filter-building-$_filterEpoch'),
+                        initialValue: _filterBuilding,
+                        isExpanded: true,
                         style: TextStyle(fontSize: bodyFontSize),
-                        keyboardType: TextInputType.number,
                         decoration: InputDecoration(
                           hintText: 'ตึก',
                           border: OutlineInputBorder(
@@ -878,8 +942,23 @@ class _RoomScreenState extends State<RoomScreen> {
                             vertical: isDesktop ? 12 : 8,
                           ),
                         ),
-                        // ค้นหาเมื่อกด Enter เท่านั้น
-                        onSubmitted: (_) => _runSearch(),
+                        items: _buildingItems(
+                          _filterBuilding,
+                          withAll: true,
+                          fontSize: bodyFontSize,
+                        ),
+                        onChanged: (v) async {
+                          // ถามก่อนทิ้งการแก้ไข ถ้ายกเลิกต้องไม่เปลี่ยนค่าในช่อง
+                          if (!await _confirmDiscard()) {
+                            _cancelFilterChange();
+                            return;
+                          }
+                          setState(() {
+                            _filterBuilding = v;
+                            _currentPage = 0;
+                          });
+                          _loadData();
+                        },
                       ),
                     ),
                     SizedBox(
@@ -1098,10 +1177,12 @@ class _EditRow {
 
   final TextEditingController sequenceCtrl;
   final TextEditingController roomNOCtrl;
-  final TextEditingController buildingCtrl;
   final TextEditingController floorCtrl;
 
   int? roomTypeID;
+
+  /// เลขอาคาร (m_room.building) ดู [RoomBuilding]
+  int? building;
   String status;
 
   /// ติ๊กเลือกไว้ (สำหรับปุ่มลบที่เลือก)
@@ -1112,9 +1193,9 @@ class _EditRow {
     this.original,
     required this.sequenceCtrl,
     required this.roomNOCtrl,
-    required this.buildingCtrl,
     required this.floorCtrl,
     this.roomTypeID,
+    this.building,
     this.status = '1',
   }) : uid = ++_uidSeq;
 
@@ -1123,16 +1204,15 @@ class _EditRow {
     original: r,
     sequenceCtrl: TextEditingController(text: '${r.sequence}'),
     roomNOCtrl: TextEditingController(text: r.roomNO),
-    buildingCtrl: TextEditingController(text: r.building?.toString() ?? ''),
     floorCtrl: TextEditingController(text: r.floor?.toString() ?? ''),
     roomTypeID: r.roomTypeID,
+    building: r.building,
     status: r.status,
   );
 
-  factory _EditRow.empty(int? defaultRoomTypeID) => _EditRow(
-    sequenceCtrl: TextEditingController(),
+  factory _EditRow.empty(int? defaultRoomTypeID, {int? sequence}) => _EditRow(
+    sequenceCtrl: TextEditingController(text: sequence?.toString() ?? ''),
     roomNOCtrl: TextEditingController(),
-    buildingCtrl: TextEditingController(),
     floorCtrl: TextEditingController(),
     roomTypeID: defaultRoomTypeID,
   );
@@ -1145,7 +1225,7 @@ class _EditRow {
     final o = original!;
     return roomNOCtrl.text.trim() != o.roomNO.trim() ||
         (int.tryParse(sequenceCtrl.text.trim()) ?? 0) != o.sequence ||
-        int.tryParse(buildingCtrl.text.trim()) != o.building ||
+        building != o.building ||
         int.tryParse(floorCtrl.text.trim()) != o.floor ||
         roomTypeID != o.roomTypeID ||
         status != o.status;
@@ -1155,7 +1235,7 @@ class _EditRow {
     roomID: originalRoomID,
     roomNO: roomNOCtrl.text.trim(),
     roomTypeID: roomTypeID,
-    building: int.tryParse(buildingCtrl.text.trim()),
+    building: building,
     floor: int.tryParse(floorCtrl.text.trim()),
     sequence: int.tryParse(sequenceCtrl.text.trim()) ?? 0,
     status: status,
@@ -1164,7 +1244,6 @@ class _EditRow {
   void dispose() {
     sequenceCtrl.dispose();
     roomNOCtrl.dispose();
-    buildingCtrl.dispose();
     floorCtrl.dispose();
   }
 }
