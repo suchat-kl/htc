@@ -40,7 +40,7 @@ class CustomFooter extends StatelessWidget {
                 // Downloads
                 Expanded(flex: 2, child: _buildDownloadsSection()),
                 const SizedBox(width: 24),
-                // Social Media & Newsletter
+                // ติดตามเรา (โซเชียลมีเดีย)
                 Expanded(flex: 2, child: _buildSocialSection(context)),
               ],
             ),
@@ -305,60 +305,6 @@ class CustomFooter extends StatelessWidget {
             _buildSocialIcon(Icons.camera_alt, isMobile: isMobile), // Instagram
           ],
         ),
-        if (!isMobile) ...[
-          const SizedBox(height: 24),
-          // Newsletter Signup (desktop/tablet only)
-          const Text(
-            'รับข่าวสาร',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  style: const TextStyle(color: Colors.white, fontSize: 14),
-                  decoration: InputDecoration(
-                    hintText: 'อีเมลของคุณ',
-                    hintStyle: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.5),
-                      fontSize: 14,
-                    ),
-                    filled: true,
-                    fillColor: Colors.white.withValues(alpha: 0.1),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: BorderSide.none,
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              ElevatedButton(
-                onPressed: () {},
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.secondaryColor,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                child: const Text('สมัคร', style: TextStyle(fontSize: 14)),
-              ),
-            ],
-          ),
-        ],
       ],
     );
   }
