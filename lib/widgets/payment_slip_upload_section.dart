@@ -26,6 +26,10 @@ class PaymentSlipUploadSection extends StatefulWidget {
   final ApiService apiService;
   final int bookId;
 
+  /// เลขบัตรประชาชนของใบจอง ที่ผู้จองกรอกในหน้าตรวจสอบสถานะ
+  /// backend ตรวจคู่กับ [bookId] ทุกคำขอ (ใบ Pay-in ยอด QR แนบหลักฐาน) ห้าม log
+  final String idcard;
+
   /// true = แสดง QR พร้อมเพย์แทนใบ Pay-in
   final bool showPromptPay;
 
@@ -33,6 +37,7 @@ class PaymentSlipUploadSection extends StatefulWidget {
     super.key,
     required this.apiService,
     required this.bookId,
+    required this.idcard,
     this.showPromptPay = false,
   });
 
@@ -103,6 +108,7 @@ class _PaymentSlipUploadSectionState extends State<PaymentSlipUploadSection> {
     try {
       final slips = await widget.apiService.getPublicPaymentSlips(
         widget.bookId,
+        widget.idcard,
       );
       if (!mounted) return;
       setState(() {
@@ -124,7 +130,10 @@ class _PaymentSlipUploadSectionState extends State<PaymentSlipUploadSection> {
       _balanceError = null;
     });
     try {
-      final b = await widget.apiService.getPaymentBalance(widget.bookId);
+      final b = await widget.apiService.getPaymentBalance(
+        widget.bookId,
+        widget.idcard,
+      );
       if (!mounted) return;
       setState(() {
         _balance = b;
@@ -147,7 +156,10 @@ class _PaymentSlipUploadSectionState extends State<PaymentSlipUploadSection> {
   Future<void> _createPayIn() async {
     setState(() => _payInBusy = true);
     try {
-      final bytes = await widget.apiService.downloadPayIn(widget.bookId);
+      final bytes = await widget.apiService.downloadPayIn(
+        widget.bookId,
+        widget.idcard,
+      );
       if (!mounted) return;
       setState(() {
         _payInPdf = Uint8List.fromList(bytes);
@@ -190,6 +202,7 @@ class _PaymentSlipUploadSectionState extends State<PaymentSlipUploadSection> {
     try {
       final qr = await widget.apiService.getPromptPayQr(
         widget.bookId,
+        widget.idcard,
         amount: amount,
       );
       if (!mounted) return;
@@ -265,6 +278,7 @@ class _PaymentSlipUploadSectionState extends State<PaymentSlipUploadSection> {
     try {
       await widget.apiService.uploadPaymentSlip(
         bookId: widget.bookId,
+        idcard: widget.idcard,
         amount: amount,
         note: _noteCtrl.text,
         bytes: file.bytes,
@@ -360,7 +374,7 @@ class _PaymentSlipUploadSectionState extends State<PaymentSlipUploadSection> {
             ),
             const SizedBox(height: 10),
             Text(
-              'เมื่อเจ้าหน้าที่รับจองแล้ว กลับมาที่แท็บนี้อีกครั้งเพื่อสร้างใบ Pay-in และแนบใบเสร็จ',
+              'เมื่อเจ้าหน้าที่รับจองแล้ว กลับมาตรวจสอบสถานะการจองที่หน้านี้อีกครั้งเพื่อสร้างใบ Pay-in และแนบใบเสร็จ',
               style: TextStyle(
                 fontFamily: _font,
                 fontSize: 13,

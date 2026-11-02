@@ -31,6 +31,7 @@ import 'package:highway_training/models/payment_activity.dart';
 import 'package:highway_training/models/payment_lodging.dart';
 import 'package:highway_training/models/payment_room_summary.dart';
 import 'package:highway_training/models/payment_slip.dart';
+import 'package:highway_training/models/public_booking_status.dart';
 import 'package:highway_training/models/invoice.dart';
 import 'package:highway_training/models/room_search_result.dart';
 import 'package:highway_training/models/room_type_option.dart';
@@ -1929,6 +1930,7 @@ class ApiService {
   /// พร้อมข้อความจาก backend ให้หน้าจอแสดงได้เลย
   Future<PaymentSlip> uploadPaymentSlip({
     required int bookId,
+    required String idcard,
     required double amount,
     String? note,
     required List<int> bytes,
@@ -1936,6 +1938,7 @@ class ApiService {
   }) async {
     final form = FormData.fromMap({
       'bookId': bookId,
+      'idcard': idcard,
       'amount': amount.toStringAsFixed(2),
       if (note != null && note.trim().isNotEmpty) 'note': note.trim(),
       'file': MultipartFile.fromBytes(bytes, filename: fileName),
@@ -2035,11 +2038,32 @@ class ApiService {
     return null;
   }
 
+  /// สถานะใบจองสำหรับผู้จองที่ไม่ได้ล็อกอิน — ต้องรู้ทั้งเลขใบจองและเลขบัตรประชาชน
+  ///
+  /// ส่งทาง POST ไม่ให้เลขบัตรไปอยู่ใน URL ไม่ตรง = backend ตอบ 404 ข้อความเดียวทุกกรณี
+  /// ห้าม log [idcard]
+  Future<PublicBookingStatus> getPublicBookingStatus(
+    int bookId,
+    String idcard,
+  ) async {
+    final r = await publicDio.post(
+      '/api/auth/public-booking/status',
+      data: {'bookId': bookId, 'idcard': idcard},
+      options: Options(validateStatus: (status) => status! < 500),
+    );
+    if (r.statusCode == 200 && r.data is Map) {
+      return PublicBookingStatus.fromJson(Map<String, dynamic>.from(r.data));
+    }
+    throw Exception(
+      _slipMessage(r.data) ?? 'ตรวจสอบสถานะไม่สำเร็จ (${r.statusCode})',
+    );
+  }
+
   /// ยอดค่าบริการ ยอดที่ชำระแล้ว และยอดคงเหลือของใบจองรายย่อย — ไม่ต้องล็อกอิน
-  Future<PaymentBalance> getPaymentBalance(int bookId) async {
-    final r = await publicDio.get(
+  Future<PaymentBalance> getPaymentBalance(int bookId, String idcard) async {
+    final r = await publicDio.post(
       '/api/auth/public-slips/balance',
-      queryParameters: {'bookId': bookId},
+      data: {'bookId': bookId, 'idcard': idcard},
       options: Options(validateStatus: (status) => status! < 500),
     );
     if (r.statusCode == 200 && r.data is Map) {
@@ -2054,10 +2078,10 @@ class ApiService {
   ///
   /// ยอดในใบคือยอดคงเหลือ ถ้าออกใบไม่ได้ (เช่นไม่มีเลขบัตร หรือชำระครบแล้ว)
   /// backend ส่งข้อความกลับมาเป็น JSON ต้องถอดเองเพราะขอผลเป็น bytes
-  Future<List<int>> downloadPayIn(int bookId) async {
-    final r = await publicDio.get(
+  Future<List<int>> downloadPayIn(int bookId, String idcard) async {
+    final r = await publicDio.post(
       '/api/auth/public-slips/payin',
-      queryParameters: {'bookId': bookId},
+      data: {'bookId': bookId, 'idcard': idcard},
       options: Options(
         responseType: ResponseType.bytes,
         receiveTimeout: const Duration(seconds: 60),
@@ -2083,11 +2107,16 @@ class ApiService {
   /// QR พร้อมเพย์ของใบจองรายย่อย — ไม่ต้องล็อกอิน
   ///
   /// ไม่ส่ง [amount] = ยอดคงเหลือ (ค่าบริการรวม หักสลิปที่แนบแล้วและยังไม่ถูกปฏิเสธ)
-  Future<PromptPayQrInfo> getPromptPayQr(int bookId, {double? amount}) async {
-    final r = await publicDio.get(
+  Future<PromptPayQrInfo> getPromptPayQr(
+    int bookId,
+    String idcard, {
+    double? amount,
+  }) async {
+    final r = await publicDio.post(
       '/api/auth/public-slips/promptpay',
-      queryParameters: {
+      data: {
         'bookId': bookId,
+        'idcard': idcard,
         if (amount != null) 'amount': amount.toStringAsFixed(2),
       },
       options: Options(validateStatus: (status) => status! < 500),
@@ -2101,10 +2130,13 @@ class ApiService {
   }
 
   /// สลิปของใบจอง สำหรับผู้จอง — ไม่ต้องล็อกอิน ไม่มีรูปและเลขอ้างอิง
-  Future<List<PaymentSlip>> getPublicPaymentSlips(int bookId) async {
-    final r = await publicDio.get(
-      '/api/auth/public-slips',
-      queryParameters: {'bookId': bookId},
+  Future<List<PaymentSlip>> getPublicPaymentSlips(
+    int bookId,
+    String idcard,
+  ) async {
+    final r = await publicDio.post(
+      '/api/auth/public-slips/list',
+      data: {'bookId': bookId, 'idcard': idcard},
       options: Options(validateStatus: (status) => status! < 500),
     );
     return _slipList(r, 'ดึงรายการสลิปไม่สำเร็จ');
@@ -3486,7 +3518,10 @@ class ApiService {
     if (pendingSlip) p['pendingSlip'] = true;
 
     try {
-      final r = await publicDio.get(
+      // backend ปิด /searchBookings ไม่ให้คนไม่ล็อกอินใช้แล้ว (ต.ค. 2569) ต้องแนบ token
+      // ผู้จองที่ไม่ล็อกอินดูสถานะผ่าน [getPublicBookingStatus] แทน
+      await _ensureToken();
+      final r = await dio.get(
         '/api/auth/searchBookings',
         queryParameters: p,
       );

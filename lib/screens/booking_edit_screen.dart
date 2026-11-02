@@ -413,7 +413,11 @@ class _BookingEditScreenState extends State<BookingEditScreen> {
         // ✅ ใช้ AppDialog แทน SnackBar
         await AppDialog.showSuccess(
           context,
-          'บันทึกการจองเรียบร้อยแล้ว\nเลขที่การจอง: ${_currentBooking?.bookID}',
+          'บันทึกการจองเรียบร้อยแล้ว\nเลขที่การจอง: ${_currentBooking?.bookID}'
+          // คนทั่วไปดูใบจองย้อนหลังได้ทางหน้าตรวจสอบสถานะเท่านั้น ต้องจดเลขนี้ไว้
+          '${_currentBooking?.idcard?.isNotEmpty == true ? '\n\nกรุณาจดเลขที่การจองไว้ '
+                    'ใช้คู่กับเลขบัตรประชาชนเพื่อตรวจสอบสถานะการจอง '
+                    'และออกใบ Pay-in ที่เมนู "ตรวจสอบสถานะการจอง"' : ''}',
           onPressed: () {
             // หลังจากกด OK ให้กลับไปหน้าก่อนหน้า
             // Navigator.pop(context, true);

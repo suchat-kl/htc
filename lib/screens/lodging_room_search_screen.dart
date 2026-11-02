@@ -14,7 +14,7 @@ import '../utils/util.dart';
 import '../widgets/app_autocomplete_field.dart';
 import '../widgets/app_pagination.dart';
 import 'booking_detail_screen.dart';
-import 'no_auth_booking_detail_screen.dart';
+import 'booking_status_screen.dart';
 
 /// เมนูห้องพัก/ห้องกิจกรรม > ค้นหาห้องพัก
 ///
@@ -267,9 +267,10 @@ class _LodgingRoomSearchScreenState extends State<LodgingRoomSearchScreen> {
               bookId: bookId,
             );
           }
-          return NoAuthBookingDetailScreen(
+          // ผู้จองที่ไม่ได้ล็อกอินดูได้แค่สถานะของใบจองตัวเอง (ต้องกรอกเลขบัตร)
+          return BookingStatusScreen(
             apiService: widget.apiService,
-            bookId: bookId,
+            initialBookId: bookId,
           );
         },
       ),

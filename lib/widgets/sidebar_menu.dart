@@ -15,6 +15,8 @@ import 'package:highway_training/screens/payment_list_screen.dart';
 import 'package:highway_training/screens/place_project_report_screen.dart';
 import 'package:highway_training/screens/place_request_report_screen.dart';
 import 'package:highway_training/screens/booking_list_screen.dart';
+import 'package:highway_training/screens/booking_status_screen.dart';
+import 'package:highway_training/utils/permission.dart';
 import 'package:highway_training/screens/center_plan_screen.dart';
 import 'package:highway_training/screens/commodity_report_screen.dart';
 import 'package:highway_training/screens/commodity_screen.dart';
@@ -283,24 +285,46 @@ class _SidebarMenuState extends State<SidebarMenu> {
                 compact: true,
               ),
               const Divider(indent: 16, endIndent: 16),
-              _buildMenuItem(
-                context,
-                icon: Icons.date_range,
-                title: 'รายการการจอง',
-                onTap: () => {
-                  _closeMenu(context),
-                  _open(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => BookingListScreen(
-                        authProvider: widget.authProvider,
-                        apiService: ApiService(),
+              // เจ้าหน้าที่ (มีสิทธิ์หน้ารายการการจอง) เห็นใบจองทั้งหมด
+              // คนทั่วไปและบัญชีผู้จองจาก ThaID เห็นแค่สถานะใบจองของตัวเอง
+              // ด้วยเลขใบจอง + เลขบัตร (คำขอปรับปรุงรอบ ต.ค. 2569) backend กันซ้ำอีกชั้น
+              if (widget.authProvider.isLoggedIn &&
+                  widget.authProvider.canView(Perm.bookList))
+                _buildMenuItem(
+                  context,
+                  icon: Icons.date_range,
+                  title: 'รายการการจอง',
+                  onTap: () => {
+                    _closeMenu(context),
+                    _open(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => BookingListScreen(
+                          authProvider: widget.authProvider,
+                          apiService: ApiService(),
+                        ),
                       ),
                     ),
-                  ),
-                },
-                compact: true,
-              ),
+                  },
+                  compact: true,
+                )
+              else
+                _buildMenuItem(
+                  context,
+                  icon: Icons.fact_check,
+                  title: 'ตรวจสอบสถานะการจอง',
+                  onTap: () => {
+                    _closeMenu(context),
+                    _open(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            BookingStatusScreen(apiService: ApiService()),
+                      ),
+                    ),
+                  },
+                  compact: true,
+                ),
               if (widget.authProvider.isLoggedIn) ...[
                 _buildExpandableMenuItem(
                   context,
