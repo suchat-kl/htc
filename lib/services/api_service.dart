@@ -3427,10 +3427,16 @@ class ApiService {
   /// บันทึกใบจองใหม่ — ต้องล็อกอิน (ผู้จองรายย่อยเข้าด้วย ThaID)
   ///
   /// ผู้ใช้ ThaID: backend บังคับเลขบัตรของใบจองเป็นเลขบัตรของบัญชีเสมอ
-  Future<Bookroom> createBooking(Bookroom d) async {
+  /// สร้างใบจอง [tfoods] = รายการอาหารที่ผู้จองเพิ่มไว้ก่อนกด Booking
+  /// backend บันทึกพร้อมใบจองใน transaction เดียว รายการไหนผิดจะไม่บันทึกทั้งชุด
+  Future<Bookroom> createBooking(Bookroom d, {List<Tfood>? tfoods}) async {
     try {
       await _ensureToken();
-      final r = await dio.post('/api/auth/bookings', data: d.toJson());
+      final data = d.toJson();
+      if (tfoods != null && tfoods.isNotEmpty) {
+        data['tfoods'] = tfoods.map((t) => t.toJson()).toList();
+      }
+      final r = await dio.post('/api/auth/bookings', data: data);
       if (r.statusCode == 200 && r.data['success'] == true) {
         return Bookroom.fromJson(r.data['booking']);
       }
@@ -3526,10 +3532,7 @@ class ApiService {
       // backend ปิด /searchBookings ไม่ให้คนไม่ล็อกอินใช้แล้ว (ต.ค. 2569) ต้องแนบ token
       // เจ้าหน้าที่เห็นทั้งหมด ผู้ใช้ ThaID ได้เฉพาะใบที่เลขบัตรตรงกับบัญชี (backend กรองเอง)
       await _ensureToken();
-      final r = await dio.get(
-        '/api/auth/searchBookings',
-        queryParameters: p,
-      );
+      final r = await dio.get('/api/auth/searchBookings', queryParameters: p);
       if (r.statusCode == 200) {
         return r.data;
       }

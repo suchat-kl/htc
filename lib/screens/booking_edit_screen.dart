@@ -235,6 +235,15 @@ class _BookingEditScreenState extends State<BookingEditScreen> {
 
   // Tfood related
   List<Tfood> _tfoods = [];
+
+  /// รายการอาหารที่เพิ่มไว้ก่อนกด Booking (ยังไม่มีเลขใบจอง) ส่งไปพร้อมใบจองตอนสร้าง
+  /// คำขอปรับปรุงรอบ ต.ค. 2569: กองฝึก/หน่วยงานเพิ่มอาหารได้ตั้งแต่ตอนจอง
+  final List<Tfood> _pendingTfoods = [];
+
+  /// ยังไม่ได้บันทึกใบจอง = ตารางอาหารแสดงรายการที่รอส่งพร้อมใบจอง
+  bool get _foodsPending => _currentBooking?.bookID == null;
+
+  List<Tfood> get _shownTfoods => _foodsPending ? _pendingTfoods : _tfoods;
   List<Foodtype> _foodtypes = [];
   bool _isLoading = false;
   bool _isSaving = false;
@@ -288,6 +297,7 @@ class _BookingEditScreenState extends State<BookingEditScreen> {
       _thaidPid = null;
       _thaidAddress = null;
       _tfoods = [];
+      _pendingTfoods.clear();
       if (!isEdit) {
         _idcardCtrl.clear();
         _contractNameCtrl.clear();
@@ -516,9 +526,16 @@ class _BookingEditScreenState extends State<BookingEditScreen> {
           _currentBooking = saved;
         });
       } else {
-        saved = await widget.apiService.createBooking(d);
+        saved = await widget.apiService.createBooking(
+          d,
+          tfoods: _bookingtype != 'C' ? List.of(_pendingTfoods) : null,
+        );
         // ✅ อัปเดต widget.booking ด้วยข้อมูลที่สร้างใหม่
-        setState(() => _currentBooking = saved);
+        // อาหารที่รอไว้บันทึกพร้อมใบจองแล้ว ล้างรายการรอ แล้วโหลดของจริงจาก backend
+        setState(() {
+          _currentBooking = saved;
+          _pendingTfoods.clear();
+        });
         _loadTfoods();
         // List<Bookroom> m= await ApiService().getBookingID(bookingID:  widget.booking?.bookID);
 
@@ -566,11 +583,6 @@ class _BookingEditScreenState extends State<BookingEditScreen> {
       return;
     }
 
-    if (_currentBooking == null || _currentBooking!.bookID == null) {
-      context.showErrorSnackBar('กรุณาบันทึกการจองก่อนเพิ่มรายการอาหาร');
-      return;
-    }
-
     // จำนวนคนตั้งต้น = ผู้เข้าพัก + เจ้าหน้าที่ ในฟอร์ม ผู้จองแก้ในหน้าต่างได้
     final headcount =
         (int.tryParse(_numberMemberCtrl.text.trim()) ?? 0) +
@@ -586,7 +598,36 @@ class _BookingEditScreenState extends State<BookingEditScreen> {
       ),
     );
 
-    if (selected != null && _currentBooking != null) {
+    if (selected == null || !mounted) return;
+
+    // ยังไม่ได้บันทึกใบจอง: เก็บไว้ในฟอร์มก่อน ส่งไปพร้อมใบจองตอนกด Booking
+    if (_foodsPending) {
+      final typeId = selected['foodtypeid'] as int;
+      final name = _foodtypes
+          .where((f) => f.id == typeId)
+          .map((f) => f.name)
+          .firstOrNull;
+      setState(() {
+        _pendingTfoods.add(
+          Tfood(
+            foodtypeid: typeId,
+            foodtypeName: name,
+            price: selected['price'] as int,
+            amount: selected['amount'] as int,
+            times: selected['times'] as int,
+            sequence: selected['sequence'] as int,
+            startdate: selected['startdate'] as String,
+            stopdate: selected['stopdate'] as String,
+          ),
+        );
+      });
+      context.showSuccessSnackBar(
+        'เพิ่มรายการอาหารแล้ว จะบันทึกพร้อมการจองเมื่อกด Booking',
+      );
+      return;
+    }
+
+    if (_currentBooking != null) {
       try {
         final tfood = Tfood(
           bookID: _currentBooking!.bookID,
@@ -686,6 +727,11 @@ class _BookingEditScreenState extends State<BookingEditScreen> {
   }
 */
   Future<void> _deleteTfood(Tfood t) async {
+    // รายการที่ยังไม่ได้บันทึก (รอส่งพร้อมใบจอง) เอาออกจากฟอร์มได้เลย ไม่ต้องเรียก backend
+    if (t.id == null && _foodsPending) {
+      setState(() => _pendingTfoods.remove(t));
+      return;
+    }
     if (t.id == null || _currentBooking == null) return;
 
     // ✅ ใช้ Confirm Dialog
@@ -1127,20 +1173,32 @@ class _BookingEditScreenState extends State<BookingEditScreen> {
                                       Icons.restaurant,
                                     ),
                                     const Spacer(),
-                                    if (isEdit || _currentBooking != null)
-                                      ElevatedButton.icon(
-                                        onPressed: _addTfood,
-                                        icon: const Icon(Icons.add, size: 16),
-                                        label: const Text('เพิ่ม'),
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: AppTheme.addColor,
-                                          foregroundColor: Colors.white,
-                                        ),
+                                    // เพิ่มได้ตั้งแต่ก่อนกด Booking (เก็บไว้ส่งพร้อมใบจอง)
+                                    ElevatedButton.icon(
+                                      onPressed: _addTfood,
+                                      icon: const Icon(Icons.add, size: 16),
+                                      label: const Text('เพิ่ม'),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: AppTheme.addColor,
+                                        foregroundColor: Colors.white,
                                       ),
+                                    ),
                                   ],
                                 ),
                                 const SizedBox(height: 14),
-                                if (_tfoods.isEmpty)
+                                if (_foodsPending && _pendingTfoods.isNotEmpty)
+                                  Padding(
+                                    padding: const EdgeInsets.only(bottom: 8),
+                                    child: Text(
+                                      'รายการอาหารด้านล่างยังไม่ได้บันทึก จะบันทึกพร้อมการจองเมื่อกด Booking',
+                                      style: TextStyle(
+                                        fontFamily: 'Sarabun',
+                                        fontSize: 13,
+                                        color: Colors.orange.shade800,
+                                      ),
+                                    ),
+                                  ),
+                                if (_shownTfoods.isEmpty)
                                   Container(
                                     padding: const EdgeInsets.symmetric(
                                       vertical: 24,
@@ -1171,7 +1229,7 @@ class _BookingEditScreenState extends State<BookingEditScreen> {
                                       ),
                                     ),
                                   ),
-                                ..._tfoods.map(
+                                ..._shownTfoods.map(
                                   (t) => Card(
                                     elevation: 0,
                                     margin: const EdgeInsets.only(bottom: 8),
