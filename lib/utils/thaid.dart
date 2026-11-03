@@ -42,6 +42,10 @@ class ThaidIdentity {
 /// ข้อความเมื่อผู้ใช้ยกเลิก ใช้ข้อความเดียวกันทุกหน้าจอ
 const String thaidCancelledMessage = 'ผู้ใช้งานยกเลิกการใช้ ThaID';
 
+/// ข้อความแจ้งว่าผู้จองรายย่อยต้องเข้าสู่ระบบด้วย ThaID (พ.ย. 2569) ใช้ข้อความเดียวกันทุกหน้าจอ
+/// แสดงผ่าน [RetailThaidNotice] ในการ์ดเข้าสู่ระบบ ฟอร์มจองประเภทรายย่อย และหน้าต่างเข้าสู่ระบบด้วยรหัสผ่าน
+const String retailThaidOnlyMessage = 'ผู้ใช้รายย่อยเข้าสู่ระบบผ่าน ThaID เท่านั้น';
+
 String thaidReturnUrl() {
   final base = html.document.baseUri ?? html.window.location.href;
   return Uri.parse(base).resolve('thaid_callback.html').toString();

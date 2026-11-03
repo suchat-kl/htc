@@ -5,16 +5,33 @@ import '../config/theme.dart';
 import '../models/bookroom.dart';
 import '../models/tfood.dart';
 import '../models/foodtype.dart';
+import '../providers/auth_provider.dart';
 import '../services/api_service.dart';
 import '../utils/snackbar_helper.dart';
 import '../utils/thaid.dart';
 import '../utils/util.dart';
+import '../widgets/thaid_login_card.dart';
 import 'package:highway_training/utils/logger.dart';
 
+/// หน้าจอง (เพิ่ม/แก้ไขใบจอง และรายการอาหาร)
+///
+/// ต้องเข้าสู่ระบบก่อนเสมอ (พ.ย. 2569): ยังไม่เข้าสู่ระบบแสดงการ์ดให้เข้าด้วย ThaID แทนฟอร์ม
+/// ผู้จองที่ไม่ใช่เจ้าหน้าที่ ([ApiService.isStaff] = false): เลขบัตรเติมจากบัญชีและแก้ไม่ได้
+/// backend บังคับเลขบัตรของใบจองเป็นเลขบัตรของบัญชีอีกชั้น เจ้าหน้าที่ใช้ฟอร์มแบบเดิม
 class BookingEditScreen extends StatefulWidget {
   final ApiService apiService;
   final Bookroom? booking;
-  const BookingEditScreen({super.key, required this.apiService, this.booking});
+
+  /// ใช้ฟังสถานะล็อกอินและเรียกเข้าสู่ระบบด้วย ThaID จากการ์ดในหน้านี้
+  /// ไม่ส่งมา = หน้าจอยังกันคนไม่ล็อกอินได้ แต่ต้องกดปุ่ม ThaID ที่แถบบนเอง
+  final AuthProvider? authProvider;
+
+  const BookingEditScreen({
+    super.key,
+    required this.apiService,
+    this.booking,
+    this.authProvider,
+  });
 
   @override
   State<BookingEditScreen> createState() => _BookingEditScreenState();
@@ -150,6 +167,62 @@ class _BookingEditScreenState extends State<BookingEditScreen> {
     );
   }
 
+  /// ป้ายแทนแผงยืนยัน ThaID สำหรับผู้จองที่ไม่ใช่เจ้าหน้าที่ ซึ่งเข้าสู่ระบบมาแล้ว
+  /// เลขบัตรมาจากบัญชีที่เข้าสู่ระบบ จึงไม่ต้องสแกน ThaID ซ้ำในฟอร์ม
+  Widget _bookerVerifiedBadge() {
+    final viaThaid = widget.apiService.isThaidLogin;
+    final hasId = _idcardCtrl.text.trim().isNotEmpty;
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppTheme.successColor.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppTheme.successColor.withValues(alpha: 0.4)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            viaThaid ? Icons.verified_user : Icons.badge_outlined,
+            color: AppTheme.successColor,
+            size: 22,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  viaThaid
+                      ? 'ยืนยันตัวตนด้วย ThaID แล้ว'
+                      : 'ใช้ข้อมูลผู้จองตามบัญชีที่เข้าสู่ระบบ',
+                  style: const TextStyle(
+                    fontFamily: 'NotoSansThai',
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.successColor,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  hasId
+                      ? 'เลขบัตรประชาชนของใบจองใช้เลขบัตรของบัญชีที่เข้าสู่ระบบ แก้ไขไม่ได้ '
+                            'ชื่อ-สกุลผู้จองแก้ไขได้'
+                      : 'บัญชีนี้ยังไม่มีเลขบัตรประชาชน '
+                            'กรุณาออกจากระบบแล้วเข้าสู่ระบบใหม่ด้วย ThaID ก่อนจอง',
+                  style: const TextStyle(
+                    fontFamily: 'NotoSansThai',
+                    fontSize: 13,
+                    color: AppTheme.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   /// ใบจองรายย่อย (C) ขอใช้ได้เฉพาะห้องพัก
   /// ติ๊กห้องพักไว้ให้ตั้งแต่ต้น และล้างห้องกิจกรรมที่อาจติ๊กค้างไว้จากประเภทเดิม
   void _applyLodgingOnly() {
@@ -171,6 +244,15 @@ class _BookingEditScreenState extends State<BookingEditScreen> {
   bool get isEdit =>
       _currentBooking != null; // ใช้ _currentBooking แทน widget.booking
 
+  /// ล็อกอินอยู่หรือไม่ (ApiService เป็นตัวเดียวทั้งแอป ค่าตรงกับ AuthProvider)
+  bool get _loggedIn => widget.apiService.isLoggedIn;
+
+  /// เจ้าหน้าที่ใช้ฟอร์มแบบเดิม (แก้เลขบัตรได้ ยืนยัน ThaID แทนผู้จองได้)
+  bool get _isStaff => widget.apiService.isStaff;
+
+  /// สถานะล็อกอินครั้งก่อน ใช้ดูว่าเพิ่งเข้าสู่ระบบจากการ์ดในหน้านี้
+  bool _wasLoggedIn = false;
+
   @override
   void initState() {
     super.initState();
@@ -179,13 +261,40 @@ class _BookingEditScreenState extends State<BookingEditScreen> {
       if (_thaidPid != null && mounted) setState(() {});
     });
     _currentBooking = widget.booking; // เก็บข้อมูลเริ่มต้น
+    _wasLoggedIn = _loggedIn;
+    widget.authProvider?.addListener(_onAuthChanged);
     _loadFoodtypes();
     if (isEdit) {
       _loadExistingData();
-      _loadTfoods();
-    } else if (widget.apiService.isLoggedIn) {
+      if (_loggedIn) _loadTfoods();
+    } else if (_loggedIn) {
       _fillBookerFromLogin();
     }
+  }
+
+  /// สถานะล็อกอินเปลี่ยน: เพิ่งเข้าสู่ระบบ = เติมข้อมูลผู้จอง/โหลดรายการอาหาร
+  /// ออกจากระบบ = ฟอร์มถูกแทนด้วยการ์ดเข้าสู่ระบบ (build ตัดสินเอง)
+  void _onAuthChanged() {
+    if (!mounted) return;
+    final now = _loggedIn;
+    if (now && !_wasLoggedIn) {
+      if (isEdit) {
+        _loadTfoods();
+      } else {
+        _fillBookerFromLogin();
+      }
+    } else if (!now && _wasLoggedIn) {
+      // ล้างข้อมูลผู้จองของบัญชีเดิมทิ้ง ไม่ให้ค้างไปถึงบัญชีถัดไปที่เข้าในหน้านี้
+      _thaidPid = null;
+      _thaidAddress = null;
+      _tfoods = [];
+      if (!isEdit) {
+        _idcardCtrl.clear();
+        _contractNameCtrl.clear();
+      }
+    }
+    _wasLoggedIn = now;
+    setState(() {});
   }
 
   /// ใบจองใหม่ของผู้ที่เข้าสู่ระบบแล้ว (ทั้ง ThaID และรหัสผ่าน): เติมชื่อ-สกุลผู้จองและเลขบัตรให้
@@ -196,15 +305,22 @@ class _BookingEditScreenState extends State<BookingEditScreen> {
   /// ป้าย "ยืนยันตัวตนแล้ว" ขึ้นเฉพาะเข้าด้วย ThaID เพราะเลขบัตรผ่านการยืนยันตอนเข้าสู่ระบบ
   /// เข้าด้วยรหัสผ่านเลขบัตรมาจากที่ผู้ดูแลกรอกไว้ ยังไม่ได้ยืนยัน
   /// เติมเฉพาะช่องที่ยังว่าง จองแทนคนอื่นก็แก้ทับได้
+  ///
+  /// ผู้จองที่ไม่ใช่เจ้าหน้าที่: เลขบัตรใช้ของบัญชีเสมอ (ทับค่าเดิม ช่องนี้แก้ไม่ได้)
   Future<void> _fillBookerFromLogin() async {
     try {
       final b = await widget.apiService.getMyBooker();
-      if (!mounted || b == null || isEdit) return;
+      if (!mounted || b == null || isEdit || !_loggedIn) return;
       setState(() {
         if (_contractNameCtrl.text.trim().isEmpty && b.name.isNotEmpty) {
           _contractNameCtrl.text = b.name;
         }
-        if (_idcardCtrl.text.trim().isEmpty && b.idcard.isNotEmpty) {
+        if (!_isStaff) {
+          _thaidPid = widget.apiService.isThaidLogin && b.idcard.isNotEmpty
+              ? b.idcard
+              : null;
+          _idcardCtrl.text = b.idcard;
+        } else if (_idcardCtrl.text.trim().isEmpty && b.idcard.isNotEmpty) {
           if (widget.apiService.isThaidLogin) _thaidPid = b.idcard;
           _idcardCtrl.text = b.idcard;
         }
@@ -216,6 +332,7 @@ class _BookingEditScreenState extends State<BookingEditScreen> {
 
   @override
   void dispose() {
+    widget.authProvider?.removeListener(_onAuthChanged);
     _booktitleCtrl.dispose();
     _departmentCtrl.dispose();
     _contractNameCtrl.dispose();
@@ -414,10 +531,9 @@ class _BookingEditScreenState extends State<BookingEditScreen> {
         await AppDialog.showSuccess(
           context,
           'บันทึกการจองเรียบร้อยแล้ว\nเลขที่การจอง: ${_currentBooking?.bookID}'
-          // คนทั่วไปดูใบจองย้อนหลังได้ทางหน้าตรวจสอบสถานะเท่านั้น ต้องจดเลขนี้ไว้
-          '${_currentBooking?.idcard?.isNotEmpty == true ? '\n\nกรุณาจดเลขที่การจองไว้ '
-                    'ใช้คู่กับเลขบัตรประชาชนเพื่อตรวจสอบสถานะการจอง '
-                    'และออกใบ Pay-in ที่เมนู "ตรวจสอบสถานะการจอง"' : ''}',
+          // ผู้จองที่ไม่ใช่เจ้าหน้าที่ดูใบจองย้อนหลังได้ที่เมนู "ใบจองของฉัน" (ต้องเข้าด้วย ThaID)
+          '${!_isStaff ? '\n\nดูสถานะการจอง แก้ไขใบจอง '
+                    'และออกใบ Pay-in ได้ที่เมนู "ใบจองของฉัน"' : ''}',
           onPressed: () {
             // หลังจากกด OK ให้กลับไปหน้าก่อนหน้า
             // Navigator.pop(context, true);
@@ -608,6 +724,40 @@ class _BookingEditScreenState extends State<BookingEditScreen> {
     // จุดตัดสำหรับสลับ 2 คอลัมน์ -> ซ้อนกัน (ต่ำกว่า isD เพราะแค่ 2 ช่องยังพอวางคู่ได้)
     final isWide = sw > 720;
 
+    // ยังไม่เข้าสู่ระบบ: ไม่แสดงฟอร์ม ให้เข้าด้วย ThaID ก่อน (รายย่อยจองผ่าน ThaID เท่านั้น)
+    if (!_loggedIn) {
+      return Scaffold(
+        backgroundColor: AppTheme.backgroundColor,
+        appBar: AppBar(
+          leading: IconButton(
+            icon: const Icon(Icons.close, size: 28),
+            onPressed: () => Navigator.pop(context),
+          ),
+          title: Text(
+            isEdit ? 'แก้ไขการจอง' : 'เพิ่มการจอง',
+            style: const TextStyle(
+              fontFamily: 'NotoSansThai',
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          backgroundColor: AppTheme.primaryColor,
+          foregroundColor: Colors.white,
+          elevation: 4,
+        ),
+        body: SingleChildScrollView(
+          child: ThaidLoginCard(
+            authProvider: widget.authProvider,
+            title: 'กรุณาเข้าสู่ระบบด้วย ThaID ก่อนจอง',
+            message:
+                'ระบบใช้เลขบัตรประชาชนและชื่อ-สกุลจาก ThaID เป็นข้อมูลผู้จอง '
+                'เข้าสู่ระบบแล้วจะแสดงแบบฟอร์มการจอง '
+                'และดูใบจองของท่านได้ที่เมนู "ใบจองของฉัน"',
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
@@ -744,9 +894,23 @@ class _BookingEditScreenState extends State<BookingEditScreen> {
                               const SizedBox(height: 10),
                               _advanceRuleNote(),
 
-                              // รายย่อย: ยืนยันตัวตนด้วย ThaID ก่อนกรอกรายละเอียด
-                              // ผู้ใช้มักกรอกเลยโดยไม่ได้ยืนยัน จึงวางไว้ก่อนช่องอื่นทั้งหมด
+                              // เลือกรายย่อย: แจ้งให้ชัดว่ารายย่อยต้องเข้าด้วย ThaID
                               if (_bookingtype == 'C') ...[
+                                const SizedBox(height: 10),
+                                RetailThaidNotice(
+                                  extra: _isStaff
+                                      ? 'ใบจองรายย่อยใช้เลขบัตรของผู้จองที่ยืนยันด้วย ThaID'
+                                      : null,
+                                ),
+                              ],
+
+                              // เจ้าหน้าที่ + รายย่อย: ยืนยันตัวตนผู้จองด้วย ThaID ก่อนกรอกรายละเอียด
+                              // ผู้ใช้มักกรอกเลยโดยไม่ได้ยืนยัน จึงวางไว้ก่อนช่องอื่นทั้งหมด
+                              // ผู้จองที่ไม่ใช่เจ้าหน้าที่เข้าด้วย ThaID มาแล้ว แสดงป้ายแทนแผงสแกน
+                              if (!_isStaff) ...[
+                                const SizedBox(height: 14),
+                                _bookerVerifiedBadge(),
+                              ] else if (_bookingtype == 'C') ...[
                                 const SizedBox(height: 14),
                                 _thaidPanel(),
                               ],
@@ -839,15 +1003,18 @@ class _BookingEditScreenState extends State<BookingEditScreen> {
                                       : 'เลขบัตรประชาชน',
                                   _idcardCtrl,
                                   kb: TextInputType.number,
+                                  // ผู้จองที่ไม่ใช่เจ้าหน้าที่ใช้เลขบัตรของบัญชี แก้เองไม่ได้
+                                  readOnly: !_isStaff,
                                   validator: (value) {
                                     final cleaned = (value ?? '').replaceAll(
                                       ' ',
                                       '',
                                     );
                                     if (cleaned.isEmpty) {
-                                      return _bookingtype == 'C'
+                                      if (_bookingtype != 'C') return null;
+                                      return _isStaff
                                           ? 'กรุณากรอกเลขบัตรประชาชน'
-                                          : null;
+                                          : 'บัญชีนี้ไม่มีเลขบัตรประชาชน กรุณาเข้าสู่ระบบด้วย ThaID';
                                     }
                                     if (cleaned.length != 13) {
                                       return 'เลขบัตรประชาชนต้องมี 13 หลัก';
@@ -1257,6 +1424,8 @@ class _BookingEditScreenState extends State<BookingEditScreen> {
     String? suffix, // หน่วยท้ายช่อง เช่น 'คน'
     // ช่องบังคับกรอก: ต่อ * ท้ายชื่อช่อง และเตือนเมื่อเว้นว่าง (ใช้เมื่อไม่ได้ส่ง validator มาเอง)
     bool requiredField = false,
+    // แสดงค่าแต่แก้ไม่ได้ (เช่นเลขบัตรของผู้จองที่มาจากบัญชี)
+    bool readOnly = false,
   }) => Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
@@ -1268,6 +1437,7 @@ class _BookingEditScreenState extends State<BookingEditScreen> {
         controller: c,
         keyboardType: kb,
         maxLines: maxLines,
+        readOnly: readOnly,
         validator:
             validator ??
             (requiredField
@@ -1291,8 +1461,11 @@ class _BookingEditScreenState extends State<BookingEditScreen> {
             borderSide: BorderSide(color: AppTheme.primaryColor, width: 1.6),
           ),
           filled: true,
-          fillColor: AppTheme.fieldFillColor,
+          fillColor: readOnly ? Colors.grey.shade200 : AppTheme.fieldFillColor,
           suffixText: suffix,
+          suffixIcon: readOnly
+              ? Icon(Icons.lock_outline, size: 18, color: Colors.grey.shade600)
+              : null,
           suffixStyle: TextStyle(fontSize: 13, color: Colors.grey.shade600),
           contentPadding: const EdgeInsets.symmetric(
             horizontal: 14,

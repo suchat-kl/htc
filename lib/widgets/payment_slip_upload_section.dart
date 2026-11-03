@@ -13,8 +13,11 @@ import '../utils/file_pick.dart';
 import '../utils/snackbar_helper.dart';
 import '../utils/util.dart';
 
-/// ส่วนแจ้งชำระเงินของผู้จอง (ไม่ต้องล็อกอิน) ใช้กับใบจองประเภทรายย่อย (C) เท่านั้น
+/// ส่วนแจ้งชำระเงินของผู้จอง ใช้กับใบจองประเภทรายย่อย (C) เท่านั้น
 /// หน้าที่เรียกต้องเช็คประเภทเอง
+///
+/// ต้องล็อกอินแล้ว (ผู้จองเข้าด้วย ThaID ในหน้า "ใบจองของฉัน") ทุกคำขอแนบ token
+/// backend ใช้เลขบัตรของบัญชีที่ล็อกอินเทียบกับใบจองเอง หน้าเว็บไม่ส่งเลขบัตร
 ///
 /// ตอนนี้ใช้ใบ Pay-in ไปชำระที่เคาน์เตอร์ แล้วแนบใบเสร็จเป็นหลักฐาน
 /// QR พร้อมเพย์ทำไว้แล้วแต่ปิดไว้ก่อน ([showPromptPay] = false) รอ QR Bill Payment ของกรุงไทย
@@ -26,10 +29,6 @@ class PaymentSlipUploadSection extends StatefulWidget {
   final ApiService apiService;
   final int bookId;
 
-  /// เลขบัตรประชาชนของใบจอง ที่ผู้จองกรอกในหน้าตรวจสอบสถานะ
-  /// backend ตรวจคู่กับ [bookId] ทุกคำขอ (ใบ Pay-in ยอด QR แนบหลักฐาน) ห้าม log
-  final String idcard;
-
   /// true = แสดง QR พร้อมเพย์แทนใบ Pay-in
   final bool showPromptPay;
 
@@ -37,7 +36,6 @@ class PaymentSlipUploadSection extends StatefulWidget {
     super.key,
     required this.apiService,
     required this.bookId,
-    required this.idcard,
     this.showPromptPay = false,
   });
 
@@ -108,7 +106,6 @@ class _PaymentSlipUploadSectionState extends State<PaymentSlipUploadSection> {
     try {
       final slips = await widget.apiService.getPublicPaymentSlips(
         widget.bookId,
-        widget.idcard,
       );
       if (!mounted) return;
       setState(() {
@@ -130,10 +127,7 @@ class _PaymentSlipUploadSectionState extends State<PaymentSlipUploadSection> {
       _balanceError = null;
     });
     try {
-      final b = await widget.apiService.getPaymentBalance(
-        widget.bookId,
-        widget.idcard,
-      );
+      final b = await widget.apiService.getPaymentBalance(widget.bookId);
       if (!mounted) return;
       setState(() {
         _balance = b;
@@ -156,10 +150,7 @@ class _PaymentSlipUploadSectionState extends State<PaymentSlipUploadSection> {
   Future<void> _createPayIn() async {
     setState(() => _payInBusy = true);
     try {
-      final bytes = await widget.apiService.downloadPayIn(
-        widget.bookId,
-        widget.idcard,
-      );
+      final bytes = await widget.apiService.downloadPayIn(widget.bookId);
       if (!mounted) return;
       setState(() {
         _payInPdf = Uint8List.fromList(bytes);
@@ -202,7 +193,6 @@ class _PaymentSlipUploadSectionState extends State<PaymentSlipUploadSection> {
     try {
       final qr = await widget.apiService.getPromptPayQr(
         widget.bookId,
-        widget.idcard,
         amount: amount,
       );
       if (!mounted) return;
@@ -278,7 +268,6 @@ class _PaymentSlipUploadSectionState extends State<PaymentSlipUploadSection> {
     try {
       await widget.apiService.uploadPaymentSlip(
         bookId: widget.bookId,
-        idcard: widget.idcard,
         amount: amount,
         note: _noteCtrl.text,
         bytes: file.bytes,
@@ -374,7 +363,7 @@ class _PaymentSlipUploadSectionState extends State<PaymentSlipUploadSection> {
             ),
             const SizedBox(height: 10),
             Text(
-              'เมื่อเจ้าหน้าที่รับจองแล้ว กลับมาตรวจสอบสถานะการจองที่หน้านี้อีกครั้งเพื่อสร้างใบ Pay-in และแนบใบเสร็จ',
+              'เมื่อเจ้าหน้าที่รับจองแล้ว กลับมาที่ใบจองนี้ในเมนู "ใบจองของฉัน" อีกครั้งเพื่อสร้างใบ Pay-in และแนบใบเสร็จ',
               style: TextStyle(
                 fontFamily: _font,
                 fontSize: 13,

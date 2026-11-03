@@ -13,7 +13,7 @@ import '../utils/util.dart';
 import '../widgets/app_autocomplete_field.dart';
 import '../widgets/app_pagination.dart';
 import 'booking_detail_screen.dart';
-import 'booking_status_screen.dart';
+import 'my_bookings_screen.dart';
 
 /// เมนูห้องพัก/ห้องกิจกรรม > ค้นหาห้องกิจกรรม
 ///
@@ -209,10 +209,11 @@ class _ActivityRoomSearchScreenState extends State<ActivityRoomSearchScreen> {
               bookId: bookId,
             );
           }
-          // ผู้จองที่ไม่ได้ล็อกอินดูได้แค่สถานะของใบจองตัวเอง (ต้องกรอกเลขบัตร)
-          return BookingStatusScreen(
+          // ผู้ที่ยังไม่ได้ล็อกอิน: ไปหน้า "ใบจองของฉัน" ซึ่งให้เข้าด้วย ThaID ก่อน
+          // แล้วเห็นเฉพาะใบจองของตัวเอง (ไม่เปิดรายละเอียดใบจองของคนอื่น)
+          return MyBookingsScreen(
             apiService: widget.apiService,
-            initialBookId: bookId,
+            authProvider: widget.authProvider,
           );
         },
       ),

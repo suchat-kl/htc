@@ -31,7 +31,6 @@ import 'package:highway_training/models/payment_activity.dart';
 import 'package:highway_training/models/payment_lodging.dart';
 import 'package:highway_training/models/payment_room_summary.dart';
 import 'package:highway_training/models/payment_slip.dart';
-import 'package:highway_training/models/public_booking_status.dart';
 import 'package:highway_training/models/invoice.dart';
 import 'package:highway_training/models/room_search_result.dart';
 import 'package:highway_training/models/room_type_option.dart';
@@ -220,6 +219,17 @@ class ApiService {
 
   List<String> get roles => _roles;
   bool get isLoggedIn => _isLoggedIn;
+
+  /// บัญชีเจ้าหน้าที่ = ล็อกอินแล้วและมีสิทธิ์ดูหน้าจออย่างน้อยหนึ่งหน้า
+  ///
+  /// ผู้จองที่ ThaID สร้างบัญชีให้ (thaid_..., role USER) ไม่มีสิทธิ์หน้าจอใดจึงไม่ใช่เจ้าหน้าที่
+  /// ยังโหลดสิทธิ์ไม่เสร็จ: ถือว่าบัญชี thaid_ ไม่ใช่เจ้าหน้าที่ บัญชีอื่นเป็นเจ้าหน้าที่ไปก่อน
+  /// ใช้แค่จัดหน้าจอ (เช่นล็อกช่องเลขบัตรในหน้าจอง) การกันจริงอยู่ที่ backend
+  bool get isStaff {
+    if (!_isLoggedIn) return false;
+    if (!_permissionsLoaded) return !isThaidOnly;
+    return _permissions.values.any((p) => p.canView);
+  }
 
   bool hasRole(String role) => _roles.contains(role);
 
@@ -1935,26 +1945,26 @@ class ApiService {
 
   // ============ สลิปโอนเงิน ============
 
-  /// ผู้จองแนบสลิปโอนเงิน — ไม่ต้องล็อกอิน
+  /// ผู้จองแนบหลักฐานการชำระเงินของใบจองตัวเอง — ต้องล็อกอิน
   ///
+  /// backend ใช้เลขบัตรของบัญชีที่ล็อกอินเทียบกับใบจอง ไม่รับเลขบัตรจากหน้าเว็บแล้ว
   /// backend อ่าน QR บนสลิปเพื่อกันสลิปซ้ำ ถ้าซ้ำหรือไฟล์ไม่ถูกต้องจะโยน Exception
   /// พร้อมข้อความจาก backend ให้หน้าจอแสดงได้เลย
   Future<PaymentSlip> uploadPaymentSlip({
     required int bookId,
-    required String idcard,
     required double amount,
     String? note,
     required List<int> bytes,
     required String fileName,
   }) async {
+    await _ensureToken();
     final form = FormData.fromMap({
       'bookId': bookId,
-      'idcard': idcard,
       'amount': amount.toStringAsFixed(2),
       if (note != null && note.trim().isNotEmpty) 'note': note.trim(),
       'file': MultipartFile.fromBytes(bytes, filename: fileName),
     });
-    final r = await publicDio.post(
+    final r = await dio.post(
       '/api/auth/public-slips',
       data: form,
       options: Options(
@@ -1968,9 +1978,19 @@ class ApiService {
     if (r.statusCode == 413) {
       throw Exception('ไฟล์ใหญ่เกินกว่าที่ระบบรับได้ กรุณาใช้รูปที่เล็กลง');
     }
-    throw Exception(
-      _slipMessage(r.data) ?? 'แนบสลิปไม่สำเร็จ (${r.statusCode})',
-    );
+    throw Exception(_myBookingMessage(r, 'แนบสลิปไม่สำเร็จ'));
+  }
+
+  /// ข้อความผิดพลาดของเส้นใบจองของผู้จองเอง (public-slips) ที่ต้องล็อกอิน
+  ///
+  /// backend ส่งข้อความมาเองใช้ข้อความนั้น ไม่มีข้อความ: 401 = ยังไม่ได้เข้าสู่ระบบ/หมดอายุ
+  /// 403 = ไม่ใช่ใบจองของบัญชีนี้
+  static String _myBookingMessage(Response r, String fallback) {
+    final m = _slipMessage(r.data);
+    if (m != null) return m;
+    if (r.statusCode == 401) return 'กรุณาเข้าสู่ระบบด้วย ThaID ก่อน';
+    if (r.statusCode == 403) return 'ไม่มีสิทธิ์เข้าถึงใบจองนี้';
+    return '$fallback (${r.statusCode})';
   }
 
   // ============ ThaID ============
@@ -2049,50 +2069,33 @@ class ApiService {
     return null;
   }
 
-  /// สถานะใบจองสำหรับผู้จองที่ไม่ได้ล็อกอิน — ต้องรู้ทั้งเลขใบจองและเลขบัตรประชาชน
-  ///
-  /// ส่งทาง POST ไม่ให้เลขบัตรไปอยู่ใน URL ไม่ตรง = backend ตอบ 404 ข้อความเดียวทุกกรณี
-  /// ห้าม log [idcard]
-  Future<PublicBookingStatus> getPublicBookingStatus(
-    int bookId,
-    String idcard,
-  ) async {
-    final r = await publicDio.post(
-      '/api/auth/public-booking/status',
-      data: {'bookId': bookId, 'idcard': idcard},
-      options: Options(validateStatus: (status) => status! < 500),
-    );
-    if (r.statusCode == 200 && r.data is Map) {
-      return PublicBookingStatus.fromJson(Map<String, dynamic>.from(r.data));
-    }
-    throw Exception(
-      _slipMessage(r.data) ?? 'ตรวจสอบสถานะไม่สำเร็จ (${r.statusCode})',
-    );
-  }
+  // ── ใบจองของผู้จองเอง (public-slips) ─────────────────────────────
+  // ทุกเส้นต้องล็อกอิน (ผู้จองเข้าด้วย ThaID) backend ใช้เลขบัตรของบัญชีที่ล็อกอิน
+  // เทียบกับใบจองเอง หน้าเว็บไม่ส่งเลขบัตรแล้ว (เดิมกรอกเลขบัตรคู่เลขใบจองโดยไม่ล็อกอิน)
 
-  /// ยอดค่าบริการ ยอดที่ชำระแล้ว และยอดคงเหลือของใบจองรายย่อย — ไม่ต้องล็อกอิน
-  Future<PaymentBalance> getPaymentBalance(int bookId, String idcard) async {
-    final r = await publicDio.post(
+  /// ยอดค่าบริการ ยอดที่ชำระแล้ว และยอดคงเหลือของใบจองรายย่อยของตัวเอง — ต้องล็อกอิน
+  Future<PaymentBalance> getPaymentBalance(int bookId) async {
+    await _ensureToken();
+    final r = await dio.post(
       '/api/auth/public-slips/balance',
-      data: {'bookId': bookId, 'idcard': idcard},
+      data: {'bookId': bookId},
       options: Options(validateStatus: (status) => status! < 500),
     );
     if (r.statusCode == 200 && r.data is Map) {
       return PaymentBalance.fromJson(Map<String, dynamic>.from(r.data));
     }
-    throw Exception(
-      _slipMessage(r.data) ?? 'ดึงยอดชำระไม่สำเร็จ (${r.statusCode})',
-    );
+    throw Exception(_myBookingMessage(r, 'ดึงยอดชำระไม่สำเร็จ'));
   }
 
-  /// ใบแจ้งการชำระเงิน (Pay-in) ของใบจองรายย่อยเป็น PDF — ไม่ต้องล็อกอิน
+  /// ใบแจ้งการชำระเงิน (Pay-in) ของใบจองรายย่อยของตัวเองเป็น PDF — ต้องล็อกอิน
   ///
   /// ยอดในใบคือยอดคงเหลือ ถ้าออกใบไม่ได้ (เช่นไม่มีเลขบัตร หรือชำระครบแล้ว)
   /// backend ส่งข้อความกลับมาเป็น JSON ต้องถอดเองเพราะขอผลเป็น bytes
-  Future<List<int>> downloadPayIn(int bookId, String idcard) async {
-    final r = await publicDio.post(
+  Future<List<int>> downloadPayIn(int bookId) async {
+    await _ensureToken();
+    final r = await dio.post(
       '/api/auth/public-slips/payin',
-      data: {'bookId': bookId, 'idcard': idcard},
+      data: {'bookId': bookId},
       options: Options(
         responseType: ResponseType.bytes,
         receiveTimeout: const Duration(seconds: 60),
@@ -2112,22 +2115,23 @@ class ApiService {
         // ไม่ใช่ JSON ใช้ข้อความกลาง
       }
     }
+    if (message == null && r.statusCode == 401) {
+      message = 'กรุณาเข้าสู่ระบบด้วย ThaID ก่อน';
+    } else if (message == null && r.statusCode == 403) {
+      message = 'ไม่มีสิทธิ์เข้าถึงใบจองนี้';
+    }
     throw Exception(message ?? 'สร้างใบ Pay-in ไม่สำเร็จ (${r.statusCode})');
   }
 
-  /// QR พร้อมเพย์ของใบจองรายย่อย — ไม่ต้องล็อกอิน
+  /// QR พร้อมเพย์ของใบจองรายย่อยของตัวเอง — ต้องล็อกอิน
   ///
   /// ไม่ส่ง [amount] = ยอดคงเหลือ (ค่าบริการรวม หักสลิปที่แนบแล้วและยังไม่ถูกปฏิเสธ)
-  Future<PromptPayQrInfo> getPromptPayQr(
-    int bookId,
-    String idcard, {
-    double? amount,
-  }) async {
-    final r = await publicDio.post(
+  Future<PromptPayQrInfo> getPromptPayQr(int bookId, {double? amount}) async {
+    await _ensureToken();
+    final r = await dio.post(
       '/api/auth/public-slips/promptpay',
       data: {
         'bookId': bookId,
-        'idcard': idcard,
         if (amount != null) 'amount': amount.toStringAsFixed(2),
       },
       options: Options(validateStatus: (status) => status! < 500),
@@ -2135,21 +2139,20 @@ class ApiService {
     if (r.statusCode == 200 && r.data is Map) {
       return PromptPayQrInfo.fromJson(Map<String, dynamic>.from(r.data));
     }
-    throw Exception(
-      _slipMessage(r.data) ?? 'สร้าง QR ไม่สำเร็จ (${r.statusCode})',
-    );
+    throw Exception(_myBookingMessage(r, 'สร้าง QR ไม่สำเร็จ'));
   }
 
-  /// สลิปของใบจอง สำหรับผู้จอง — ไม่ต้องล็อกอิน ไม่มีรูปและเลขอ้างอิง
-  Future<List<PaymentSlip>> getPublicPaymentSlips(
-    int bookId,
-    String idcard,
-  ) async {
-    final r = await publicDio.post(
+  /// หลักฐานการชำระเงินของใบจองตัวเอง สำหรับผู้จอง — ต้องล็อกอิน ไม่มีรูปและเลขอ้างอิง
+  Future<List<PaymentSlip>> getPublicPaymentSlips(int bookId) async {
+    await _ensureToken();
+    final r = await dio.post(
       '/api/auth/public-slips/list',
-      data: {'bookId': bookId, 'idcard': idcard},
+      data: {'bookId': bookId},
       options: Options(validateStatus: (status) => status! < 500),
     );
+    if (r.statusCode == 401 || r.statusCode == 403) {
+      throw Exception(_myBookingMessage(r, 'ดึงรายการสลิปไม่สำเร็จ'));
+    }
     return _slipList(r, 'ดึงรายการสลิปไม่สำเร็จ');
   }
 
@@ -3435,9 +3438,13 @@ class ApiService {
     throw Exception('ไม่สามารถดึงข้อมูลได้');
   }
 
+  /// บันทึกใบจองใหม่ — ต้องล็อกอิน (ผู้จองรายย่อยเข้าด้วย ThaID)
+  ///
+  /// ผู้ใช้ ThaID: backend บังคับเลขบัตรของใบจองเป็นเลขบัตรของบัญชีเสมอ
   Future<Bookroom> createBooking(Bookroom d) async {
     try {
-      final r = await publicDio.post('/api/auth/bookings', data: d.toJson());
+      await _ensureToken();
+      final r = await dio.post('/api/auth/bookings', data: d.toJson());
       if (r.statusCode == 200 && r.data['success'] == true) {
         return Bookroom.fromJson(r.data['booking']);
       }
@@ -3460,15 +3467,11 @@ class ApiService {
     //   }
     // }
     try {
-      // ล็อกอินอยู่ต้องแนบ token ไปด้วย backend จึงรู้ว่าใครเปลี่ยนสถานะการจอง
-      // และตรวจสิทธิ์ตาม m_role_bookstatus ได้ เดิมส่งแบบไม่มี token ทุกกรณี
-      // สถานะจึงไม่เคยถูกบันทึก ผู้จองที่ไม่ล็อกอินยังส่งแบบเดิม
-      // ล็อกอินอยู่ต้องต่ออายุ token ก่อนส่ง — path นี้ backend เปิดให้คนไม่ล็อกอินด้วย
-      // token หมดอายุจึงไม่ได้ 401 ให้ interceptor ต่ออายุ แต่ถูกมองเป็นคนไม่ล็อกอิน
-      // แล้วเปลี่ยนสถานะไม่ได้ (400) — เจอบน production หลังล็อกอินเกิน 5 นาที
-      if (_isLoggedIn) await _ensureToken();
-      final client = _isLoggedIn ? dio : publicDio;
-      final r = await client.put('/api/auth/bookings/$id', data: d.toJson());
+      // ต้องล็อกอินเสมอ (พ.ย. 2569) backend รู้ว่าใครแก้/เปลี่ยนสถานะ ตรวจสิทธิ์ตาม
+      // m_role_bookstatus และให้ผู้ใช้ ThaID แก้ได้เฉพาะใบจองที่เลขบัตรตรงกับบัญชี
+      // ต่ออายุ token ก่อนส่งทุกครั้ง กัน token หมดอายุกลางทาง
+      await _ensureToken();
+      final r = await dio.put('/api/auth/bookings/$id', data: d.toJson());
       if (r.statusCode == 200 && r.data['success'] == true) {
         return Bookroom.fromJson(r.data['booking']);
       }
@@ -3530,7 +3533,7 @@ class ApiService {
 
     try {
       // backend ปิด /searchBookings ไม่ให้คนไม่ล็อกอินใช้แล้ว (ต.ค. 2569) ต้องแนบ token
-      // ผู้จองที่ไม่ล็อกอินดูสถานะผ่าน [getPublicBookingStatus] แทน
+      // เจ้าหน้าที่เห็นทั้งหมด ผู้ใช้ ThaID ได้เฉพาะใบที่เลขบัตรตรงกับบัญชี (backend กรองเอง)
       await _ensureToken();
       final r = await dio.get(
         '/api/auth/searchBookings',
@@ -3573,6 +3576,8 @@ class ApiService {
   }
 
   // ============ TFOOD API ============
+  // รายการอาหารของใบจอง ต้องล็อกอินทุกเส้น (พ.ย. 2569) ผู้ใช้ ThaID ได้เฉพาะใบจองของตัวเอง
+
   Future<Map<String, dynamic>> getTfoods({
     int page = 0,
     int size = 100,
@@ -3580,14 +3585,16 @@ class ApiService {
   }) async {
     final p = <String, dynamic>{'page': page, 'size': size};
     if (bookID != null) p['bookID'] = bookID;
-    final r = await publicDio.get('/api/auth/tfoods', queryParameters: p);
+    await _ensureToken();
+    final r = await dio.get('/api/auth/tfoods', queryParameters: p);
     if (r.statusCode == 200) return r.data;
     throw Exception('ไม่สามารถดึงข้อมูลได้');
   }
 
   Future<Tfood> createTfood(Tfood d) async {
     try {
-      final r = await publicDio.post('/api/auth/tfoods', data: d.toJson());
+      await _ensureToken();
+      final r = await dio.post('/api/auth/tfoods', data: d.toJson());
       if (r.statusCode == 200 && r.data['success'] == true) {
         return Tfood.fromJson(r.data['tfood']);
       }
@@ -3600,13 +3607,11 @@ class ApiService {
     }
   }
 
-  /// แก้ไขรายการอาหาร — PUT /api/auth/tfoods/{id}
-  ///
-  /// ใช้ publicDio เหมือน create/delete ของ tfoods เพราะ SecurityConfig
-  /// เปิด /api/auth/tfoods/** ไว้เป็น permitAll
+  /// แก้ไขรายการอาหาร — PUT /api/auth/tfoods/{id} ต้องล็อกอิน
   Future<Tfood> updateTfood(int id, Tfood d) async {
     try {
-      final r = await publicDio.put('/api/auth/tfoods/$id', data: d.toJson());
+      await _ensureToken();
+      final r = await dio.put('/api/auth/tfoods/$id', data: d.toJson());
       if (r.statusCode == 200 && r.data['success'] == true) {
         return Tfood.fromJson(r.data['tfood']);
       }
@@ -3621,7 +3626,8 @@ class ApiService {
 
   Future<void> deleteTfood(int id) async {
     try {
-      final r = await publicDio.delete('/api/auth/tfoods/$id');
+      await _ensureToken();
+      final r = await dio.delete('/api/auth/tfoods/$id');
       if (r.statusCode != 200 || r.data['success'] != true) {
         throw Exception(r.data['message'] ?? 'ลบไม่สำเร็จ');
       }

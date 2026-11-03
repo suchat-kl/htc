@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:highway_training/providers/auth_provider.dart';
 import '../config/theme.dart';
 import '../services/api_service.dart';
+import 'thaid_login_card.dart';
 
 // Add this import at the top
 // import '../widgets/debug_panel.dart';
@@ -222,6 +223,13 @@ class _LoginDialogState extends State<LoginDialog> {
                         ),
                         const SizedBox(height: 16),
                       ],
+
+                      // หน้าต่างนี้สำหรับบัญชีเจ้าหน้าที่ (รหัสผ่าน) รายย่อยต้องใช้ปุ่ม ThaID
+                      const RetailThaidNotice(
+                        extra: 'กรุณาปิดหน้าต่างนี้แล้วกดปุ่ม ThaID ที่แถบด้านบน '
+                            'หน้าต่างนี้สำหรับบัญชีเจ้าหน้าที่',
+                      ),
+                      const SizedBox(height: 16),
 
                       // Username Field
                       TextFormField(

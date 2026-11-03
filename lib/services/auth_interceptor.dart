@@ -27,12 +27,11 @@ class AuthInterceptor extends Interceptor {
       '/api/auth/refresh-token',
       '/api/auth/hello',
       '/api/auth/foodtypes',
-      '/api/auth/tfoods',
-      // /api/auth/bookings ไม่อยู่ในรายการนี้แล้ว ล็อกอินอยู่ต้องแนบ token ไปด้วย
-      // backend จึงรู้ว่าใครเปลี่ยนสถานะการจองและตรวจสิทธิ์ได้ (เดิมตัด token ทิ้ง
-      // เปลี่ยนสถานะจึงถูกปฏิเสธทุกครั้งแม้เป็น admin) ผู้จองที่ไม่ล็อกอินเรียกผ่าน
-      // publicDio ซึ่งไม่ผ่าน interceptor นี้ backend ยังเปิดเส้นนี้ให้ไม่ต้องล็อกอินเหมือนเดิม
-      '/api/auth/searchBookings',
+      // /api/auth/bookings, /api/auth/tfoods, /api/auth/searchBookings และ
+      // /api/auth/public-slips ไม่อยู่ในรายการนี้ ต้องแนบ token เสมอ (พ.ย. 2569)
+      // backend ให้เฉพาะผู้ที่ล็อกอิน ผู้ใช้ ThaID ได้เฉพาะใบจองที่เลขบัตรตรงกับบัญชี
+      // ถ้าใส่ไว้ในรายการนี้ token จะถูกตัดทิ้งแล้วได้ 401/403 ทุกครั้ง
+      // (สังเกต: เทียบด้วย contains ห้ามใส่ path ที่เป็นส่วนต้นของเส้นที่ต้องล็อกอิน)
       '/api/auth/documentstatus',
       // '/api/auth/bookingID',
       // '/api/auth/',

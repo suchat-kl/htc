@@ -92,6 +92,9 @@ class AuthProvider extends ChangeNotifier {
   /// บัญชีที่ ThaID สร้างให้ (ไม่พบเลขบัตรในตาราง users) ไม่มีเมนูเปลี่ยนรหัสผ่าน
   bool get isThaidOnly => _apiService.isThaidOnly;
 
+  /// บัญชีเจ้าหน้าที่ (มีสิทธิ์ดูหน้าจออย่างน้อยหนึ่งหน้า) ดู [ApiService.isStaff]
+  bool get isStaff => _apiService.isStaff;
+
   // Get user's display name
   String get displayName {
     if (fullName != null && fullName!.isNotEmpty) {

@@ -671,7 +671,10 @@ class _HomeScreenState extends State<HomeScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => BookingEditScreen(apiService: _apiService),
+        builder: (_) => BookingEditScreen(
+          apiService: _apiService,
+          authProvider: widget.authProvider,
+        ),
       ),
     );
   }
