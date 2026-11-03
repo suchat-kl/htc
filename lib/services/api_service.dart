@@ -3203,21 +3203,7 @@ class ApiService {
     return [];
   }
 
-  // Delete maintenance (cascades to tparts)
-  Future<void> deleteMaintenance(int id) async {
-    await _ensureToken();
-    try {
-      final r = await dio.delete('/api/auth/maintenance/$id');
-      if (r.statusCode != 200 || r.data['success'] != true) {
-        throw Exception(r.data['message'] ?? 'ลบไม่สำเร็จ');
-      }
-    } on DioException catch (e) {
-      if (e.response?.data is Map) {
-        throw Exception(e.response!.data['message'] ?? 'เกิดข้อผิดพลาด');
-      }
-      throw Exception('เกิดข้อผิดพลาดในการเชื่อมต่อ');
-    }
-  }
+  // ไม่มีการลบใบแจ้งซ่อม (backend ไม่มีเส้น DELETE แล้ว) ไม่ได้ซ่อมให้ใช้สถานะ "ยกเลิกงาน"
 
   // ============ MAINTENANCE API ============
 
