@@ -9,6 +9,7 @@ import '../models/schedule.dart';
 import '../services/api_service.dart';
 import '../utils/logger.dart';
 import '../utils/snackbar_helper.dart';
+import '../utils/util.dart';
 
 /// ข้อผิดพลาดที่รู้แล้วว่ามาจาก API ตัวไหน — ใช้ส่งข้อความที่อ่านรู้เรื่อง
 /// ขึ้นไปให้ผู้ใช้แทน DioException ดิบ
@@ -89,6 +90,12 @@ class _RoomAvailabilityDialogState extends State<RoomAvailabilityDialog> {
 
   List<String> _totalRoom = [];
   List<String> _useRoom = [];
+
+  /// หมายเลขห้อง -> รายการที่ใช้ห้องนั้นในช่วงนี้ (มีเลขใบจอง) รวมทุกใบจอง
+  Map<String, List<RoomUsage>> _usageByRoom = {};
+
+  /// ข้อความเมื่อดึงเลขใบจองไม่สำเร็จ — หน้าจอยังใช้ได้แต่จะไม่เห็นห้องของใบจองอื่น
+  String? _usageError;
 
   /// หมายเลขห้องที่ถูกเลือก — เลือกได้เฉพาะห้องว่างเท่านั้น
   final Set<String> _selected = {};
@@ -171,15 +178,41 @@ class _RoomAvailabilityDialogState extends State<RoomAvailabilityDialog> {
       } catch (e) {
         throw _ApiFailure(_describe(e, 'ดึงห้องที่ใช้งาน (by-bookR)'));
       }
-      final used = (usedRes['bookdetails'] as List? ?? const [])
+      final ownUsed = (usedRes['bookdetails'] as List? ?? const [])
           .map((j) => (j as Map)['roomNo']?.toString() ?? '')
           .where((s) => s.isNotEmpty)
-          .toList();
+          .toSet();
+
+      // การใช้ห้องของทุกใบจองพร้อมเลขใบจอง — เดิมดูเฉพาะห้องของใบจองนี้
+      // ห้องที่ใบจองอื่นใช้อยู่จึงขึ้นเป็นว่างแล้วกำหนดชนกันได้
+      // ถ้าดึงไม่สำเร็จยังแสดงผลแบบเดิมได้ แต่ขึ้นคำเตือนให้รู้
+      final usage = <String, List<RoomUsage>>{};
+      String? usageError;
+      try {
+        final list = await widget.apiService.getRoomUsage(
+          roomTypeId: widget.roomTypeId,
+          startdate: sd,
+          stopdate: ed,
+        );
+        for (final u in list) {
+          final no = u.roomNo ?? '';
+          if (no.isEmpty) continue;
+          // ห้องพักนับเป็นคืน: รายการที่ออกวันที่เราเข้าพักไม่นับว่าชน
+          // แถวของใบจองนี้เองนับทุกแถวตามแบบเดิม
+          if (u.bookId != widget.bookId && !u.overlapsNights(sd, ed)) continue;
+          usage.putIfAbsent(no, () => []).add(u);
+        }
+      } catch (e) {
+        if (AppLogger.on) AppLogger.d('Error loading room usage: $e');
+        usageError = _describe(e, 'ดึงเลขใบจองที่ใช้ห้อง (room-usage)');
+      }
 
       if (!mounted) return;
       setState(() {
         _totalRoom = total;
-        _useRoom = used;
+        _useRoom = {...ownUsed, ...usage.keys}.toList();
+        _usageByRoom = usage;
+        _usageError = usageError;
         _isLoading = false;
       });
     } catch (e) {
@@ -374,6 +407,13 @@ class _RoomAvailabilityDialogState extends State<RoomAvailabilityDialog> {
               _legend(),
             ],
           ),
+          if (_usageError != null) ...[
+            const SizedBox(height: 12),
+            Text(
+              '$_usageError\nห้องที่แสดงว่าใช้งานจึงเป็นเฉพาะของใบจองนี้',
+              style: TextStyle(fontSize: 13, color: AppTheme.warningColor),
+            ),
+          ],
           const SizedBox(height: 18),
           for (final entry in _grouped.entries) ...[
             Wrap(
@@ -448,9 +488,15 @@ class _RoomAvailabilityDialogState extends State<RoomAvailabilityDialog> {
       fontWeight: FontWeight.bold,
     );
 
+    final usages = _usageByRoom[roomNo] ?? const <RoomUsage>[];
+    final bookIds = <int>{
+      for (final u in usages)
+        if (u.bookId != null) u.bookId!,
+    }.toList()..sort();
+
     final chip = Container(
-      width: 78,
-      height: 40,
+      width: 86,
+      height: 46,
       alignment: Alignment.center,
       decoration: BoxDecoration(
         color: color,
@@ -466,13 +512,34 @@ class _RoomAvailabilityDialogState extends State<RoomAvailabilityDialog> {
                 Text(roomNo, style: label),
               ],
             )
+          : (isUsed && bookIds.isNotEmpty)
+          // ห้องที่ไม่ว่างบอกเลขใบจองที่ใช้ห้องไว้ใต้หมายเลขห้อง
+          ? Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(roomNo, style: label),
+                Text(
+                  bookIds.length == 1
+                      ? 'ใบจอง ${bookIds.first}'
+                      : 'ใบจอง ${bookIds.first} +${bookIds.length - 1}',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 11,
+                    fontFamily: 'NotoSansThai',
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            )
           : Text(roomNo, style: label),
     );
 
     // นอกแท็บกำหนดห้องเป็นหน้าดูอย่างเดียว จึงไม่ห่อ InkWell เลย
     if (!widget.selectionMode) {
       return Tooltip(
-        message: isUsed ? 'ห้อง $roomNo — ใช้งานอยู่' : 'ห้อง $roomNo — ว่าง',
+        message: isUsed
+            ? 'ห้อง $roomNo — ใช้งานอยู่${_usageText(usages)}'
+            : 'ห้อง $roomNo — ว่าง',
         child: chip,
       );
     }
@@ -480,7 +547,8 @@ class _RoomAvailabilityDialogState extends State<RoomAvailabilityDialog> {
     // ห้องที่ใช้งานอยู่กดไม่ได้ ไม่ห่อ InkWell เพื่อไม่ให้มี ripple ชวนให้กด
     if (isUsed) {
       return Tooltip(
-        message: 'ห้อง $roomNo — ใช้งานอยู่ (เลือกไม่ได้)',
+        message:
+            'ห้อง $roomNo — ใช้งานอยู่ (เลือกไม่ได้)${_usageText(usages)}',
         child: chip,
       );
     }
@@ -498,6 +566,21 @@ class _RoomAvailabilityDialogState extends State<RoomAvailabilityDialog> {
         ),
       ),
     );
+  }
+
+  /// ข้อความใน tooltip ว่าห้องนี้ใช้โดยใบจองใด ช่วงไหน — หนึ่งบรรทัดต่อหนึ่งรายการ
+  String _usageText(List<RoomUsage> usages) {
+    if (usages.isEmpty) return '';
+    final lines = usages.map((u) {
+      final own = u.bookId == widget.bookId ? ' (ใบจองนี้)' : '';
+      final title = (u.bookTitle == null || u.bookTitle!.trim().isEmpty)
+          ? ''
+          : ' ${u.bookTitle!.trim()}';
+      return 'ใบจองเลขที่ ${u.bookId ?? '-'}$own: '
+          '${Util.formatThaiDateStr(u.startDate)} - '
+          '${Util.formatThaiDateStr(u.stopDate)}$title';
+    });
+    return '\n${lines.join('\n')}';
   }
 
   Widget _legend() {

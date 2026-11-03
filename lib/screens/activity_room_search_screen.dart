@@ -1,6 +1,7 @@
 // lib/screens/activity_room_search_screen.dart
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
 import '../config/theme.dart';
@@ -17,7 +18,8 @@ import 'my_bookings_screen.dart';
 
 /// เมนูห้องพัก/ห้องกิจกรรม > ค้นหาห้องกิจกรรม
 ///
-/// ส่วนบนเป็นเงื่อนไขค้นหา 7 ช่อง กรอกบางช่องหรือไม่กรอกเลยก็ได้
+/// ส่วนบนเป็นเงื่อนไขค้นหา 8 ช่อง กรอกบางช่องหรือไม่กรอกเลยก็ได้
+/// เลขที่ใบจองเทียบตรงตัว (ได้เฉพาะห้องของใบจองนั้น) ช่องข้อความอื่นพิมพ์บางคำก็เจอ
 /// ส่วนล่างแสดงผลเป็นตารางแบ่งหน้า ค่าทั้งหมดแก้ไขไม่ได้ ปุ่มรายละเอียด
 /// เปิดหน้ารายละเอียดการจองด้วย bookId แบบเดียวกับหน้ารายการการจอง
 class ActivityRoomSearchScreen extends StatefulWidget {
@@ -42,6 +44,7 @@ class _ActivityRoomSearchScreenState extends State<ActivityRoomSearchScreen> {
   static final _apiDate = DateFormat('yyyy-MM-dd');
 
   // ---------- เงื่อนไขค้นหา ----------
+  final _bookIdCtrl = TextEditingController();
   final _roomNoCtrl = TextEditingController();
   final _departmentCtrl = TextEditingController();
   final _bookTitleCtrl = TextEditingController();
@@ -74,6 +77,7 @@ class _ActivityRoomSearchScreenState extends State<ActivityRoomSearchScreen> {
 
   @override
   void dispose() {
+    _bookIdCtrl.dispose();
     _roomNoCtrl.dispose();
     _departmentCtrl.dispose();
     _bookTitleCtrl.dispose();
@@ -109,8 +113,30 @@ class _ActivityRoomSearchScreenState extends State<ActivityRoomSearchScreen> {
     }
   }
 
+  /// หมายเลขห้องที่ตรงกับตัวเลือกในรายการทั้งคำ = เลือกจากรายการ ส่งไปเทียบตรงตัว
+  /// ไม่ตรงตัวเลือกใด = พิมพ์เองบางส่วน ส่งเป็น keyword ให้ backend ค้นแบบมีคำนั้นอยู่
+  /// (แยกสองแบบเพื่อไม่ให้เลือก "101" แล้วได้ "1011" ติดมาด้วย)
+  bool get _roomNoIsOption {
+    final text = _roomNoCtrl.text.trim();
+    return text.isNotEmpty && _roomNos.contains(text);
+  }
+
   Future<void> _search({int page = 0}) async {
     FocusScope.of(context).unfocus();
+
+    final bookIdText = _bookIdCtrl.text.trim();
+    final bookId = int.tryParse(bookIdText);
+    if (bookIdText.isNotEmpty && bookId == null) {
+      setState(() {
+        _searched = true;
+        _results = [];
+        _totalItems = 0;
+        _totalPages = 0;
+        _error = 'เลขที่ใบจองต้องเป็นตัวเลข';
+      });
+      return;
+    }
+
     setState(() {
       _searched = true;
       _loading = true;
@@ -120,7 +146,9 @@ class _ActivityRoomSearchScreenState extends State<ActivityRoomSearchScreen> {
     try {
       final res = await widget.apiService.searchRooms(
         type: _roomType,
-        roomNo: _roomNoCtrl.text,
+        roomNo: _roomNoIsOption ? _roomNoCtrl.text : null,
+        roomNoKeyword: _roomNoIsOption ? null : _roomNoCtrl.text,
+        bookId: bookId,
         departmentName: _departmentCtrl.text,
         bookTitle: _bookTitleCtrl.text,
         contractName: _contractNameCtrl.text,
@@ -149,6 +177,7 @@ class _ActivityRoomSearchScreenState extends State<ActivityRoomSearchScreen> {
 
   void _clear() {
     setState(() {
+      _bookIdCtrl.clear();
       _roomNoCtrl.clear();
       _departmentCtrl.clear();
       _bookTitleCtrl.clear();
@@ -297,6 +326,7 @@ class _ActivityRoomSearchScreenState extends State<ActivityRoomSearchScreen> {
           spacing: 12,
           runSpacing: 14,
           children: [
+            _bookIdField(),
             AppAutocompleteField(
               label: 'ห้องกิจกรรม',
               controller: _roomNoCtrl,
@@ -374,6 +404,24 @@ class _ActivityRoomSearchScreenState extends State<ActivityRoomSearchScreen> {
         controller: ctrl,
         style: const TextStyle(fontSize: 14),
         decoration: _input(label),
+        onSubmitted: (_) => _search(),
+      ),
+    );
+  }
+
+  /// เลขที่ใบจอง — รับเฉพาะตัวเลข กด Enter เพื่อค้นหาได้
+  Widget _bookIdField() {
+    return SizedBox(
+      width: 160,
+      child: TextField(
+        controller: _bookIdCtrl,
+        keyboardType: TextInputType.number,
+        inputFormatters: [
+          FilteringTextInputFormatter.digitsOnly,
+          LengthLimitingTextInputFormatter(9),
+        ],
+        style: const TextStyle(fontSize: 14),
+        decoration: _input('เลขที่ใบจอง'),
         onSubmitted: (_) => _search(),
       ),
     );

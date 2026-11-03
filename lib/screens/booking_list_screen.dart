@@ -47,6 +47,7 @@ class _BookingListScreenState extends State<BookingListScreen> {
   final TextEditingController _stopDateCtrl = TextEditingController();
   final TextEditingController _departmentCtrl = TextEditingController();
   final TextEditingController _booktitleCtrl = TextEditingController();
+  final TextEditingController _contractNameCtrl = TextEditingController();
   final TextEditingController _idcardCtrl = TextEditingController();
 
   // Search State
@@ -76,6 +77,7 @@ class _BookingListScreenState extends State<BookingListScreen> {
     _stopDateCtrl.dispose();
     _departmentCtrl.dispose();
     _booktitleCtrl.dispose();
+    _contractNameCtrl.dispose();
     _idcardCtrl.dispose();
     super.dispose();
   }
@@ -112,10 +114,16 @@ class _BookingListScreenState extends State<BookingListScreen> {
         stopdate: _stopDate != null
             ? DateFormat('yyyy-MM-dd').format(_stopDate!)
             : null,
-        departmentname: _departmentCtrl.text.isNotEmpty
-            ? _departmentCtrl.text
+        // ช่องข้อความเทียบแบบมีคำนั้นอยู่ (พิมพ์บางคำก็เจอ) ตัดช่องว่างหัวท้ายก่อนส่ง
+        departmentname: _departmentCtrl.text.trim().isNotEmpty
+            ? _departmentCtrl.text.trim()
             : null,
-        booktitle: _booktitleCtrl.text.isNotEmpty ? _booktitleCtrl.text : null,
+        booktitle: _booktitleCtrl.text.trim().isNotEmpty
+            ? _booktitleCtrl.text.trim()
+            : null,
+        contractname: _contractNameCtrl.text.trim().isNotEmpty
+            ? _contractNameCtrl.text.trim()
+            : null,
         status: _selectedStatusId,
         idcard: _idcardCtrl.text.trim().isNotEmpty
             ? _idcardCtrl.text.trim()
@@ -156,6 +164,7 @@ class _BookingListScreenState extends State<BookingListScreen> {
       _stopDateCtrl.clear();
       _departmentCtrl.clear();
       _booktitleCtrl.clear();
+      _contractNameCtrl.clear();
       _idcardCtrl.clear();
       _bookingtype = _defaultBookingtype;
       _selectedStatusId = null;
@@ -308,6 +317,11 @@ class _BookingListScreenState extends State<BookingListScreen> {
                 width: isDesktop ? 200 : 150,
               ),
               _buildSearchField(
+                label: 'ชื่อผู้จอง',
+                controller: _contractNameCtrl,
+                width: isDesktop ? 180 : 140,
+              ),
+              _buildSearchField(
                 label: 'เลขบัตรประชาชน',
                 controller: _idcardCtrl,
                 width: isDesktop ? 180 : 150,
@@ -374,6 +388,11 @@ class _BookingListScreenState extends State<BookingListScreen> {
       child: TextField(
         controller: controller,
         keyboardType: isNumber ? TextInputType.number : TextInputType.text,
+        // กด Enter ในช่องค้นหาได้ทันที เริ่มที่หน้าแรกเหมือนปุ่มค้นหา
+        onSubmitted: (_) {
+          setState(() => _currentPage = 0);
+          _searchBookings();
+        },
         decoration: InputDecoration(
           labelText: label,
           labelStyle: const TextStyle(fontSize: 14),

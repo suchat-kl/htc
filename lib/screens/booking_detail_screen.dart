@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:highway_training/providers/auth_provider.dart';
 import 'package:highway_training/screens/booking_info_tab.dart';
 import 'package:highway_training/screens/booking_list_screen.dart';
-import 'package:highway_training/screens/check_in_tab.dart';
 import 'package:highway_training/screens/room_assignment_tab.dart';
 import 'package:highway_training/utils/snackbar_helper.dart';
 import '../config/theme.dart';
@@ -11,7 +10,6 @@ import '../services/api_service.dart';
 
 // import 'tabs/booking_info_tab.dart';
 // import 'tabs/room_assignment_tab.dart';
-// import 'tabs/check_in_tab.dart';
 
 class BookingDetailScreen extends StatefulWidget {
   final AuthProvider authProvider;
@@ -44,7 +42,9 @@ class _BookingDetailScreenState extends State<BookingDetailScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    // แท็บ Check in เดิมถูกยุบรวมเข้าแท็บกำหนดห้องแล้ว (คำขอ ต.ค. 2569)
+    // เพราะเป็นข้อมูลชุดเดียวกับ "ห้องที่กำหนดแล้ว" จึงเหลือ 2 แท็บ
+    _tabController = TabController(length: 2, vsync: this);
 
     // ✅ ตรวจสอบและนำทางไป  BookingListScreen
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -103,7 +103,6 @@ class _BookingDetailScreenState extends State<BookingDetailScreen>
           tabs: const [
             Tab(icon: Icon(Icons.info, size: 15), text: 'ข้อมูลสำรองห้อง'),
             Tab(icon: Icon(Icons.meeting_room, size: 15), text: 'กำหนดห้อง'),
-            Tab(icon: Icon(Icons.check_circle, size: 15), text: 'Check in'),
           ],
           labelColor: Colors.white, // ✅ สีขาว
           unselectedLabelColor: Colors.grey.shade300, // ✅ สีเทาอ่อน
@@ -127,7 +126,6 @@ class _BookingDetailScreenState extends State<BookingDetailScreen>
               children: [
                 // BookingInfoTab(bookId: widget.bookId),
                 // const RoomAssignmentTab(),
-                // const CheckInTab(),
                 // Tab 1: ข้อมูลสำรองห้อง
                 // BookingInfoTab มี SingleChildScrollView ของตัวเองอยู่แล้ว
                 // ถ้าครอบซ้ำอีกชั้น viewport ชั้นในจะได้ความสูงแบบ unbounded แล้ว assert
@@ -140,15 +138,6 @@ class _BookingDetailScreenState extends State<BookingDetailScreen>
                 // Tab 2: กำหนดห้อง
                 SingleChildScrollView(
                   child: RoomAssignmentTab(
-                    apiService: widget.apiService,
-                    bookId: widget.bookId,
-                    bookingData: _bookingData,
-                    onSaved: () => _dataChanged = true,
-                  ),
-                ),
-                // Tab 3: Check in
-                SingleChildScrollView(
-                  child: CheckInTab(
                     apiService: widget.apiService,
                     bookId: widget.bookId,
                     bookingData: _bookingData,

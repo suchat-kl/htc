@@ -1,7 +1,7 @@
 import 'dart:typed_data';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-// import 'package:intl/intl.dart';
 import '../config/theme.dart';
 import '../models/commodity.dart';
 import '../services/api_service.dart';
@@ -10,6 +10,25 @@ import 'package:universal_html/html.dart' as html;
 import '../utils/util.dart';
 import 'package:highway_training/utils/logger.dart';
 
+/// ห้องพักหนึ่งห้องที่ใช้งานในวันที่เลือก checkout = ออกวันนั้น (ห้องที่ต้องรื้อเครื่องนอน)
+class _RoomLine {
+  final String roomNo;
+  final bool checkout;
+
+  const _RoomLine({required this.roomNo, required this.checkout});
+
+  factory _RoomLine.fromJson(Map<String, dynamic> json) => _RoomLine(
+    roomNo: json['roomNo']?.toString() ?? '',
+    checkout: json['checkout'] == true,
+  );
+}
+
+/// หน้า "การจัดการวัสดุห้องพัก" (เมนู OP_BEDDING)
+///
+/// เลือกวันที่และแบบฟอร์ม แล้วแสดงห้องพักที่ใช้งานวันนั้น (มีผู้พักคืนนั้นหรือ check out)
+/// หนึ่งแถวต่อห้อง คอลัมน์คือเครื่องนอน/ของใช้ที่ยังใช้งาน เรียงตามช่อง "ลำดับ"
+/// ในหน้าเครื่องนอน-ของใช้ ปุ่มรายงานออกไฟล์ Excel ชื่อเอกสารเดิม
+/// (ใบรื้อเครื่องนอน / ใบเติมของใช้) ไว้พิมพ์ให้เจ้าหน้าที่กรอก
 class CommodityReportScreen extends StatefulWidget {
   final ApiService apiService;
   const CommodityReportScreen({super.key, required this.apiService});
@@ -21,127 +40,107 @@ class CommodityReportScreen extends StatefulWidget {
 class _CommodityReportScreenState extends State<CommodityReportScreen> {
   final ApiService _apiService = ApiService();
   List<Commodity> _commodities = [];
+  List<_RoomLine> _rooms = [];
   bool _isLoading = false;
   bool _isDownloading = false;
   DateTime _selectedDate = DateTime.now();
   String _selectedType = 'B';
   String? _errorMessage;
 
+  /// ชื่อในรายการคือชื่อเอกสารเดิมที่เจ้าหน้าที่คุ้น
   static const List<Map<String, String>> _types = [
-    {'code': 'B', 'name': 'เครื่องนอน'},
-    {'code': 'C', 'name': 'ของใช้'},
+    {'code': 'B', 'name': 'ใบรื้อเครื่องนอน'},
+    {'code': 'C', 'name': 'ใบเติมของใช้'},
   ];
 
-  // String _formatThaiDate(DateTime date) {
-  //   final thaiYear = date.year + 543;
-  //   final thaiMonths = [
-  //     'มกราคม',
-  //     'กุมภาพันธ์',
-  //     'มีนาคม',
-  //     'เมษายน',
-  //     'พฤษภาคม',
-  //     'มิถุนายน',
-  //     'กรกฎาคม',
-  //     'สิงหาคม',
-  //     'กันยายน',
-  //     'ตุลาคม',
-  //     'พฤศจิกายน',
-  //     'ธันวาคม',
-  //   ];
-  //   return '${date.day} ${thaiMonths[date.month - 1]} $thaiYear';
-  // }
+  String get _formName =>
+      _types.firstWhere((t) => t['code'] == _selectedType)['name']!;
 
-  // String _formatDateForApi(DateTime date) {
-  //   return DateFormat('dd/MM/yyyy').format(date);
-  // }
+  /// วันที่ส่งให้ API เป็น yyyy-MM-dd (ค.ศ.)
+  String _isoDate(DateTime d) =>
+      '${d.year.toString().padLeft(4, '0')}-'
+      '${d.month.toString().padLeft(2, '0')}-'
+      '${d.day.toString().padLeft(2, '0')}';
 
-  // ✅ Simplified: Just call API service
+  /// เปลี่ยนวันที่หรือแบบฟอร์มแล้วล้างตาราง ให้กดค้นหาใหม่ จะได้ไม่เห็นห้องของวันเดิม
+  void _clearResult() {
+    _commodities = [];
+    _rooms = [];
+    _errorMessage = null;
+  }
+
   Future<void> _loadData() async {
     setState(() {
       _isLoading = true;
       _errorMessage = null;
     });
     try {
-      final commodities = await _apiService.getCommoditiesByType(_selectedType);
+      // ใช้ path เดียวกับไฟล์ Excel (สิทธิ์ OP_BEDDING) จึงเรียก dio ตรงจากหน้านี้
+      final response = await _apiService.dio.get(
+        '/api/auth/report/commodity',
+        queryParameters: {
+          'type': _selectedType,
+          'date': _isoDate(_selectedDate),
+          'format': 'json',
+        },
+      );
+      final data = response.data;
+      if (data is! Map || data['success'] != true) {
+        throw Exception(
+          data is Map && data['message'] != null
+              ? data['message'].toString()
+              : 'ไม่สามารถโหลดข้อมูลได้',
+        );
+      }
+      final commodities = (data['commodities'] as List? ?? [])
+          .map((j) => Commodity.fromJson(Map<String, dynamic>.from(j as Map)))
+          .toList();
+      final rooms = (data['rooms'] as List? ?? [])
+          .map((j) => _RoomLine.fromJson(Map<String, dynamic>.from(j as Map)))
+          .toList();
       if (mounted) {
         setState(() {
           _commodities = commodities;
+          _rooms = rooms;
           _isLoading = false;
+          if (commodities.isEmpty) {
+            _errorMessage =
+                'ไม่พบรายการ${_selectedType == 'B' ? 'เครื่องนอน' : 'ของใช้'}ที่ใช้งาน';
+          }
         });
       }
     } catch (e) {
+      if (AppLogger.on) AppLogger.e('โหลดข้อมูลใบเครื่องนอน/ของใช้ไม่สำเร็จ: $e');
+      // เซิร์ฟเวอร์ตอบ 400 พร้อมข้อความไทย ให้แสดงข้อความนั้นแทนข้อความของ Dio
+      final body = e is DioException ? e.response?.data : null;
+      final reason = body is Map && body['message'] != null
+          ? body['message'].toString()
+          : e.toString().replaceAll('Exception: ', '');
       if (mounted) {
         setState(() {
-          _errorMessage = e.toString().replaceAll('Exception: ', '');
+          _errorMessage = 'ไม่สามารถโหลดข้อมูลได้: $reason';
           _isLoading = false;
         });
       }
     }
   }
 
-  // ✅ Simplified: Just call API service and handle download
-  /*Future<void> _downloadReport() async {
-    setState(() => _isDownloading = true);
-    try {
-      final dateStr = _formatDateForApi(_selectedDate);
-      final bytes = await _apiService.downloadCommodityReport(
-        type: _selectedType,
-        date: dateStr,
-      );
-
-      // Download file in browser
-      final blob = html.Blob([
-        bytes,
-      ], 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-      final url = html.Url.createObjectUrlFromBlob(blob);
-      final anchor = html.document.createElement('a') as html.AnchorElement
-        ..href = url
-        ..style.display = 'none'
-        ..download = 'ใบเติมของใช้_$dateStr.xlsx';
-      html.document.body!.children.add(anchor);
-      anchor.click();
-      html.document.body!.children.remove(anchor);
-      html.Url.revokeObjectUrl(url);
-
-      if (mounted) {
-        context.showSuccessSnackBar('ดาวน์โหลดรายงานสำเร็จ');
-      }
-    } catch (e) {
-      if (mounted) {
-        context.showErrorSnackBar(e.toString().replaceAll('Exception: ', ''));
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isDownloading = false);
-      }
-    }
-  }
-  */
   Future<void> _downloadReport() async {
     setState(() => _isDownloading = true);
     try {
-      // final dateStr = _formatDateForApi(_selectedDate);
-
-      final dateStr = Util.formatThaiDate(_selectedDate);
+      final dateStr = _isoDate(_selectedDate);
 
       final bytes = await _apiService.downloadCommodityReport(
         type: _selectedType,
         date: dateStr,
       );
 
-      // ✅ Verify the bytes are not empty and look like an Excel file
       if (bytes.isEmpty) {
         throw Exception('ไฟล์รายงานว่างเปล่า');
       }
 
       if (AppLogger.on) AppLogger.d('Downloaded report: ${bytes.length} bytes');
-      if (AppLogger.on) {
-        AppLogger.d(
-          'First bytes: ${bytes.take(8).map((b) => b.toRadixString(16)).join(' ')}',
-        );
-      }
 
-      // ✅ Create blob with correct MIME type
       final blob = html.Blob([
         Uint8List.fromList(bytes),
       ], 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
@@ -149,11 +148,10 @@ class _CommodityReportScreenState extends State<CommodityReportScreen> {
       final anchor = html.document.createElement('a') as html.AnchorElement
         ..href = url
         ..style.display = 'none'
-        ..download = 'ใบเติมของใช้_$dateStr.xlsx';
+        ..download = '${_formName}_$dateStr.xlsx';
       html.document.body!.children.add(anchor);
       anchor.click();
 
-      // Cleanup
       Future.delayed(const Duration(seconds: 1), () {
         html.document.body!.children.remove(anchor);
         html.Url.revokeObjectUrl(url);
@@ -172,96 +170,141 @@ class _CommodityReportScreenState extends State<CommodityReportScreen> {
     }
   }
 
-  // ✅ Date picker already works
-  // late DateTime dateNow ;//= DateTime.now();
   Future<void> _selectDate() async {
-    // AppLogger.d("dateNow $dateNow");
-    // int y = dateNow.year;
     final DateTime? picked = await Util.dateFieldPickerNullable(
       context,
       _selectedDate,
     );
     if (picked != null && picked != _selectedDate) {
-      setState(() => _selectedDate = picked);
+      setState(() {
+        _selectedDate = picked;
+        _clearResult();
+      });
     }
-    /*
-    await showDatePicker(
-      context: context,
-      initialDate: _selectedDate,
-      firstDate: DateTime(y, 1, 1),
-      lastDate: DateTime(y, 12, 31),
-      locale: const Locale('th'),
-      helpText: 'เลือกวันที่',
-      cancelText: 'ยกเลิก',
-      confirmText: 'ตกลง',
-      fieldLabelText: 'วันที่',
-      fieldHintText: 'วัน/เดือน/ปี',
-      errorFormatText: 'รูปแบบวันที่ไม่ถูกต้อง',
-      errorInvalidText: 'วันที่ไม่ถูกต้อง',
-      // ✅ Add today button
-      builder: (context, child) {
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Quick select buttons
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  TextButton(
-                    onPressed: () {
-                      Navigator.pop(context, DateTime.now());
-                    },
-                    child: const Text('วันนี้'),
-                  ),
-                  TextButton(
-                    onPressed: () {
-                      Navigator.pop(context, _selectedDate);
-                    },
-                    style: TextButton.styleFrom(foregroundColor: AppTheme.cancelColor), child: const Text('ยกเลิก'),
-                  ),
-                ],
+  }
+
+  /// สรุปจำนวนห้องเหนือตาราง
+  Widget _roomSummary(double fontSize) {
+    final checkout = _rooms.where((r) => r.checkout).length;
+    final text = _rooms.isEmpty
+        ? 'ไม่มีห้องพักที่มีผู้พักหรือ check out ในวันที่ ${Util.formatThaiDate(_selectedDate)}'
+        : '$_formName วันที่ ${Util.formatThaiDate(_selectedDate)} — '
+              'ห้องพักที่ใช้งาน ${_rooms.length} ห้อง'
+              '${checkout > 0 ? ' (check out $checkout ห้อง)' : ''}';
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Text(
+        text,
+        style: TextStyle(
+          fontFamily: 'Sarabun',
+          fontSize: fontSize,
+          fontWeight: FontWeight.w600,
+          color: _rooms.isEmpty ? Colors.grey.shade600 : AppTheme.primaryColor,
+        ),
+      ),
+    );
+  }
+
+  DataColumn _headerColumn(String text, double width, double fontSize) {
+    return DataColumn(
+      label: SizedBox(
+        width: width,
+        child: Text(
+          text,
+          style: TextStyle(
+            fontFamily: 'Sarabun',
+            fontSize: fontSize,
+            fontWeight: FontWeight.bold,
+            color: AppTheme.primaryColor,
+          ),
+          textAlign: TextAlign.center,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
+      ),
+    );
+  }
+
+  DataCell _textCell(String text, double width, double fontSize) {
+    return DataCell(
+      SizedBox(
+        width: width,
+        child: Text(
+          text,
+          style: TextStyle(fontFamily: 'Sarabun', fontSize: fontSize),
+          textAlign: TextAlign.center,
+        ),
+      ),
+    );
+  }
+
+  /// ช่องของใช้เว้นว่างไว้ ใบนี้พิมพ์ไปให้เจ้าหน้าที่กรอกจำนวนเอง
+  DataCell _blankCell() {
+    return DataCell(
+      Container(
+        width: 120,
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.grey.shade200, width: 0.5),
+        ),
+        child: const SizedBox(height: 40),
+      ),
+    );
+  }
+
+  List<DataRow> _rows(double fontSize) {
+    if (_rooms.isEmpty) {
+      return [
+        DataRow(
+          cells: [
+            _textCell('', 50, fontSize),
+            _textCell('-', 80, fontSize),
+            ..._commodities.map((_) => _blankCell()),
+            _textCell('', 100, fontSize),
+          ],
+        ),
+      ];
+    }
+    return List.generate(_rooms.length, (i) {
+      final room = _rooms[i];
+      return DataRow(
+        cells: [
+          _textCell('${i + 1}', 50, fontSize),
+          DataCell(
+            SizedBox(
+              width: 80,
+              child: Text(
+                room.roomNo,
+                style: TextStyle(
+                  fontFamily: 'Sarabun',
+                  fontSize: fontSize,
+                  fontWeight: FontWeight.w600,
+                ),
+                textAlign: TextAlign.center,
               ),
             ),
-            Expanded(child: child!),
-          ],
-        );
-      },
-    );
-
-*/
-    // if (picked != null && picked != _selectedDate) {
-    //   setState(() {
-    //     _selectedDate = picked;
-    //   });
-    // }
+          ),
+          ..._commodities.map((_) => _blankCell()),
+          DataCell(
+            SizedBox(
+              width: 100,
+              child: room.checkout
+                  ? Text(
+                      'check out',
+                      style: TextStyle(
+                        fontFamily: 'Sarabun',
+                        fontSize: fontSize - 1,
+                        color: Colors.orange.shade800,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      textAlign: TextAlign.center,
+                    )
+                  : const SizedBox.shrink(),
+            ),
+          ),
+        ],
+      );
+    });
   }
-  /*
-  // ✅ Thai date display
-  String _formatThaiDate(DateTime date) {
-    final thaiYear = date.year + 543;
-    final thaiMonths = [
-      'มกราคม',
-      'กุมภาพันธ์',
-      'มีนาคม',
-      'เมษายน',
-      'พฤษภาคม',
-      'มิถุนายน',
-      'กรกฎาคม',
-      'สิงหาคม',
-      'กันยายน',
-      'ตุลาคม',
-      'พฤศจิกายน',
-      'ธันวาคม',
-    ];
-    return '${date.day} ${thaiMonths[date.month - 1]} $thaiYear';
-  }
-*/
-  // ✅ API date format
-  // String _formatDateForApi(DateTime date) {
-  //   return DateFormat('dd/MM/yyyy').format(date);
-  // }
 
   @override
   Widget build(BuildContext context) {
@@ -270,8 +313,6 @@ class _CommodityReportScreenState extends State<CommodityReportScreen> {
     final isLargeScreen = screenWidth > 1400;
     final headerFontSize = isLargeScreen ? 22.0 : (isDesktop ? 20.0 : 18.0);
     final bodyFontSize = isLargeScreen ? 16.0 : (isDesktop ? 15.0 : 14.0);
-    // Create instance
-    // final util = Util();
 
     return Scaffold(
       appBar: AppBar(
@@ -283,6 +324,7 @@ class _CommodityReportScreenState extends State<CommodityReportScreen> {
         title: Text(
           'การจัดการวัสดุห้องพัก',
           style: TextStyle(
+            fontFamily: 'Sarabun',
             fontSize: headerFontSize,
             fontWeight: FontWeight.bold,
           ),
@@ -293,7 +335,7 @@ class _CommodityReportScreenState extends State<CommodityReportScreen> {
       ),
       body: Column(
         children: [
-          // Filter Bar
+          // แถบเลือกเงื่อนไข
           Container(
             padding: EdgeInsets.all(isDesktop ? 24 : 16),
             decoration: BoxDecoration(
@@ -313,10 +355,9 @@ class _CommodityReportScreenState extends State<CommodityReportScreen> {
                 alignment: WrapAlignment.center,
                 crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
-                  // Date Picker
-                  // The date picker trigger - user taps this to open calendar
+                  // วันที่ — กดเพื่อเปิดปฏิทิน พ.ศ.
                   InkWell(
-                    onTap: _selectDate, // ✅ Opens date picker
+                    onTap: _selectDate,
                     child: Container(
                       padding: EdgeInsets.symmetric(
                         horizontal: 20,
@@ -337,10 +378,9 @@ class _CommodityReportScreenState extends State<CommodityReportScreen> {
                           ),
                           const SizedBox(width: 10),
                           Text(
-                            Util.formatThaiDate(
-                              _selectedDate,
-                            ), // ✅ Shows selected date in Thai
+                            Util.formatThaiDate(_selectedDate),
                             style: TextStyle(
+                              fontFamily: 'Sarabun',
                               fontSize: bodyFontSize,
                               fontWeight: FontWeight.w500,
                             ),
@@ -349,14 +389,18 @@ class _CommodityReportScreenState extends State<CommodityReportScreen> {
                       ),
                     ),
                   ),
-                  // Type Dropdown
+                  // แบบฟอร์ม
                   SizedBox(
-                    width: isDesktop ? 180 : 160,
+                    width: isDesktop ? 220 : 200,
                     child: DropdownButtonFormField<String>(
                       initialValue: _selectedType,
-                      style: TextStyle(fontSize: bodyFontSize),
+                      style: TextStyle(
+                        fontFamily: 'Sarabun',
+                        fontSize: bodyFontSize,
+                        color: Colors.black87,
+                      ),
                       decoration: InputDecoration(
-                        labelText: 'ประเภท',
+                        labelText: 'แบบฟอร์ม',
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -373,21 +417,29 @@ class _CommodityReportScreenState extends State<CommodityReportScreen> {
                               value: t['code'],
                               child: Text(
                                 t['name']!,
-                                style: TextStyle(fontSize: bodyFontSize),
+                                style: TextStyle(
+                                  fontFamily: 'Sarabun',
+                                  fontSize: bodyFontSize,
+                                ),
                               ),
                             ),
                           )
                           .toList(),
-                      onChanged: (v) => setState(() => _selectedType = v!),
+                      onChanged: (v) => setState(() {
+                        _selectedType = v!;
+                        _clearResult();
+                      }),
                     ),
                   ),
-                  // Search Button
                   ElevatedButton.icon(
                     onPressed: _isLoading ? null : _loadData,
                     icon: Icon(Icons.search, size: isDesktop ? 22 : 18),
                     label: Text(
                       'ค้นหา',
-                      style: TextStyle(fontSize: bodyFontSize),
+                      style: TextStyle(
+                        fontFamily: 'Sarabun',
+                        fontSize: bodyFontSize,
+                      ),
                     ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppTheme.searchColor,
@@ -401,7 +453,6 @@ class _CommodityReportScreenState extends State<CommodityReportScreen> {
                       ),
                     ),
                   ),
-                  // Report Button
                   ElevatedButton.icon(
                     onPressed: (_isDownloading || _commodities.isEmpty)
                         ? null
@@ -418,7 +469,10 @@ class _CommodityReportScreenState extends State<CommodityReportScreen> {
                         : Icon(Icons.download, size: isDesktop ? 22 : 18),
                     label: Text(
                       'รายงาน',
-                      style: TextStyle(fontSize: bodyFontSize),
+                      style: TextStyle(
+                        fontFamily: 'Sarabun',
+                        fontSize: bodyFontSize,
+                      ),
                     ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.green.shade600,
@@ -436,7 +490,6 @@ class _CommodityReportScreenState extends State<CommodityReportScreen> {
               ),
             ),
           ),
-          // Error
           if (_errorMessage != null)
             Container(
               padding: const EdgeInsets.all(12),
@@ -447,10 +500,12 @@ class _CommodityReportScreenState extends State<CommodityReportScreen> {
               ),
               child: Text(
                 _errorMessage!,
-                style: TextStyle(color: Colors.red.shade700),
+                style: TextStyle(
+                  fontFamily: 'Sarabun',
+                  color: Colors.red.shade700,
+                ),
               ),
             ),
-          // Table
           Expanded(
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
@@ -459,6 +514,7 @@ class _CommodityReportScreenState extends State<CommodityReportScreen> {
                     child: Text(
                       'กรุณากดค้นหาเพื่อแสดงข้อมูล',
                       style: TextStyle(
+                        fontFamily: 'Sarabun',
                         fontSize: 18,
                         color: Colors.grey.shade500,
                       ),
@@ -466,105 +522,50 @@ class _CommodityReportScreenState extends State<CommodityReportScreen> {
                   )
                 : SingleChildScrollView(
                     padding: EdgeInsets.all(isDesktop ? 24 : 12),
-                    child: Card(
-                      elevation: 2,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(16),
-                        child: SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          child: DataTable(
-                            headingRowColor: WidgetStateProperty.all(
-                              AppTheme.primaryColor.withValues(alpha: 0.08),
-                            ),
-                            headingRowHeight: 56,
-                            dataRowMinHeight: 44,
-                            dataRowMaxHeight: 60,
-                            columnSpacing: 20,
-                            columns: [
-                              DataColumn(
-                                label: SizedBox(
-                                  width: 80,
-                                  child: Text(
-                                    'ห้อง',
-                                    style: TextStyle(
-                                      fontSize: bodyFontSize,
-                                      fontWeight: FontWeight.bold,
-                                      color: AppTheme.primaryColor,
-                                    ),
-                                    textAlign: TextAlign.center,
-                                  ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _roomSummary(bodyFontSize),
+                        Card(
+                          elevation: 2,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(16),
+                            child: SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              child: DataTable(
+                                headingRowColor: WidgetStateProperty.all(
+                                  AppTheme.primaryColor.withValues(alpha: 0.08),
                                 ),
-                              ),
-                              ..._commodities.map(
-                                (c) => DataColumn(
-                                  label: SizedBox(
-                                    width: 120,
-                                    child: Text(
-                                      c.name,
-                                      style: TextStyle(
-                                        fontSize: bodyFontSize - 1,
-                                        fontWeight: FontWeight.bold,
-                                        color: AppTheme.primaryColor,
-                                      ),
-                                      textAlign: TextAlign.center,
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                            rows: List.generate(
-                              1,
-                              (rowIndex) => DataRow(
-                                cells: [
-                                  DataCell(
-                                    SizedBox(
-                                      width: 80,
-                                      child: Text(
-                                        '',
-                                        // '${rowIndex + 1}',
-                                        style: TextStyle(
-                                          fontSize: bodyFontSize,
-                                        ),
-                                        textAlign: TextAlign.center,
-                                      ),
-                                    ),
-                                  ),
+                                headingRowHeight: 56,
+                                dataRowMinHeight: 44,
+                                dataRowMaxHeight: 60,
+                                columnSpacing: 20,
+                                columns: [
+                                  _headerColumn('ลำดับ', 50, bodyFontSize),
+                                  _headerColumn('ห้อง', 80, bodyFontSize),
                                   ..._commodities.map(
-                                    (c) => DataCell(
-                                      Container(
-                                        width: 120,
-                                        decoration: BoxDecoration(
-                                          border: Border.all(
-                                            color: Colors.grey.shade200,
-                                            width: 0.5,
-                                          ),
-                                        ),
-                                        child: const SizedBox(height: 40),
-                                      ),
+                                    (c) => _headerColumn(
+                                      c.name,
+                                      120,
+                                      bodyFontSize - 1,
                                     ),
                                   ),
+                                  _headerColumn('หมายเหตุ', 100, bodyFontSize),
                                 ],
+                                rows: _rows(bodyFontSize),
                               ),
                             ),
                           ),
                         ),
-                      ),
+                      ],
                     ),
                   ),
           ),
         ],
       ),
     );
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    //  dateNow = DateTime.now();
   }
 }

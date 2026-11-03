@@ -593,6 +593,7 @@ class _BookingEditScreenState extends State<BookingEditScreen> {
           foodtypeid: selected['foodtypeid'] as int,
           price: selected['price'] as int,
           amount: selected['amount'] as int,
+          times: selected['times'] as int,
           sequence: selected['sequence'] as int,
           // ✅ ใช้ startdate และ stopdate จาก dialog
           startdate: selected['startdate'] as String,
@@ -1661,10 +1662,15 @@ class _AddTfoodDialogState extends State<_AddTfoodDialog> {
   int? _selectedFoodtypeID;
   late int _amount;
   late final TextEditingController _amountCtrl;
+  late final TextEditingController _timesCtrl;
   int _sequence = 1;
   // ✅ เพิ่มตัวแปรสำหรับเก็บวันที่ที่สามารถเปลี่ยนแปลงได้
   late DateTime _startDate;
   late DateTime _stopDate;
+
+  /// ผู้จองพิมพ์จำนวนมื้อเองแล้ว — หลังจากนี้เปลี่ยนวันที่ก็ไม่คำนวณทับค่าที่พิมพ์
+  /// (แบบเดียวกับหน้าต่างรายการอาหารฝั่งเจ้าหน้าที่ใน tfood_dialog.dart)
+  bool _timesEditedByUser = false;
 
   @override
   void initState() {
@@ -1673,6 +1679,10 @@ class _AddTfoodDialogState extends State<_AddTfoodDialog> {
     _stopDate = widget.stopDate;
     _amount = widget.defaultAmount;
     _amountCtrl = TextEditingController(text: '$_amount');
+    // จำนวนมื้อตั้งต้น = จำนวนวันจากวันเริ่มถึงวันสิ้นสุด นับรวมหัวท้าย (แก้ได้)
+    _timesCtrl = TextEditingController(
+      text: '${_dayCount(_startDate, _stopDate)}',
+    );
     if (widget.foodtypes.isNotEmpty) {
       _selectedFoodtypeID = widget.foodtypes.first.id;
     }
@@ -1681,7 +1691,25 @@ class _AddTfoodDialogState extends State<_AddTfoodDialog> {
   @override
   void dispose() {
     _amountCtrl.dispose();
+    _timesCtrl.dispose();
     super.dispose();
+  }
+
+  /// จำนวนวันแบบนับรวมวันเริ่มและวันสิ้นสุด เช่น วันที่ 1 ถึง 3 ได้ 3
+  /// ตัดเวลาทิ้งก่อนเทียบ ไม่งั้นเศษชั่วโมงจะทำให้ผลคลาดไปหนึ่งวัน
+  static int _dayCount(DateTime from, DateTime to) {
+    final a = DateTime(from.year, from.month, from.day);
+    final b = DateTime(to.year, to.month, to.day);
+    final n = b.difference(a).inDays + 1;
+    return n < 1 ? 1 : n;
+  }
+
+  /// เปลี่ยนวันที่แล้วคำนวณจำนวนมื้อใหม่ เว้นแต่ผู้จองพิมพ์เองไปแล้ว
+  /// (ช่องว่างอยู่ = ถือว่ายังไม่ได้แก้ คำนวณใหม่ได้)
+  void _syncTimesWithDates() {
+    if (_timesEditedByUser && _timesCtrl.text.trim().isNotEmpty) return;
+    _timesEditedByUser = false;
+    _timesCtrl.text = '${_dayCount(_startDate, _stopDate)}';
   }
 
   // ✅ สร้างเมธอด _dateField ภายในคลาสนี้โดยตรง
@@ -1723,54 +1751,73 @@ class _AddTfoodDialogState extends State<_AddTfoodDialog> {
 
     return AlertDialog(
       title: const Text('เพิ่มรายการอาหาร'),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          TextField(
-            keyboardType: TextInputType.number,
-            decoration: const InputDecoration(labelText: 'ลำดับ'),
-            onChanged: (v) => _sequence = int.tryParse(v) ?? 1,
-          ),
-          const SizedBox(height: 10),
-          DropdownButtonFormField<int>(
-            initialValue: _selectedFoodtypeID,
-            isExpanded: true,
-            items: widget.foodtypes
-                .map(
-                  (f) => DropdownMenuItem<int>(
-                    value: f.id,
-                    child: Text('${f.name} (${f.price})'),
-                  ),
-                )
-                .toList(),
-            onChanged: (v) => setState(() => _selectedFoodtypeID = v),
-          ),
-          const SizedBox(height: 10),
-          TextField(
-            controller: _amountCtrl,
-            keyboardType: TextInputType.number,
-            decoration: const InputDecoration(
-              labelText: 'จำนวน (คน)',
-              helperText: 'ตั้งต้นตามจำนวนผู้เข้าพัก + เจ้าหน้าที่ แก้ได้',
+      // เลื่อนได้ จอเตี้ยช่องจะได้ไม่ล้นหน้าต่าง
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(labelText: 'ลำดับ'),
+              onChanged: (v) => _sequence = int.tryParse(v) ?? 1,
             ),
-            onChanged: (v) => _amount = int.tryParse(v.trim()) ?? 1,
-          ),
-          const SizedBox(height: 10),
-          // ✅ ใช้ _dateField ที่สร้างในคลาสนี้
-          _dateField('วันที่เริ่มต้น', _startDate, () async {
-            final p = await Util.dateFieldPickerNullable(context, _startDate);
-            if (p != null && p != _startDate) {
-              setState(() => _startDate = p);
-            }
-          }),
-          const SizedBox(height: 10),
-          _dateField('วันที่สิ้นสุด', _stopDate, () async {
-            final p = await Util.dateFieldPickerNullable(context, _stopDate);
-            if (p != null && p != _stopDate) {
-              setState(() => _stopDate = p);
-            }
-          }),
-        ],
+            const SizedBox(height: 10),
+            DropdownButtonFormField<int>(
+              initialValue: _selectedFoodtypeID,
+              isExpanded: true,
+              items: widget.foodtypes
+                  .map(
+                    (f) => DropdownMenuItem<int>(
+                      value: f.id,
+                      child: Text('${f.name} (${f.price})'),
+                    ),
+                  )
+                  .toList(),
+              onChanged: (v) => setState(() => _selectedFoodtypeID = v),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: _amountCtrl,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: 'จำนวน (คน)',
+                helperText: 'ตั้งต้นตามจำนวนผู้เข้าพัก + เจ้าหน้าที่ แก้ได้',
+              ),
+              onChanged: (v) => _amount = int.tryParse(v.trim()) ?? 1,
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: _timesCtrl,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: 'จำนวน (มื้อ)',
+                helperText: 'ตั้งต้นตามจำนวนวันจากวันเริ่มถึงวันสิ้นสุด แก้ได้',
+              ),
+              onChanged: (_) => _timesEditedByUser = true,
+            ),
+            const SizedBox(height: 10),
+            // ✅ ใช้ _dateField ที่สร้างในคลาสนี้
+            _dateField('วันที่เริ่มต้น', _startDate, () async {
+              final p = await Util.dateFieldPickerNullable(context, _startDate);
+              if (p != null && p != _startDate) {
+                setState(() {
+                  _startDate = p;
+                  _syncTimesWithDates();
+                });
+              }
+            }),
+            const SizedBox(height: 10),
+            _dateField('วันที่สิ้นสุด', _stopDate, () async {
+              final p = await Util.dateFieldPickerNullable(context, _stopDate);
+              if (p != null && p != _stopDate) {
+                setState(() {
+                  _stopDate = p;
+                  _syncTimesWithDates();
+                });
+              }
+            }),
+          ],
+        ),
       ),
       actions: [
         TextButton(
@@ -1784,6 +1831,10 @@ class _AddTfoodDialogState extends State<_AddTfoodDialog> {
               'foodtypeid': _selectedFoodtypeID,
               'price': selectedType.price,
               'amount': _amount,
+              // ช่องว่าง = ใช้จำนวนวันของช่วงที่เลือก ไม่ส่ง 0 มื้อไปให้ยอดเงินเป็นศูนย์
+              'times':
+                  int.tryParse(_timesCtrl.text.trim()) ??
+                  _dayCount(_startDate, _stopDate),
               'sequence': _sequence,
               'startdate': DateFormat('yyyy-MM-dd').format(_startDate),
               'stopdate': DateFormat('yyyy-MM-dd').format(_stopDate),

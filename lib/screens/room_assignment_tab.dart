@@ -1,7 +1,6 @@
 // สร้างไฟล์ room_assignment_tab.dart
 import 'package:flutter/material.dart';
 import 'package:highway_training/services/api_service.dart';
-import 'package:highway_training/widgets/booking_activity_assignment_section.dart';
 import 'package:highway_training/widgets/booking_room_assignment_section.dart';
 import 'package:highway_training/widgets/booking_room_list_section.dart';
 import 'package:highway_training/widgets/booking_summary_bar.dart';
@@ -94,7 +93,8 @@ class _RoomAssignmentTabState extends State<RoomAssignmentTab> {
                 ),
               ),
               const SizedBox(height: 16),
-              // ห้องพักที่กำหนดแล้ว — แก้ไขได้เฉพาะลำดับ ชื่อ เบอร์ติดต่อ และสถานะ
+              // ห้องพักที่กำหนดแล้ว — พิมพ์ชื่อผู้เข้าพัก 2 คนต่อห้องในตาราง
+              // บันทึกทั้งชุด และกด check in / check out ได้เลย (แทนแท็บ Check in เดิม)
               BookingRoomAssignmentSection(
                 apiService: widget.apiService,
                 bookId: widget.bookId,
@@ -129,10 +129,12 @@ class _RoomAssignmentTabState extends State<RoomAssignmentTab> {
                     ),
               ),
               const SizedBox(height: 16),
-              // ห้องกิจกรรมที่กำหนดแล้ว — ตารางชุดเดียวกับห้องพักที่กำหนดแล้ว แต่ type 'C'
-              BookingActivityAssignmentSection(
+              // ห้องกิจกรรมที่กำหนดแล้ว — ตารางชุดเดียวกับห้องพัก แต่ type 'C'
+              // แสดงเวลาที่ใช้ห้องแทนชื่อ-สกุล/เบอร์ติดต่อ และมีปุ่ม check in / check out
+              BookingRoomAssignmentSection(
                 apiService: widget.apiService,
                 bookId: widget.bookId,
+                type: 'C',
                 refreshSignal: _activityAssignmentsChanged,
               ),
             ],

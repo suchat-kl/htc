@@ -14,10 +14,11 @@ import '../utils/logger.dart';
 import '../utils/snackbar_helper.dart';
 import '../utils/util.dart';
 
-/// แก้ไขห้องพักที่กำหนดแล้วหนึ่งแถว
+/// แก้ไขห้องที่กำหนดแล้วหนึ่งแถว
 ///
-/// แสดงครบทั้ง 7 ค่า แต่แก้ได้เฉพาะ ลำดับ ชื่อ-สกุล เบอร์ติดต่อ และสถานะ
+/// แก้ได้เฉพาะ ลำดับ ชื่อ-สกุลผู้เข้าพัก 2 คน (เฉพาะห้องพัก) และสถานะ
 /// หมายเลขห้องกับช่วงวันที่เป็นข้อมูลการจอง จึงแสดงอย่างเดียว
+/// เบอร์ติดต่อเลิกแสดงแล้ว (คำขอ ต.ค. 2569) ตอนบันทึกไม่ส่งไป ค่าเดิมในฐานจึงคงอยู่
 ///
 /// ปิดด้วย true เมื่อบันทึกสำเร็จ
 class RoomAssignmentDialog extends StatefulWidget {
@@ -36,6 +37,9 @@ class RoomAssignmentDialog extends StatefulWidget {
   /// ตอนบันทึกยังส่งค่าเดิมกลับไปครบเหมือนเดิม
   final bool statusOnly;
 
+  /// แสดงช่องชื่อผู้เข้าพัก — ห้องกิจกรรมไม่มีผู้เข้าพักจึงปิด
+  final bool showGuestNames;
+
   const RoomAssignmentDialog({
     super.key,
     required this.apiService,
@@ -43,6 +47,7 @@ class RoomAssignmentDialog extends StatefulWidget {
     this.others = const [],
     this.title = 'แก้ไขข้อมูลห้องพัก',
     this.statusOnly = false,
+    this.showGuestNames = true,
   });
 
   @override
@@ -53,7 +58,7 @@ class _RoomAssignmentDialogState extends State<RoomAssignmentDialog> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _seqCtrl;
   late final TextEditingController _nameCtrl;
-  late final TextEditingController _telCtrl;
+  late final TextEditingController _name2Ctrl;
 
   List<StatusCheck> _statuses = [];
   bool _loadingStatuses = true;
@@ -66,7 +71,7 @@ class _RoomAssignmentDialogState extends State<RoomAssignmentDialog> {
     final a = widget.assignment;
     _seqCtrl = TextEditingController(text: a.sequence?.toString() ?? '');
     _nameCtrl = TextEditingController(text: a.contractName ?? '');
-    _telCtrl = TextEditingController(text: a.contractTel ?? '');
+    _name2Ctrl = TextEditingController(text: a.contractName2 ?? '');
     _statusId = a.status;
     _loadStatuses();
   }
@@ -75,7 +80,7 @@ class _RoomAssignmentDialogState extends State<RoomAssignmentDialog> {
   void dispose() {
     _seqCtrl.dispose();
     _nameCtrl.dispose();
-    _telCtrl.dispose();
+    _name2Ctrl.dispose();
     super.dispose();
   }
 
@@ -152,8 +157,9 @@ class _RoomAssignmentDialogState extends State<RoomAssignmentDialog> {
           stopDate: a.stopDate,
           // ค่าที่แก้ไขได้
           sequence: seq,
-          contractName: _nameCtrl.text.trim(),
-          contractTel: _telCtrl.text.trim(),
+          // ห้องกิจกรรมไม่มีช่องชื่อ ส่ง null = คงค่าเดิม
+          contractName: widget.showGuestNames ? _nameCtrl.text.trim() : null,
+          contractName2: widget.showGuestNames ? _name2Ctrl.text.trim() : null,
           status: _statusId,
         ),
       );
@@ -234,25 +240,32 @@ class _RoomAssignmentDialogState extends State<RoomAssignmentDialog> {
                         const SizedBox(height: 8),
                         _dupWarning(dups),
                       ],
-                      const SizedBox(height: 16),
-                      widget.statusOnly
-                          ? _readOnly('ชื่อ-สกุล', _orDash(a.contractName))
-                          : TextFormField(
-                              controller: _nameCtrl,
-                              enabled: !_saving,
-                              decoration: _input('ชื่อ-สกุล'),
-                              maxLength: 50,
-                            ),
-                      const SizedBox(height: 16),
-                      widget.statusOnly
-                          ? _readOnly('เบอร์ติดต่อ', _orDash(a.contractTel))
-                          : TextFormField(
-                              controller: _telCtrl,
-                              enabled: !_saving,
-                              decoration: _input('เบอร์ติดต่อ'),
-                              keyboardType: TextInputType.phone,
-                              maxLength: 50,
-                            ),
+                      if (widget.showGuestNames) ...[
+                        const SizedBox(height: 16),
+                        widget.statusOnly
+                            ? _readOnly(
+                                'ผู้เข้าพักคนที่ 1',
+                                _orDash(a.contractName),
+                              )
+                            : TextFormField(
+                                controller: _nameCtrl,
+                                enabled: !_saving,
+                                decoration: _input('ผู้เข้าพักคนที่ 1'),
+                                maxLength: 50,
+                              ),
+                        const SizedBox(height: 16),
+                        widget.statusOnly
+                            ? _readOnly(
+                                'ผู้เข้าพักคนที่ 2',
+                                _orDash(a.contractName2),
+                              )
+                            : TextFormField(
+                                controller: _name2Ctrl,
+                                enabled: !_saving,
+                                decoration: _input('ผู้เข้าพักคนที่ 2'),
+                                maxLength: 50,
+                              ),
+                      ],
                       const SizedBox(height: 16),
                       Row(
                         children: [
@@ -375,8 +388,25 @@ class _RoomAssignmentDialogState extends State<RoomAssignmentDialog> {
       );
     }
 
+    // ใช้แค่ 2 สถานะ check in / check out แล้ว (คำขอ ต.ค. 2569)
+    // สถานะอื่นของข้อมูลเก่ายังอยู่ในรายการเฉพาะเมื่อเป็นค่าปัจจุบันของแถว
+    // ถ้าหาสองสถานะหลักจากชื่อไม่เจอ แสดงทุกสถานะเหมือนเดิม
+    final check = RoomCheckStatus.from(
+      _statuses.map((s) => (status: s.status, name: s.name)),
+    );
+    final options = check.ready
+        ? _statuses
+              .where(
+                (s) =>
+                    s.status == check.checkIn ||
+                    s.status == check.checkOut ||
+                    s.status == a.status,
+              )
+              .toList()
+        : _statuses;
+
     // ค่าเดิมต้องมีอยู่ในรายการ ไม่งั้น DropdownButton จะ assert
-    final current = _statuses.any((s) => s.status == _statusId)
+    final current = options.any((s) => s.status == _statusId)
         ? _statusId
         : null;
 
@@ -384,7 +414,7 @@ class _RoomAssignmentDialogState extends State<RoomAssignmentDialog> {
       initialValue: current,
       decoration: _input('สถานะ'),
       items: [
-        for (final s in _statuses)
+        for (final s in options)
           if (s.status != null)
             DropdownMenuItem(value: s.status, child: Text(s.name ?? '-')),
       ],

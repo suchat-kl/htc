@@ -4,8 +4,22 @@ import '../config/theme.dart';
 import '../utils/snackbar_helper.dart';
 import 'package:highway_training/utils/logger.dart';
 
+/// ประเภทห้องที่ให้หน้ารายละเอียดแสดง (การ์ดห้องบนหน้าหลักส่งมา)
+enum RoomRateCategory {
+  vip('ห้องพักวีไอพี'),
+  standard('ห้องพักมาตรฐาน'),
+  meeting('ห้องประชุมและห้องกิจกรรม');
+
+  const RoomRateCategory(this.label);
+  final String label;
+}
+
 class RoomRatesScreen extends StatefulWidget {
-  const RoomRatesScreen({super.key});
+  /// null = แสดงทุกประเภท (เมนูในแถบด้านข้าง)
+  /// มีค่า = แสดงเฉพาะประเภทนั้น (กดการ์ดห้องจากหน้าหลัก)
+  final RoomRateCategory? category;
+
+  const RoomRatesScreen({super.key, this.category});
 
   @override
   State<RoomRatesScreen> createState() => _RoomRatesScreenState();
@@ -49,7 +63,7 @@ class _RoomRatesScreenState extends State<RoomRatesScreen> {
           tooltip: 'กลับหน้าหลัก',
         ),
         title: Text(
-          'ราคาห้อง',
+          widget.category?.label ?? 'ราคาห้อง',
           style: TextStyle(
             fontSize: headerFontSize,
             fontWeight: FontWeight.bold,
@@ -116,13 +130,17 @@ class _RoomRatesScreenState extends State<RoomRatesScreen> {
               _buildHeader(context, isDesktop),
               const SizedBox(height: 40),
 
-              // Room Cards
-              _buildRoomCards(context, isDesktop, isLargeScreen),
-              const SizedBox(height: 40),
-
-              // Meeting Room Section
-              _buildMeetingSection(context, isDesktop),
-              const SizedBox(height: 40),
+              // ไม่ระบุประเภท = ห้องพักทั้งสองแบบ + ห้องกิจกรรม
+              // ระบุประเภท = เฉพาะการ์ดของประเภทนั้น
+              if (widget.category == null) ...[
+                _buildRoomCards(context, isDesktop, isLargeScreen),
+                const SizedBox(height: 40),
+                _buildMeetingSection(context, isDesktop),
+                const SizedBox(height: 40),
+              ] else ...[
+                _buildSingleCategory(context, isDesktop, widget.category!),
+                const SizedBox(height: 40),
+              ],
 
               // Download Brochure Button
               _buildDownloadButton(context, isDesktop),
@@ -164,7 +182,9 @@ class _RoomRatesScreenState extends State<RoomRatesScreen> {
               Icon(Icons.hotel, size: isDesktop ? 60 : 40, color: Colors.white),
               SizedBox(height: isDesktop ? 16 : 10),
               Text(
-                'รายละเอียดห้องพักและห้องกิจกรรม',
+                widget.category == null
+                    ? 'รายละเอียดห้องพักและห้องกิจกรรม'
+                    : 'รายละเอียด${widget.category!.label}',
                 style: TextStyle(
                   fontSize: isDesktop ? 28 : 22,
                   fontWeight: FontWeight.bold,
@@ -186,6 +206,73 @@ class _RoomRatesScreenState extends State<RoomRatesScreen> {
     );
   }
 
+  /// การ์ดของประเภทเดียว ใช้ข้อมูลชุดเดียวกับหน้ารวม ราคาจะได้ไม่เพี้ยนกัน
+  Widget _buildSingleCategory(
+    BuildContext context,
+    bool isDesktop,
+    RoomRateCategory category,
+  ) {
+    switch (category) {
+      case RoomRateCategory.vip:
+        return Column(
+          children: [
+            _buildRateTitle(isDesktop),
+            _buildVipCard(context, isDesktop),
+          ],
+        );
+      case RoomRateCategory.standard:
+        return Column(
+          children: [
+            _buildRateTitle(isDesktop),
+            _buildStandardCard(context, isDesktop),
+          ],
+        );
+      case RoomRateCategory.meeting:
+        return _buildMeetingSection(context, isDesktop);
+    }
+  }
+
+  /// หัวข้อ "อัตราค่าบริการ" เหนือการ์ดห้องพัก
+  Widget _buildRateTitle(bool isDesktop) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: isDesktop ? 20 : 14),
+      child: Text(
+        'อัตราค่าบริการ',
+        style: TextStyle(
+          fontSize: isDesktop ? 24 : 20,
+          fontWeight: FontWeight.bold,
+          color: AppTheme.primaryColor,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStandardCard(BuildContext context, bool isDesktop) {
+    return _buildRoomCard(
+      context: context,
+      imagePath: 'assets/images/normal.png',
+      roomType: 'ห้องพักธรรมดา',
+      price: '800 บาท',
+      details: 'ปรับอากาศ น้ำอุ่น ทีวี WIFI',
+      icon: Icons.bed,
+      color: Colors.blue,
+      isDesktop: isDesktop,
+    );
+  }
+
+  Widget _buildVipCard(BuildContext context, bool isDesktop) {
+    return _buildRoomCard(
+      context: context,
+      imagePath: 'assets/images/vip.png',
+      roomType: 'ห้อง VIP',
+      price: '1,500 บาท',
+      details: 'ปรับอากาศ น้ำอุ่น ทีวี\nตู้เย็น WIFI และห้องนั่งเล่น',
+      icon: Icons.star,
+      color: Colors.amber,
+      isDesktop: isDesktop,
+    );
+  }
+
   // Room Cards Row
   Widget _buildRoomCards(
     BuildContext context,
@@ -194,67 +281,23 @@ class _RoomRatesScreenState extends State<RoomRatesScreen> {
   ) {
     return Column(
       children: [
-        Text(
-          'อัตราค่าบริการ',
-          style: TextStyle(
-            fontSize: isDesktop ? 24 : 20,
-            fontWeight: FontWeight.bold,
-            color: AppTheme.primaryColor,
-          ),
-        ),
-        SizedBox(height: isDesktop ? 20 : 14),
+        _buildRateTitle(isDesktop),
         if (isDesktop)
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              _buildRoomCard(
-                context: context,
-                imagePath: 'assets/images/normal.png',
-                roomType: 'ห้องพักธรรมดา',
-                price: '800 บาท',
-                details: 'ปรับอากาศ น้ำอุ่น ทีวี WIFI',
-                icon: Icons.bed,
-                color: Colors.blue,
-                isDesktop: isDesktop,
-              ),
+              _buildStandardCard(context, isDesktop),
               SizedBox(width: isLargeScreen ? 30 : 20),
-              _buildRoomCard(
-                context: context,
-                imagePath: 'assets/images/vip.png',
-                roomType: 'ห้อง VIP',
-                price: '1,500 บาท',
-                details: 'ปรับอากาศ น้ำอุ่น ทีวี\nตู้เย็น WIFI และห้องนั่งเล่น',
-                icon: Icons.star,
-                color: Colors.amber,
-                isDesktop: isDesktop,
-              ),
+              _buildVipCard(context, isDesktop),
             ],
           )
         else
           Column(
             children: [
-              _buildRoomCard(
-                context: context,
-                imagePath: 'assets/images/normal.png',
-                roomType: 'ห้องพักธรรมดา',
-                price: '800 บาท',
-                details: 'ปรับอากาศ น้ำอุ่น ทีวี WIFI',
-                icon: Icons.bed,
-                color: Colors.blue,
-                isDesktop: isDesktop,
-              ),
-              SizedBox(height: 20),
-              _buildRoomCard(
-                context: context,
-                imagePath: 'assets/images/vip.png',
-                roomType: 'ห้อง VIP',
-                price: '1,500 บาท',
-                details: 'ปรับอากาศ น้ำอุ่น ทีวี\nตู้เย็น WIFI และห้องนั่งเล่น',
-                icon: Icons.star,
-                color: Colors.amber,
-                isDesktop: isDesktop,
-              ),
+              _buildStandardCard(context, isDesktop),
+              const SizedBox(height: 20),
+              _buildVipCard(context, isDesktop),
             ],
           ),
       ],

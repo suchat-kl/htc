@@ -1,6 +1,7 @@
 // lib/screens/lodging_room_search_screen.dart
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
 import '../config/theme.dart';
@@ -18,12 +19,14 @@ import 'my_bookings_screen.dart';
 
 /// เมนูห้องพัก/ห้องกิจกรรม > ค้นหาห้องพัก
 ///
-/// ส่วนบนเป็นเงื่อนไขค้นหา 9 ช่อง กรอกบางช่องหรือไม่กรอกเลยก็ได้
+/// ส่วนบนเป็นเงื่อนไขค้นหา 10 ช่อง กรอกบางช่องหรือไม่กรอกเลยก็ได้
+/// เลขที่ใบจองเทียบตรงตัว (ได้เฉพาะห้องของใบจองนั้น) ช่องข้อความอื่นพิมพ์บางคำก็เจอ
 /// ส่วนล่างแสดงผลเป็นตารางแบ่งหน้า ค่าทั้งหมดแก้ไขไม่ได้ ปุ่มรายละเอียด
 /// เปิดหน้ารายละเอียดการจองด้วย bookId แบบเดียวกับหน้ารายการการจอง
 ///
 /// ต่างจากหน้าค้นหาห้องกิจกรรมตรงที่มีประเภทห้องพักและเบอร์โทรศัพท์
 /// และ backend ใส่ % ที่ชื่อผู้เข้าพัก ชื่อหน่วยงาน ชื่อหลักสูตร และโทรศัพท์
+/// หมายเลขห้องและประเภทห้องที่เลือกจากรายการเทียบตรงตัว ถ้าพิมพ์เองบางส่วนจะค้นแบบมีคำนั้นอยู่
 class LodgingRoomSearchScreen extends StatefulWidget {
   final ApiService apiService;
   final AuthProvider authProvider;
@@ -46,6 +49,7 @@ class _LodgingRoomSearchScreenState extends State<LodgingRoomSearchScreen> {
   static final _apiDate = DateFormat('yyyy-MM-dd');
 
   // ---------- เงื่อนไขค้นหา ----------
+  final _bookIdCtrl = TextEditingController();
   final _roomNoCtrl = TextEditingController();
   final _roomTypeCtrl = TextEditingController();
   final _contractNameCtrl = TextEditingController();
@@ -83,6 +87,7 @@ class _LodgingRoomSearchScreenState extends State<LodgingRoomSearchScreen> {
 
   @override
   void dispose() {
+    _bookIdCtrl.dispose();
     _roomNoCtrl.dispose();
     _roomTypeCtrl.dispose();
     _contractNameCtrl.dispose();
@@ -134,36 +139,46 @@ class _LodgingRoomSearchScreenState extends State<LodgingRoomSearchScreen> {
     }
   }
 
-  /// รหัสประเภทห้องจากข้อความในช่อง
+  /// เงื่อนไขประเภทห้องจากข้อความในช่อง
   ///
   /// หาจากชื่อที่ตรงกันทั้งคำ แทนการจำค่าตอนเลือก เพราะผู้ใช้อาจเลือกแล้ว
   /// แก้ข้อความต่อ ค่าที่จำไว้จะไม่ตรงกับที่เห็นในช่อง
-  /// คืน (null, true) เมื่อช่องว่าง = ไม่กรอง และ (null, false) เมื่อพิมพ์ชื่อที่ไม่มี
-  ({int? id, bool valid}) _resolveRoomTypeId() {
+  /// ตรงชื่อในรายการ = ส่งรหัส (เทียบตรงตัว) พิมพ์เองบางส่วน = ส่งชื่อให้ค้นแบบมีคำนั้นอยู่
+  /// ช่องว่าง = ไม่กรอง (คืน null ทั้งคู่)
+  ({int? id, String? keyword}) _resolveRoomType() {
     final text = _roomTypeCtrl.text.trim();
-    if (text.isEmpty) return (id: null, valid: true);
+    if (text.isEmpty) return (id: null, keyword: null);
     for (final t in _roomTypes) {
-      if (t.name.trim() == text) return (id: t.roomTypeId, valid: true);
+      if (t.name.trim() == text) return (id: t.roomTypeId, keyword: null);
     }
-    return (id: null, valid: false);
+    return (id: null, keyword: text);
+  }
+
+  /// หมายเลขห้องที่ตรงกับตัวเลือกในรายการทั้งคำ = เลือกจากรายการ ส่งไปเทียบตรงตัว
+  /// ไม่ตรงตัวเลือกใด = พิมพ์เองบางส่วน ส่งเป็น keyword ให้ backend ค้นแบบมีคำนั้นอยู่
+  /// (แยกสองแบบเพื่อไม่ให้เลือก "101" แล้วได้ "1011" ติดมาด้วย)
+  bool get _roomNoIsOption {
+    final text = _roomNoCtrl.text.trim();
+    return text.isNotEmpty && _roomNos.contains(text);
   }
 
   Future<void> _search({int page = 0}) async {
     FocusScope.of(context).unfocus();
 
-    final roomType = _resolveRoomTypeId();
-    if (!roomType.valid) {
+    final bookIdText = _bookIdCtrl.text.trim();
+    final bookId = int.tryParse(bookIdText);
+    if (bookIdText.isNotEmpty && bookId == null) {
       setState(() {
         _searched = true;
         _results = [];
         _totalItems = 0;
         _totalPages = 0;
-        _error =
-            'ไม่พบประเภทห้องพัก "${_roomTypeCtrl.text.trim()}" '
-            'กรุณาเลือกจากรายการ';
+        _error = 'เลขที่ใบจองต้องเป็นตัวเลข';
       });
       return;
     }
+
+    final roomType = _resolveRoomType();
 
     setState(() {
       _searched = true;
@@ -174,8 +189,11 @@ class _LodgingRoomSearchScreenState extends State<LodgingRoomSearchScreen> {
     try {
       final res = await widget.apiService.searchLodgingRooms(
         type: _roomType,
-        roomNo: _roomNoCtrl.text,
+        roomNo: _roomNoIsOption ? _roomNoCtrl.text : null,
+        roomNoKeyword: _roomNoIsOption ? null : _roomNoCtrl.text,
+        bookId: bookId,
         roomTypeId: roomType.id,
+        roomTypeName: roomType.keyword,
         contractName: _contractNameCtrl.text,
         departmentName: _departmentCtrl.text,
         bookTitle: _bookTitleCtrl.text,
@@ -205,6 +223,7 @@ class _LodgingRoomSearchScreenState extends State<LodgingRoomSearchScreen> {
 
   void _clear() {
     setState(() {
+      _bookIdCtrl.clear();
       _roomNoCtrl.clear();
       _roomTypeCtrl.clear();
       _contractNameCtrl.clear();
@@ -355,6 +374,7 @@ class _LodgingRoomSearchScreenState extends State<LodgingRoomSearchScreen> {
           spacing: 12,
           runSpacing: 14,
           children: [
+            _bookIdField(),
             AppAutocompleteField<String>(
               label: 'หมายเลขห้อง',
               controller: _roomNoCtrl,
@@ -441,6 +461,24 @@ class _LodgingRoomSearchScreenState extends State<LodgingRoomSearchScreen> {
         controller: ctrl,
         style: const TextStyle(fontSize: 14),
         decoration: _input(label),
+        onSubmitted: (_) => _search(),
+      ),
+    );
+  }
+
+  /// เลขที่ใบจอง — รับเฉพาะตัวเลข กด Enter เพื่อค้นหาได้
+  Widget _bookIdField() {
+    return SizedBox(
+      width: 160,
+      child: TextField(
+        controller: _bookIdCtrl,
+        keyboardType: TextInputType.number,
+        inputFormatters: [
+          FilteringTextInputFormatter.digitsOnly,
+          LengthLimitingTextInputFormatter(9),
+        ],
+        style: const TextStyle(fontSize: 14),
+        decoration: _input('เลขที่ใบจอง'),
         onSubmitted: (_) => _search(),
       ),
     );

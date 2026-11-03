@@ -8,6 +8,9 @@ class BookDetail {
   final String? checkIn;
   final String? checkOut;
   final String? contractName;
+
+  /// ชื่อ-สกุลผู้เข้าพักคนที่สอง (คอลัมน์ contractname2) — null = ไม่แก้ค่าเดิมตอน update
+  final String? contractName2;
   final String? address;
   final String? contractTel;
   final int? numberMember;
@@ -32,6 +35,7 @@ class BookDetail {
     this.checkIn,
     this.checkOut,
     this.contractName,
+    this.contractName2,
     this.address,
     this.contractTel,
     this.numberMember,
@@ -58,6 +62,7 @@ class BookDetail {
       checkIn: json['checkIn'] as String?,
       checkOut: json['checkOut'] as String?,
       contractName: json['contractName'] as String?,
+      contractName2: json['contractName2'] as String?,
       address: json['address'] as String?,
       contractTel: json['contractTel'] as String?,
       numberMember: json['numberMember'] as int?,
@@ -85,6 +90,7 @@ class BookDetail {
       'checkIn': checkIn,
       'checkOut': checkOut,
       'contractName': contractName,
+      'contractName2': contractName2,
       'address': address,
       'contractTel': contractTel,
       'numberMember': numberMember,
@@ -111,6 +117,7 @@ class BookDetail {
     String? checkIn,
     String? checkOut,
     String? contractName,
+    String? contractName2,
     String? address,
     String? contractTel,
     int? numberMember,
@@ -135,6 +142,7 @@ class BookDetail {
       checkIn: checkIn ?? this.checkIn,
       checkOut: checkOut ?? this.checkOut,
       contractName: contractName ?? this.contractName,
+      contractName2: contractName2 ?? this.contractName2,
       address: address ?? this.address,
       contractTel: contractTel ?? this.contractTel,
       numberMember: numberMember ?? this.numberMember,

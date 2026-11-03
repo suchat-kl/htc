@@ -94,6 +94,9 @@ class _ScheduleAvailabilityDialogState
   List<Schedule> _schedules = [];
   List<DateTime> _dates = [];
 
+  /// รายการกำหนดห้องที่ใช้ห้องนี้ในช่วงวันที่ (ทุกใบจอง) — ใช้หาเลขใบจองของช่วงเวลา
+  List<RoomUsage> _usages = [];
+
   /// ช่วงเวลาที่เลือกไว้ — เก็บเป็น yyyy-MM-dd|from|to เลือกได้เฉพาะช่องที่ว่าง
   final Set<String> _selected = {};
 
@@ -149,9 +152,21 @@ class _ScheduleAvailabilityDialogState
         startdate: fmt.format(sd),
         stopdate: fmt.format(ed),
       );
+      // เลขใบจองของแต่ละช่วงเวลา — ดึงไม่สำเร็จก็ยังตรวจห้องว่างได้ แค่ไม่เห็นเลขใบจอง
+      var usages = <RoomUsage>[];
+      try {
+        usages = await widget.apiService.getRoomUsage(
+          roomTypeId: widget.roomTypeId,
+          startdate: fmt.format(sd),
+          stopdate: fmt.format(ed),
+        );
+      } catch (e) {
+        if (AppLogger.on) AppLogger.d('Error loading room usage: $e');
+      }
       if (!mounted) return;
       setState(() {
         _schedules = result;
+        _usages = usages;
         _dates = dates;
         _isLoading = false;
       });
@@ -193,6 +208,47 @@ class _ScheduleAvailabilityDialogState
           from < slot.to &&
           slot.from < to;
     });
+  }
+
+  /// เลขใบจองที่ใช้ช่วงเวลานี้ของวันนี้ เรียงจากน้อยไปมาก (ว่าง = หาไม่ได้)
+  ///
+  /// จับคู่แถว t_schedule กับรายการกำหนดห้องด้วย bookiddetail (แถวใหม่)
+  /// หรือ bookingreservationid (แถวที่ย้ายมาจากระบบเดิม) ถ้าจับคู่ไม่ได้
+  /// จึงดูรายการของห้องเดียวกันที่ครอบวันนั้น
+  List<int> _bookIdsAt(DateTime date, _Slot slot) {
+    final key = DateFormat('yyyy-MM-dd').format(date);
+    final ids = <int>{};
+    for (final s in _schedules) {
+      final from = s.fromTime;
+      final to = s.toTime;
+      if (from == null || to == null) continue;
+      if (!(s.scheduleDate ?? '').startsWith(key)) continue;
+      if (!(from < slot.to && slot.from < to)) continue;
+
+      final owner = s.bookIdDetail ?? s.bookingReservationId;
+      final byOwner = owner == null
+          ? null
+          : _usages.where((u) => u.bookIdDetail == owner).firstOrNull;
+      if (byOwner?.bookId != null) {
+        ids.add(byOwner!.bookId!);
+        continue;
+      }
+      for (final u in _usages) {
+        if (u.roomId == s.roomID && u.bookId != null && u.covers(key)) {
+          ids.add(u.bookId!);
+        }
+      }
+    }
+    return ids.toList()..sort();
+  }
+
+  /// ชื่อหลักสูตรของใบจอง ใช้ประกอบ tooltip
+  String _titleOf(int bookId) {
+    final t = _usages
+        .where((u) => u.bookId == bookId)
+        .map((u) => u.bookTitle)
+        .firstOrNull;
+    return (t == null || t.trim().isEmpty) ? '' : ' ${t.trim()}';
   }
 
   /// คีย์ของช่องหนึ่งในตาราง — วันที่คู่กับช่วงเวลา
@@ -554,10 +610,18 @@ class _ScheduleAvailabilityDialogState
     final selected = _selected.contains(_slotKey(date, slot));
     final label = '${_hhmm(slot.from)} - ${_hhmm(slot.to)}';
     final day = Util.toBuddhistYearDisplay(date);
+    final bookIds = used ? _bookIdsAt(date, slot) : const <int>[];
+    // บรรทัดใน tooltip บอกเลขใบจองที่ใช้ช่วงเวลานี้ พร้อมชื่อหลักสูตร
+    final owners = bookIds
+        .map((id) {
+          final own = id == widget.bookId ? ' (ใบจองนี้)' : '';
+          return '\nใบจองเลขที่ $id$own${_titleOf(id)}';
+        })
+        .join();
 
     final box = Container(
       width: 146,
-      height: 40,
+      height: 46,
       alignment: Alignment.center,
       decoration: BoxDecoration(
         color: used ? _usedColor : (selected ? _selectedColor : _freeColor),
@@ -573,19 +637,41 @@ class _ScheduleAvailabilityDialogState
                 Text(label, style: _cellLabel),
               ],
             )
+          : bookIds.isNotEmpty
+          // ช่วงที่ไม่ว่างบอกเลขใบจองที่ใช้อยู่ไว้ใต้ช่วงเวลา
+          ? Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(label, style: _cellLabel),
+                Text(
+                  'ใบจอง ${bookIds.join(', ')}',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 11,
+                    fontFamily: 'NotoSansThai',
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            )
           : Text(label, style: _cellLabel),
     );
 
     // นอกโหมดกำหนดห้องกิจกรรมเป็นหน้าดูอย่างเดียว จึงไม่ห่อ InkWell เลย
     if (!widget.selectionMode) {
       final state = used ? 'ใช้งานอยู่' : 'ว่าง';
-      return _cellBox(Tooltip(message: '$day $label — $state', child: box));
+      return _cellBox(
+        Tooltip(message: '$day $label — $state$owners', child: box),
+      );
     }
 
     // ช่วงเวลาที่ใช้งานอยู่กดไม่ได้ ไม่ห่อ InkWell เพื่อไม่ให้มี ripple ชวนให้กด
     if (used) {
       return _cellBox(
-        Tooltip(message: '$day $label — ใช้งานอยู่ (เลือกไม่ได้)', child: box),
+        Tooltip(
+          message: '$day $label — ใช้งานอยู่ (เลือกไม่ได้)$owners',
+          child: box,
+        ),
       );
     }
 

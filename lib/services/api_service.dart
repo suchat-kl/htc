@@ -3492,6 +3492,8 @@ class ApiService {
     String? stopdate,
     String? departmentname,
     String? booktitle,
+    // ชื่อผู้จอง/ผู้ติดต่อ backend เทียบแบบมีคำนั้นอยู่ (LIKE %x%) ทั้งผู้ติดต่อคนที่ 1 และ 2
+    String? contractname,
     int? status,
     String? idcard,
     String? bookingtype,
@@ -3508,6 +3510,9 @@ class ApiService {
       p['departmentname'] = departmentname;
     }
     if (booktitle != null && booktitle.isNotEmpty) p['booktitle'] = booktitle;
+    if (contractname != null && contractname.trim().isNotEmpty) {
+      p['contractname'] = contractname.trim();
+    }
     if (status != null) p['status'] = status;
     if (idcard != null && idcard.isNotEmpty) p['idcard'] = idcard;
     // A = กองฝึก (รวมใบที่ไม่ได้ระบุประเภท), B = หน่วยราชการอื่น, C = รายย่อย
@@ -3797,9 +3802,11 @@ class ApiService {
 
   /// ตัวเลขสรุปบนหน้าแรก
   ///
-  /// ใช้ publicDio เพราะหน้าแรกเปิดดูได้โดยไม่ต้องล็อกอิน
+  /// สถิติหน้าแรก เฉพาะเจ้าหน้าที่ (ดู HomeScreen._loadStats)
   Future<HomeStats> getHomeStats() async {
-    final r = await publicDio.get('/api/auth/home-stats');
+    // เฉพาะเจ้าหน้าที่ backend ปิดเส้นนี้ให้คนอื่นแล้ว (พ.ย. 2569) ต้องแนบ token
+    await _ensureToken();
+    final r = await dio.get('/api/auth/home-stats');
     if (r.statusCode == 200 && r.data is Map) {
       return HomeStats.fromJson(Map<String, dynamic>.from(r.data as Map));
     }
@@ -4248,6 +4255,47 @@ class ApiService {
         .toList();
   }
 
+  /// แก้ไขรายการกำหนดห้องหลายรายการในครั้งเดียว (PUT /bookdetails/batch)
+  ///
+  /// ใช้กับปุ่มบันทึกชื่อผู้เข้าพักทั้งชุด และ check in / check out ทั้งชุด
+  /// ทุกรายการต้องมี bookIdDetail backend บันทึกใน transaction เดียว
+  /// ฟิลด์ที่เป็น null คงค่าเดิม — ล้างชื่อให้ส่ง "" แทน
+  Future<void> updateBookDetailsBatch(List<BookDetail> details) async {
+    if (details.isEmpty) return;
+    await _ensureToken();
+    final response = await dio.put(
+      '/api/auth/bookdetails/batch',
+      data: details.map((d) => d.toJson()).toList(),
+    );
+    if (response.data is Map && response.data['success'] != true) {
+      throw Exception(response.data['message'] ?? 'บันทึกไม่สำเร็จ');
+    }
+  }
+
+  /// การใช้ห้องของประเภทห้องหนึ่งในช่วงวันที่ พร้อมเลขใบจอง — รวมทุกใบจอง
+  ///
+  /// ใช้ในหน้าตรวจสอบห้องว่าง บอกว่าห้อง/ช่วงเวลาที่ไม่ว่างเป็นของใบจองใด
+  /// ช่วงที่ได้คือรายการที่คาบเกี่ยวแบบนับรวมวันปลาย ห้องพักต้องตัดเป็นคืนเอง
+  Future<List<RoomUsage>> getRoomUsage({
+    required int roomTypeId,
+    required String startdate, // yyyy-MM-dd
+    required String stopdate, // yyyy-MM-dd
+  }) async {
+    await _ensureToken();
+    final r = await dio.get(
+      '/api/auth/schedules/room-usage',
+      queryParameters: {
+        'roomTypeId': roomTypeId,
+        'startdate': startdate,
+        'stopdate': stopdate,
+      },
+    );
+    final list = r.data['usages'] as List? ?? const [];
+    return list
+        .map((j) => RoomUsage.fromJson(j as Map<String, dynamic>))
+        .toList();
+  }
+
   // ============ SCHEDULE API (t_schedule) ============
   //
   // ตารางนี้ใช้ composite key roomID + scheduleDate + fromTime + toTime
@@ -4351,9 +4399,14 @@ class ApiService {
   /// (LIKE %x%) ส่วน [roomNo] และ [status] เทียบตรงตัว วันที่เป็นช่วง
   /// (วันเริ่มต้นตั้งแต่ [startDate] วันสิ้นสุดไม่เกิน [stopDate]) ช่องที่เป็น null หรือว่างจะไม่ถูกส่งไป คืน Map ที่มี
   /// `results` (`List<RoomSearchResult>`), `totalItems`, `totalPages`, `currentPage`
+  ///
+  /// [roomNoKeyword] หมายเลขห้องที่พิมพ์บางส่วน (LIKE %x%) ใช้แทน [roomNo] เมื่อผู้ใช้
+  /// ไม่ได้เลือกจากรายการ [bookId] เลขที่ใบจอง เทียบตรงตัว
   Future<Map<String, dynamic>> searchRooms({
     String type = 'C',
     String? roomNo,
+    String? roomNoKeyword,
+    int? bookId,
     String? departmentName,
     String? bookTitle,
     String? contractName,
@@ -4370,6 +4423,8 @@ class ApiService {
       queryParameters: {
         'type': type,
         if (has(roomNo)) 'roomNo': roomNo!.trim(),
+        if (has(roomNoKeyword)) 'roomNoKeyword': roomNoKeyword!.trim(),
+        'bookId': ?bookId,
         if (has(departmentName)) 'departmentName': departmentName!.trim(),
         if (has(bookTitle)) 'bookTitle': bookTitle!.trim(),
         if (has(contractName)) 'contractName': contractName!.trim(),
@@ -4410,10 +4465,16 @@ class ApiService {
   /// แบบมีคำนั้นอยู่ (LIKE %x%) ส่วน [roomNo] [roomTypeId] [status] เทียบตรงตัว
   /// วันที่เป็นช่วง (วันเริ่มต้นตั้งแต่ [startDate] วันสิ้นสุดไม่เกิน [stopDate])
   /// คืน Map รูปแบบเดียวกับ [searchRooms]
+  ///
+  /// [roomNoKeyword] [roomTypeName] หมายเลขห้อง/ชื่อประเภทห้องที่พิมพ์บางส่วน (LIKE %x%)
+  /// ใช้เมื่อผู้ใช้ไม่ได้เลือกจากรายการ [bookId] เลขที่ใบจอง เทียบตรงตัว
   Future<Map<String, dynamic>> searchLodgingRooms({
     String type = 'R',
     String? roomNo,
+    String? roomNoKeyword,
+    int? bookId,
     int? roomTypeId,
+    String? roomTypeName,
     String? contractName,
     String? departmentName,
     String? bookTitle,
@@ -4431,7 +4492,10 @@ class ApiService {
       queryParameters: {
         'type': type,
         if (has(roomNo)) 'roomNo': roomNo!.trim(),
+        if (has(roomNoKeyword)) 'roomNoKeyword': roomNoKeyword!.trim(),
+        'bookId': ?bookId,
         'roomTypeId': ?roomTypeId,
+        if (has(roomTypeName)) 'roomTypeName': roomTypeName!.trim(),
         if (has(contractName)) 'contractName': contractName!.trim(),
         if (has(departmentName)) 'departmentName': departmentName!.trim(),
         if (has(bookTitle)) 'bookTitle': bookTitle!.trim(),

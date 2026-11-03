@@ -47,10 +47,23 @@ class _HomeScreenState extends State<HomeScreen> {
     _loadTickerMessages();
     _loadStats();
     _loadNotifications();
+    widget.authProvider.addListener(_onAuthChanged);
   }
 
-  /// ตัวเลขสรุปบนหน้าแรก โหลดไม่ได้ก็ซ่อนแถบไปเลย ไม่ขึ้น error ให้ผู้ใช้ทั่วไปเห็น
+  /// สถิติหน้าแรกเป็นของเจ้าหน้าที่เท่านั้น (backend ปิด /home-stats ให้คนอื่นแล้ว)
+  /// เข้าสู่ระบบด้วยบัญชีเจ้าหน้าที่ทีหลัง = โหลดใหม่, ออกจากระบบ = ล้างตัวเลขทิ้ง
+  void _onAuthChanged() {
+    if (!mounted) return;
+    if (widget.authProvider.isStaff) {
+      if (_stats == null) _loadStats();
+    } else if (_stats != null) {
+      setState(() => _stats = null);
+    }
+  }
+
+  /// ตัวเลขสรุปบนหน้าแรก (เฉพาะเจ้าหน้าที่) โหลดไม่ได้ก็ซ่อนแถบไปเลย ไม่ขึ้น error
   Future<void> _loadStats() async {
+    if (!widget.authProvider.isStaff) return;
     try {
       final stats = await _apiService.getHomeStats();
       if (mounted) setState(() => _stats = stats);
@@ -146,6 +159,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   void dispose() {
+    widget.authProvider.removeListener(_onAuthChanged);
     _tickerScrollController.dispose();
     super.dispose();
   }
@@ -166,7 +180,14 @@ class _HomeScreenState extends State<HomeScreen> {
           _buildBannerSection(context, isDesktop),
           // ประกาศของศูนย์ฯ อยู่ใต้ภาพหัว เห็นทันทีไม่ต้องเลื่อนลงไปถึงส่วนข่าว
           _buildNotificationSection(isDesktop),
-          _buildStatsSection(context, isDesktop),
+          // ตัวเลขห้องว่าง/จำนวนใบจอง ให้เห็นเฉพาะเจ้าหน้าที่ ผู้จอง (ThaID) และคนทั่วไปไม่เห็น
+          // ฟัง authProvider เพื่อให้แถบโผล่/หายทันทีตอนเข้าหรือออกจากระบบ
+          ListenableBuilder(
+            listenable: widget.authProvider,
+            builder: (context, _) => widget.authProvider.isStaff
+                ? _buildStatsSection(context, isDesktop)
+                : const SizedBox.shrink(),
+          ),
           _buildNewsSection(context, isDesktop),
           _buildRoomSection(context, isDesktop),
           const CustomFooter(),
@@ -859,7 +880,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           SizedBox(height: isDesktop ? 8 : 6),
           Text(
-            'กดที่การ์ดเพื่อดูราคาห้องทั้งหมด',
+            'กดที่การ์ดเพื่อดูรายละเอียดและราคาของห้องประเภทนั้น',
             style: TextStyle(
               fontSize: isDesktop ? 14 : 12,
               color: AppTheme.textSecondary,
@@ -875,18 +896,21 @@ class _HomeScreenState extends State<HomeScreen> {
                 'assets/images/vip.png',
                 'ห้องพักวีไอพี',
                 'ห้องพักสำหรับผู้บริหารและวิทยากร',
+                RoomRateCategory.vip,
                 isDesktop,
               ),
               _buildRoomCard(
                 'assets/images/normal.png',
                 'ห้องพักมาตรฐาน',
                 'ห้องพักสำหรับผู้เข้ารับการอบรม',
+                RoomRateCategory.standard,
                 isDesktop,
               ),
               _buildRoomCard(
                 'assets/images/meeting.png',
                 'ห้องประชุมและห้องกิจกรรม',
                 'รองรับการอบรม สัมมนา และกิจกรรมกลุ่ม',
+                RoomRateCategory.meeting,
                 isDesktop,
               ),
             ],
@@ -900,6 +924,7 @@ class _HomeScreenState extends State<HomeScreen> {
     String asset,
     String title,
     String description,
+    RoomRateCategory category,
     bool isDesktop,
   ) {
     final width = isDesktop ? 300.0 : 260.0;
@@ -910,9 +935,12 @@ class _HomeScreenState extends State<HomeScreen> {
       borderRadius: BorderRadius.circular(14),
       child: InkWell(
         borderRadius: BorderRadius.circular(14),
+        // เปิดหน้ารายละเอียดเฉพาะประเภทห้องของการ์ดนี้ ไม่ใช่หน้ารวมทุกประเภท
         onTap: () => Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => const RoomRatesScreen()),
+          MaterialPageRoute(
+            builder: (_) => RoomRatesScreen(category: category),
+          ),
         ),
         child: Ink(
           width: width,

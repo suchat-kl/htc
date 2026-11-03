@@ -135,3 +135,65 @@ class Schedule {
     );
   }
 }
+
+/// การใช้ห้องหนึ่งรายการ (หนึ่งแถวของ bookdetail) — ใช้ในหน้าตรวจสอบห้องว่าง
+///
+/// มาจาก GET /api/auth/schedules/room-usage บอกว่าห้องไหนถูกใช้โดยใบจองเลขที่เท่าไร
+/// ช่วงวันที่ใด รวมทุกใบจอง ไม่ใช่แค่ใบที่เปิดอยู่
+class RoomUsage {
+  final int? bookIdDetail;
+  final int? bookId;
+  final int? roomId;
+
+  /// หมายเลขห้องจาก m_room — ตรงกับรายการห้องทั้งหมดที่หน้าตรวจสอบห้องว่างใช้
+  final String? roomNo;
+  final String? startDate; // yyyy-MM-dd
+  final String? stopDate; // yyyy-MM-dd
+
+  /// ชื่อหลักสูตร/โครงการของใบจอง
+  final String? bookTitle;
+
+  const RoomUsage({
+    this.bookIdDetail,
+    this.bookId,
+    this.roomId,
+    this.roomNo,
+    this.startDate,
+    this.stopDate,
+    this.bookTitle,
+  });
+
+  factory RoomUsage.fromJson(Map<String, dynamic> json) {
+    return RoomUsage(
+      bookIdDetail: Schedule._int(json['bookIdDetail']),
+      bookId: Schedule._int(json['bookId']),
+      roomId: Schedule._int(json['roomId']),
+      roomNo: json['roomNo']?.toString(),
+      startDate: json['startDate']?.toString(),
+      stopDate: json['stopDate']?.toString(),
+      bookTitle: json['bookTitle']?.toString(),
+    );
+  }
+
+  /// วันที่ในรูปแบบ yyyy-MM-dd ตัดส่วนเวลาทิ้ง เผื่อ backend ส่งมาเป็น datetime
+  static String? _day(String? s) =>
+      (s == null || s.length < 10) ? s : s.substring(0, 10);
+
+  /// ช่วงของรายการนี้ครอบวันที่ [day] (yyyy-MM-dd) หรือไม่ — นับรวมวันปลายทั้งสองด้าน
+  bool covers(String day) {
+    final a = _day(startDate);
+    final b = _day(stopDate);
+    if (a == null || b == null) return false;
+    return a.compareTo(day) <= 0 && b.compareTo(day) >= 0;
+  }
+
+  /// มีคืนที่พักทับช่วง [from, to) หรือไม่ (yyyy-MM-dd) — ใช้กับห้องพักที่นับเป็นคืน
+  ///
+  /// วันสิ้นสุดของรายการหนึ่งเป็นวันเข้าพักของอีกรายการได้ จึงใช้ < และ > ไม่รวมเท่ากับ
+  bool overlapsNights(String from, String to) {
+    final a = _day(startDate);
+    final b = _day(stopDate);
+    if (a == null || b == null) return false;
+    return a.compareTo(to) < 0 && b.compareTo(from) > 0;
+  }
+}
