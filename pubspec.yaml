@@ -80,14 +80,14 @@ flutter:
 
   assets:
     - assets/images/
-    - assets/images/normal.png
-    - assets/images/vip.png
-    - assets/images/meeting.png
+    - assets/images/normal.jpg
+    - assets/images/vip.jpg
+    - assets/images/meeting.jpg
     - assets/images/brochure.pdf
     - assets/images/location.pdf
-    - assets/images/line.png
-    - assets/images/map500.png
+    - assets/images/line.jpg
+    - assets/images/map500.jpg
     - assets/images/view.jpg
-    - assets/images/thaid.png
+    - assets/images/thaid.jpg
     # - assets/icons/       # ถ้ามีไฟล์ icon.png ก็เปิดใช้งานด้วย
     # - assets/icons/icon.png

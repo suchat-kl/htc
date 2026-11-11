@@ -250,7 +250,7 @@ class _RoomRatesScreenState extends State<RoomRatesScreen> {
   Widget _buildStandardCard(BuildContext context, bool isDesktop) {
     return _buildRoomCard(
       context: context,
-      imagePath: 'assets/images/normal.png',
+      imagePath: 'assets/images/normal.jpg',
       roomType: 'ห้องพักธรรมดา',
       price: '800 บาท',
       details: 'ปรับอากาศ น้ำอุ่น ทีวี WIFI',
@@ -263,7 +263,7 @@ class _RoomRatesScreenState extends State<RoomRatesScreen> {
   Widget _buildVipCard(BuildContext context, bool isDesktop) {
     return _buildRoomCard(
       context: context,
-      imagePath: 'assets/images/vip.png',
+      imagePath: 'assets/images/vip.jpg',
       roomType: 'ห้อง VIP',
       price: '1,500 บาท',
       details: 'ปรับอากาศ น้ำอุ่น ทีวี\nตู้เย็น WIFI และห้องนั่งเล่น',
@@ -473,7 +473,7 @@ class _RoomRatesScreenState extends State<RoomRatesScreen> {
                 color: Colors.purple.withValues(alpha: 0.05),
               ),
               child: Image.asset(
-                'assets/images/meeting.png',
+                'assets/images/meeting.jpg',
                 fit: BoxFit.cover,
                 errorBuilder: (context, error, stackTrace) {
                   return Container(
