@@ -11,6 +11,7 @@ import '../widgets/footer.dart';
 import 'package:highway_training/models/home_stats.dart';
 import 'package:highway_training/models/notification_item.dart';
 import 'package:highway_training/widgets/hover_lift.dart';
+import 'package:highway_training/utils/home_banner.dart';
 import 'package:highway_training/utils/logger.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -206,103 +207,108 @@ class _HomeScreenState extends State<HomeScreen> {
   ///
   /// ชื่อศูนย์ฯ และส่วนจองห้องพักอยู่ในภาพเดียวกัน จัดกลางภาพ เว้นระหว่างกันราวหนึ่งบรรทัด
   /// เดิมส่วนจองเป็นการ์ดแยกใต้แถบสถิติ ผู้ใช้ให้ย้ายขึ้นมาอยู่ในภาพวิว (28 ก.ย. 2569)
+  ///
+  /// ความสูงตาม [HomeBanner.height] จอ laptop และ desktop จึงเห็นภาพเต็มรูปเหมือนกัน
+  /// (เดิมสูงตายตัว ภาพถูกตัดบน-ล่างมากน้อยต่างกันตามความกว้างจอ)
   Widget _buildBannerSection(BuildContext context, bool isDesktop) {
-    // สูงขึ้นจากเดิม (460/320) ให้ส่วนจองห้องพักอยู่ในภาพได้ครบบนจอมือถือ
-    final height = isDesktop ? 540.0 : 480.0;
+    return LayoutBuilder(
+      builder: (context, constraints) => SizedBox(
+        height: HomeBanner.height(constraints.maxWidth, isDesktop: isDesktop),
+        width: double.infinity,
+        child: _buildBannerContent(context, isDesktop),
+      ),
+    );
+  }
 
-    return SizedBox(
-      height: height,
-      width: double.infinity,
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          Image.asset(
-            'assets/images/view.jpg',
-            fit: BoxFit.cover,
-            alignment: Alignment.center,
-            // ภาพหายก็ยังเห็นหัวเรื่อง ไม่ปล่อยให้ทั้งแถบพัง
-            errorBuilder: (_, _, _) => Container(color: AppTheme.primaryColor),
-          ),
-          DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Colors.black.withValues(alpha: 0.45),
-                  Colors.black.withValues(alpha: 0.25),
-                  Colors.black.withValues(alpha: 0.55),
-                ],
-              ),
-            ),
-          ),
-          Padding(
-            padding: EdgeInsets.fromLTRB(
-              isDesktop ? 32 : 16,
-              isDesktop ? 40 : 24,
-              isDesktop ? 32 : 16,
-              isDesktop ? 40 : 24,
-            ),
-            child: Column(
-              // ชื่อศูนย์ฯ กับส่วนจองห้องพักอยู่กลางภาพ เว้นระหว่างกันราวหนึ่งบรรทัด
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.apartment,
-                      size: isDesktop ? 48 : 34,
-                      color: Colors.white.withValues(alpha: 0.9),
-                    ),
-                    SizedBox(height: isDesktop ? 12 : 8),
-                    Text(
-                      'ศูนย์พัฒนาทรัพยากรบุคคลงานทาง',
-                      style: Theme.of(context).textTheme.headlineLarge
-                          ?.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: isDesktop ? 34 : 24,
-                            shadows: const [
-                              Shadow(blurRadius: 8, color: Colors.black54),
-                            ],
-                          ),
-                      textAlign: TextAlign.center,
-                    ),
-                    SizedBox(height: isDesktop ? 10 : 8),
-                    Text(
-                      'กรมทางหลวง  อำเภอศรีราชา จังหวัดชลบุรี',
-                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: Colors.white,
-                        fontSize: isDesktop ? 17 : 14,
-                        shadows: const [
-                          Shadow(blurRadius: 6, color: Colors.black54),
-                        ],
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    SizedBox(height: isDesktop ? 12 : 10),
-                    Text(
-                      'ห้องพัก ห้องประชุม และห้องกิจกรรม สำหรับการฝึกอบรมและสัมมนา',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Colors.white70,
-                        fontSize: isDesktop ? 15 : 13,
-                        shadows: const [
-                          Shadow(blurRadius: 6, color: Colors.black54),
-                        ],
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ),
-                // ระยะห่างราวหนึ่งบรรทัดตามที่ผู้ใช้ขอ
-                SizedBox(height: isDesktop ? 28 : 22),
-                _buildBannerBooking(context, isDesktop),
+  Widget _buildBannerContent(BuildContext context, bool isDesktop) {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        Image.asset(
+          HomeBanner.image,
+          fit: BoxFit.cover,
+          alignment: Alignment.center,
+          // ภาพหายก็ยังเห็นหัวเรื่อง ไม่ปล่อยให้ทั้งแถบพัง
+          errorBuilder: (_, _, _) => Container(color: AppTheme.primaryColor),
+        ),
+        DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Colors.black.withValues(alpha: 0.45),
+                Colors.black.withValues(alpha: 0.25),
+                Colors.black.withValues(alpha: 0.55),
               ],
             ),
           ),
-        ],
-      ),
+        ),
+        Padding(
+          padding: EdgeInsets.fromLTRB(
+            isDesktop ? 32 : 16,
+            isDesktop ? 40 : 24,
+            isDesktop ? 32 : 16,
+            isDesktop ? 40 : 24,
+          ),
+          child: Column(
+            // ชื่อศูนย์ฯ กับส่วนจองห้องพักอยู่กลางภาพ เว้นระหว่างกันราวหนึ่งบรรทัด
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.apartment,
+                    size: isDesktop ? 48 : 34,
+                    color: Colors.white.withValues(alpha: 0.9),
+                  ),
+                  SizedBox(height: isDesktop ? 12 : 8),
+                  Text(
+                    'ศูนย์พัฒนาทรัพยากรบุคคลงานทาง',
+                    style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: isDesktop ? 34 : 24,
+                      shadows: const [
+                        Shadow(blurRadius: 8, color: Colors.black54),
+                      ],
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  SizedBox(height: isDesktop ? 10 : 8),
+                  Text(
+                    'กรมทางหลวง  อำเภอศรีราชา จังหวัดชลบุรี',
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      color: Colors.white,
+                      fontSize: isDesktop ? 17 : 14,
+                      shadows: const [
+                        Shadow(blurRadius: 6, color: Colors.black54),
+                      ],
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  SizedBox(height: isDesktop ? 12 : 10),
+                  Text(
+                    'ห้องพัก ห้องประชุม และห้องกิจกรรม สำหรับการฝึกอบรมและสัมมนา',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Colors.white70,
+                      fontSize: isDesktop ? 15 : 13,
+                      shadows: const [
+                        Shadow(blurRadius: 6, color: Colors.black54),
+                      ],
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+              // ระยะห่างราวหนึ่งบรรทัดตามที่ผู้ใช้ขอ
+              SizedBox(height: isDesktop ? 28 : 22),
+              _buildBannerBooking(context, isDesktop),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -893,21 +899,21 @@ class _HomeScreenState extends State<HomeScreen> {
             alignment: WrapAlignment.center,
             children: [
               _buildRoomCard(
-                'assets/images/vip.png',
+                'assets/images/vip.jpg',
                 'ห้องพักวีไอพี',
                 'ห้องพักสำหรับผู้บริหารและวิทยากร',
                 RoomRateCategory.vip,
                 isDesktop,
               ),
               _buildRoomCard(
-                'assets/images/normal.png',
+                'assets/images/normal.jpg',
                 'ห้องพักมาตรฐาน',
                 'ห้องพักสำหรับผู้เข้ารับการอบรม',
                 RoomRateCategory.standard,
                 isDesktop,
               ),
               _buildRoomCard(
-                'assets/images/meeting.png',
+                'assets/images/meeting.jpg',
                 'ห้องประชุมและห้องกิจกรรม',
                 'รองรับการอบรม สัมมนา และกิจกรรมกลุ่ม',
                 RoomRateCategory.meeting,

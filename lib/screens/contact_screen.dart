@@ -239,7 +239,7 @@ class _ContactScreenState extends State<ContactScreen> {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Image.asset(
-                'assets/images/line.png',
+                'assets/images/line.jpg',
                 width: 100, //isDesktop ? 100 : 90,
                 height: 100, //isDesktop ? 28 : 22,
                 errorBuilder: (ctx, err, _) => Icon(
@@ -378,7 +378,7 @@ class _ContactScreenState extends State<ContactScreen> {
                 // height: isDesktop ? 400 : 250,
                 decoration: BoxDecoration(color: Colors.grey.shade200),
                 child: Image.asset(
-                  'assets/images/map500.png',
+                  'assets/images/map500.jpg',
                   fit: BoxFit.cover,
                   errorBuilder: (ctx, err, _) => Center(
                     child: Icon(

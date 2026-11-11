@@ -156,7 +156,7 @@ class CustomHeader extends StatelessWidget implements PreferredSizeWidget {
     );
   }
 
-  /// ปุ่มรูปโลโก้ ThaID ใช้ไฟล์ assets/images/thaid.png
+  /// ปุ่มรูปโลโก้ ThaID ใช้ไฟล์ assets/images/thaid.jpg
   /// ถ้ายังไม่มีไฟล์ แสดงตัวอักษร ThaiD สีเดียวกับโลโก้แทน ปุ่มจะไม่หายไป
   Widget _buildThaidButton(BuildContext context) {
     return Padding(
@@ -174,7 +174,7 @@ class CustomHeader extends StatelessWidget implements PreferredSizeWidget {
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(8),
                 child: Image.asset(
-                  'assets/images/thaid.png',
+                  'assets/images/thaid.jpg',
                   height: 36,
                   fit: BoxFit.contain,
                   errorBuilder: (_, _, _) => _thaidFallback(),
