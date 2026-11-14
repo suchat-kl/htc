@@ -208,12 +208,18 @@ class _HomeScreenState extends State<HomeScreen> {
   /// ชื่อศูนย์ฯ และส่วนจองห้องพักอยู่ในภาพเดียวกัน จัดกลางภาพ เว้นระหว่างกันราวหนึ่งบรรทัด
   /// เดิมส่วนจองเป็นการ์ดแยกใต้แถบสถิติ ผู้ใช้ให้ย้ายขึ้นมาอยู่ในภาพวิว (28 ก.ย. 2569)
   ///
-  /// ความสูงตาม [HomeBanner.height] จอ laptop และ desktop จึงเห็นภาพเต็มรูปเหมือนกัน
+  /// ความสูงตาม [HomeBanner.height]: สูงตามสัดส่วนภาพ แต่ไม่เกิน 70% ของความสูงหน้าต่าง
+  /// ให้ส่วนประกาศใต้ภาพยังอยู่ในจอแรก และไม่ต่ำกว่า 540/480
   /// (เดิมสูงตายตัว ภาพถูกตัดบน-ล่างมากน้อยต่างกันตามความกว้างจอ)
   Widget _buildBannerSection(BuildContext context, bool isDesktop) {
+    final viewportHeight = MediaQuery.sizeOf(context).height;
     return LayoutBuilder(
       builder: (context, constraints) => SizedBox(
-        height: HomeBanner.height(constraints.maxWidth, isDesktop: isDesktop),
+        height: HomeBanner.height(
+          constraints.maxWidth,
+          isDesktop: isDesktop,
+          viewportHeight: viewportHeight,
+        ),
         width: double.infinity,
         child: _buildBannerContent(context, isDesktop),
       ),
